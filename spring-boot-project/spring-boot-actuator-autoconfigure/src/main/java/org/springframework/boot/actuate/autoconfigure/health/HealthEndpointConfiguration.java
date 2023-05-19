@@ -112,8 +112,8 @@ class HealthEndpointConfiguration {
 
 		@Override
 		public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
-			if (bean instanceof HealthEndpointGroups groups) {
-				return applyPostProcessors(groups);
+			if (bean instanceof HealthEndpointGroups) {
+				return applyPostProcessors((HealthEndpointGroups) bean);
 			}
 			return bean;
 		}
@@ -143,11 +143,11 @@ class HealthEndpointConfiguration {
 		}
 
 		private HealthContributor adapt(ReactiveHealthContributor contributor) {
-			if (contributor instanceof ReactiveHealthIndicator healthIndicator) {
-				return adapt(healthIndicator);
+			if (contributor instanceof ReactiveHealthIndicator) {
+				return adapt((ReactiveHealthIndicator) contributor);
 			}
-			if (contributor instanceof CompositeReactiveHealthContributor healthContributor) {
-				return adapt(healthContributor);
+			if (contributor instanceof CompositeReactiveHealthContributor) {
+				return adapt((CompositeReactiveHealthContributor) contributor);
 			}
 			throw new IllegalStateException("Unsupported ReactiveHealthContributor type " + contributor.getClass());
 		}
@@ -174,7 +174,7 @@ class HealthEndpointConfiguration {
 				@Override
 				public Iterator<NamedContributor<HealthContributor>> iterator() {
 					Iterator<NamedContributor<ReactiveHealthContributor>> iterator = composite.iterator();
-					return new Iterator<>() {
+					return new Iterator<NamedContributor<HealthContributor>>() {
 
 						@Override
 						public boolean hasNext() {

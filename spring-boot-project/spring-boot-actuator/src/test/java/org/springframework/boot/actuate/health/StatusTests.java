@@ -59,7 +59,7 @@ class StatusTests {
 		Status two = new Status("spring", "framework");
 		Status three = new Status("spock", "framework");
 		assertThat(one).isEqualTo(one).isEqualTo(two).isNotEqualTo(three);
-		assertThat(one).hasSameHashCodeAs(two);
+		assertThat(one.hashCode()).isEqualTo(two.hashCode());
 	}
 
 	@Test

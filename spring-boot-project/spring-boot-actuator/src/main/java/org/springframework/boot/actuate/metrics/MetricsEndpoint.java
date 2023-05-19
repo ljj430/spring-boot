@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -34,7 +35,6 @@ import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 
 import org.springframework.boot.actuate.endpoint.InvalidEndpointRequestException;
-import org.springframework.boot.actuate.endpoint.OperationResponseBody;
 import org.springframework.boot.actuate.endpoint.annotation.Endpoint;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
 import org.springframework.boot.actuate.endpoint.annotation.Selector;
@@ -57,15 +57,15 @@ public class MetricsEndpoint {
 	}
 
 	@ReadOperation
-	public MetricNamesDescriptor listNames() {
+	public ListNamesResponse listNames() {
 		Set<String> names = new TreeSet<>();
 		collectNames(names, this.registry);
-		return new MetricNamesDescriptor(names);
+		return new ListNamesResponse(names);
 	}
 
 	private void collectNames(Set<String> names, MeterRegistry registry) {
-		if (registry instanceof CompositeMeterRegistry compositeMeterRegistry) {
-			compositeMeterRegistry.getRegistries().forEach((member) -> collectNames(names, member));
+		if (registry instanceof CompositeMeterRegistry) {
+			((CompositeMeterRegistry) registry).getRegistries().forEach((member) -> collectNames(names, member));
 		}
 		else {
 			registry.getMeters().stream().map(this::getName).forEach(names::add);
@@ -77,7 +77,7 @@ public class MetricsEndpoint {
 	}
 
 	@ReadOperation
-	public MetricDescriptor metric(@Selector String requiredMetricName, @Nullable List<String> tag) {
+	public MetricResponse metric(@Selector String requiredMetricName, @Nullable List<String> tag) {
 		List<Tag> tags = parseTags(tag);
 		Collection<Meter> meters = findFirstMatchingMeters(this.registry, requiredMetricName, tags);
 		if (meters.isEmpty()) {
@@ -87,12 +87,15 @@ public class MetricsEndpoint {
 		Map<String, Set<String>> availableTags = getAvailableTags(meters);
 		tags.forEach((t) -> availableTags.remove(t.getKey()));
 		Meter.Id meterId = meters.iterator().next().getId();
-		return new MetricDescriptor(requiredMetricName, meterId.getDescription(), meterId.getBaseUnit(),
+		return new MetricResponse(requiredMetricName, meterId.getDescription(), meterId.getBaseUnit(),
 				asList(samples, Sample::new), asList(availableTags, AvailableTag::new));
 	}
 
 	private List<Tag> parseTags(List<String> tags) {
-		return (tags != null) ? tags.stream().map(this::parseTag).toList() : Collections.emptyList();
+		if (tags == null) {
+			return Collections.emptyList();
+		}
+		return tags.stream().map(this::parseTag).collect(Collectors.toList());
 	}
 
 	private Tag parseTag(String tag) {
@@ -106,8 +109,8 @@ public class MetricsEndpoint {
 	}
 
 	private Collection<Meter> findFirstMatchingMeters(MeterRegistry registry, String name, Iterable<Tag> tags) {
-		if (registry instanceof CompositeMeterRegistry compositeMeterRegistry) {
-			return findFirstMatchingMeters(compositeMeterRegistry, name, tags);
+		if (registry instanceof CompositeMeterRegistry) {
+			return findFirstMatchingMeters((CompositeMeterRegistry) registry, name, tags);
 		}
 		return registry.find(name).tags(tags).meters();
 	}
@@ -159,17 +162,20 @@ public class MetricsEndpoint {
 	}
 
 	private <K, V, T> List<T> asList(Map<K, V> map, BiFunction<K, V, T> mapper) {
-		return map.entrySet().stream().map((entry) -> mapper.apply(entry.getKey(), entry.getValue())).toList();
+		return map.entrySet()
+			.stream()
+			.map((entry) -> mapper.apply(entry.getKey(), entry.getValue()))
+			.collect(Collectors.toList());
 	}
 
 	/**
-	 * Description of metric names.
+	 * Response payload for a metric name listing.
 	 */
-	public static final class MetricNamesDescriptor implements OperationResponseBody {
+	public static final class ListNamesResponse {
 
 		private final Set<String> names;
 
-		MetricNamesDescriptor(Set<String> names) {
+		ListNamesResponse(Set<String> names) {
 			this.names = names;
 		}
 
@@ -180,9 +186,9 @@ public class MetricsEndpoint {
 	}
 
 	/**
-	 * Description of a metric.
+	 * Response payload for a metric name selector.
 	 */
-	public static final class MetricDescriptor implements OperationResponseBody {
+	public static final class MetricResponse {
 
 		private final String name;
 
@@ -194,7 +200,7 @@ public class MetricsEndpoint {
 
 		private final List<AvailableTag> availableTags;
 
-		MetricDescriptor(String name, String description, String baseUnit, List<Sample> measurements,
+		MetricResponse(String name, String description, String baseUnit, List<Sample> measurements,
 				List<AvailableTag> availableTags) {
 			this.name = name;
 			this.description = description;

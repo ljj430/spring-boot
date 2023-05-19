@@ -322,13 +322,16 @@ class EndpointDiscovererTests {
 	private void load(ApplicationContext parent, Class<?> configuration,
 			Consumer<AnnotationConfigApplicationContext> consumer) {
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
-		try (context) {
-			if (parent != null) {
-				context.setParent(parent);
-			}
-			context.register(configuration);
-			context.refresh();
+		if (parent != null) {
+			context.setParent(parent);
+		}
+		context.register(configuration);
+		context.refresh();
+		try {
 			consumer.accept(context);
+		}
+		finally {
+			context.close();
 		}
 	}
 

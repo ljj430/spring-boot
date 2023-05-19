@@ -39,28 +39,28 @@ class SpringBootApplicationTests {
 	void proxyBeanMethodsIsEnabledByDefault() {
 		AnnotationAttributes attributes = AnnotatedElementUtils
 			.getMergedAnnotationAttributes(DefaultSpringBootApplication.class, Configuration.class);
-		assertThat(attributes).containsEntry("proxyBeanMethods", true);
+		assertThat(attributes.get("proxyBeanMethods")).isEqualTo(true);
 	}
 
 	@Test
 	void proxyBeanMethodsCanBeDisabled() {
 		AnnotationAttributes attributes = AnnotatedElementUtils
 			.getMergedAnnotationAttributes(NoBeanMethodProxyingSpringBootApplication.class, Configuration.class);
-		assertThat(attributes).containsEntry("proxyBeanMethods", false);
+		assertThat(attributes.get("proxyBeanMethods")).isEqualTo(false);
 	}
 
 	@Test
 	void nameGeneratorDefaultToBeanNameGenerator() {
 		AnnotationAttributes attributes = AnnotatedElementUtils
 			.getMergedAnnotationAttributes(DefaultSpringBootApplication.class, ComponentScan.class);
-		assertThat(attributes).containsEntry("nameGenerator", BeanNameGenerator.class);
+		assertThat(attributes.get("nameGenerator")).isEqualTo(BeanNameGenerator.class);
 	}
 
 	@Test
 	void nameGeneratorCanBeSpecified() {
 		AnnotationAttributes attributes = AnnotatedElementUtils
 			.getMergedAnnotationAttributes(CustomNameGeneratorConfiguration.class, ComponentScan.class);
-		assertThat(attributes).containsEntry("nameGenerator", TestBeanNameGenerator.class);
+		assertThat(attributes.get("nameGenerator")).isEqualTo(TestBeanNameGenerator.class);
 	}
 
 	@SpringBootApplication

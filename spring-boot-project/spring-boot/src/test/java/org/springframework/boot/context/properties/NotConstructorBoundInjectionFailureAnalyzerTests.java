@@ -19,8 +19,6 @@ package org.springframework.boot.context.properties;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.FatalBeanException;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.boot.diagnostics.FailureAnalysis;
 import org.springframework.boot.diagnostics.LoggingFailureAnalysisReporter;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -77,6 +75,7 @@ class NotConstructorBoundInjectionFailureAnalyzerTests {
 		return analysis;
 	}
 
+	@ConstructorBinding
 	@ConfigurationProperties("test")
 	static class ConstructorBoundProperties {
 
@@ -103,7 +102,6 @@ class NotConstructorBoundInjectionFailureAnalyzerTests {
 
 		private String name;
 
-		@Autowired
 		JavaBeanBoundProperties(String dependency) {
 
 		}

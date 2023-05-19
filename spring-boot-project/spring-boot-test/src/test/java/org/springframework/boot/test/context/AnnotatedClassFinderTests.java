@@ -32,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
  */
 class AnnotatedClassFinderTests {
 
-	private final AnnotatedClassFinder finder = new AnnotatedClassFinder(SpringBootConfiguration.class);
+	private AnnotatedClassFinder finder = new AnnotatedClassFinder(SpringBootConfiguration.class);
 
 	@Test
 	void findFromClassWhenSourceIsNullShouldThrowException() {

@@ -54,11 +54,11 @@ class DispatcherTests {
 	@Mock
 	private AccessManager accessManager;
 
-	private final MockHttpServletResponse response = new MockHttpServletResponse();
+	private MockHttpServletResponse response = new MockHttpServletResponse();
 
-	private final ServerHttpRequest serverRequest = new ServletServerHttpRequest(new MockHttpServletRequest());
+	private ServerHttpRequest serverRequest = new ServletServerHttpRequest(new MockHttpServletRequest());
 
-	private final ServerHttpResponse serverResponse = new ServletServerHttpResponse(this.response);
+	private ServerHttpResponse serverResponse = new ServletServerHttpResponse(this.response);
 
 	@Test
 	void accessManagerMustNotBeNull() {

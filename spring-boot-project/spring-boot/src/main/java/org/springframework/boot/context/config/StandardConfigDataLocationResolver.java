@@ -35,7 +35,6 @@ import org.apache.commons.logging.Log;
 import org.springframework.boot.context.config.LocationResourceLoader.ResourceType;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.boot.env.PropertySourceLoader;
-import org.springframework.boot.logging.DeferredLogFactory;
 import org.springframework.core.Ordered;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
@@ -62,7 +61,7 @@ public class StandardConfigDataLocationResolver
 
 	static final String CONFIG_NAME_PROPERTY = "spring.config.name";
 
-	static final String[] DEFAULT_CONFIG_NAMES = { "application" };
+	private static final String[] DEFAULT_CONFIG_NAMES = { "application" };
 
 	private static final Pattern URL_PREFIX = Pattern.compile("^([a-zA-Z][a-zA-Z0-9*]*?:)(.*$)");
 
@@ -80,13 +79,12 @@ public class StandardConfigDataLocationResolver
 
 	/**
 	 * Create a new {@link StandardConfigDataLocationResolver} instance.
-	 * @param logFactory the factory for loggers to use
+	 * @param logger the logger to use
 	 * @param binder a binder backed by the initial {@link Environment}
 	 * @param resourceLoader a {@link ResourceLoader} used to load resources
 	 */
-	public StandardConfigDataLocationResolver(DeferredLogFactory logFactory, Binder binder,
-			ResourceLoader resourceLoader) {
-		this.logger = logFactory.getLog(StandardConfigDataLocationResolver.class);
+	public StandardConfigDataLocationResolver(Log logger, Binder binder, ResourceLoader resourceLoader) {
+		this.logger = logger;
 		this.propertySourceLoaders = SpringFactoriesLoader.loadFactories(PropertySourceLoader.class,
 				getClass().getClassLoader());
 		this.configNames = getConfigNames(binder);
@@ -170,8 +168,8 @@ public class StandardConfigDataLocationResolver
 			return resourceLocation;
 		}
 		ConfigDataResource parent = context.getParent();
-		if (parent instanceof StandardConfigDataResource resource) {
-			String parentResourceLocation = resource.getReference().getResourceLocation();
+		if (parent instanceof StandardConfigDataResource) {
+			String parentResourceLocation = ((StandardConfigDataResource) parent).getReference().getResourceLocation();
 			String parentDirectory = parentResourceLocation.substring(0, parentResourceLocation.lastIndexOf("/") + 1);
 			return parentDirectory + resourceLocation;
 		}

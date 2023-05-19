@@ -16,8 +16,9 @@
 
 package org.springframework.boot.actuate.autoconfigure.web.servlet;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.junit.jupiter.api.Test;
 
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -43,9 +44,9 @@ class CompositeHandlerExceptionResolverTests {
 
 	private AnnotationConfigApplicationContext context;
 
-	private final MockHttpServletRequest request = new MockHttpServletRequest();
+	private MockHttpServletRequest request = new MockHttpServletRequest();
 
-	private final MockHttpServletResponse response = new MockHttpServletResponse();
+	private MockHttpServletResponse response = new MockHttpServletResponse();
 
 	@Test
 	void resolverShouldDelegateToOtherResolversInContext() {

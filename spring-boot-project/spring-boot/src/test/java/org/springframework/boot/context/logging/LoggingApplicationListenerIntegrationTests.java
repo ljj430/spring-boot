@@ -66,7 +66,7 @@ class LoggingApplicationListenerIntegrationTests {
 			.run()) {
 			SampleService service = context.getBean(SampleService.class);
 			assertThat(service.logFile).isNotNull();
-			assertThat(service.logFile).hasToString(logFile);
+			assertThat(service.logFile.toString()).isEqualTo(logFile);
 		}
 		finally {
 			System.clearProperty(LoggingSystemProperties.LOG_FILE);

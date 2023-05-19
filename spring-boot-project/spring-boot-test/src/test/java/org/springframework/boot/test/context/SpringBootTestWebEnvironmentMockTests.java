@@ -16,7 +16,8 @@
 
 package org.springframework.boot.test.context;
 
-import jakarta.servlet.ServletContext;
+import javax.servlet.ServletContext;
+
 import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.annotation.Autowired;

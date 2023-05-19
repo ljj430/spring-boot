@@ -18,7 +18,6 @@ package smoketest.session.mongodb;
 
 import java.net.URI;
 import java.time.Duration;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -30,20 +29,15 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.boot.testsupport.testcontainers.DockerImageNames;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -54,13 +48,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers(disabledWithoutDocker = true)
-class SampleSessionMongoApplicationTests {
+public class SampleSessionMongoApplicationTests {
 
 	@Autowired
 	private TestRestTemplate restTemplate;
-
-	@LocalServerPort
-	private int port;
 
 	@Container
 	static MongoDBContainer mongo = new MongoDBContainer(DockerImageNames.mongo()).withStartupAttempts(3)
@@ -74,32 +65,17 @@ class SampleSessionMongoApplicationTests {
 	@Test
 	@SuppressWarnings("unchecked")
 	void sessionsEndpointShouldReturnUserSessions() {
-		performLogin();
+		createSession(URI.create("/"));
 		ResponseEntity<Map<String, Object>> response = getSessions();
 		assertThat(response).isNotNull();
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 		List<Map<String, Object>> sessions = (List<Map<String, Object>>) response.getBody().get("sessions");
-		assertThat(sessions).hasSize(1);
+		assertThat(sessions.size()).isEqualTo(1);
 	}
 
-	@Test
-	void health() {
-		ResponseEntity<String> entity = this.restTemplate
-			.getForEntity("http://localhost:" + this.port + "/actuator/health", String.class);
-		assertThat(entity.getBody()).contains("\"status\":\"UP\"");
-		assertThat(entity.getBody()).contains("maxWireVersion");
-	}
-
-	private String performLogin() {
-		HttpHeaders headers = new HttpHeaders();
-		headers.setAccept(Collections.singletonList(MediaType.TEXT_HTML));
-		headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-		MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
-		form.set("username", "user");
-		form.set("password", "password");
-		ResponseEntity<String> entity = this.restTemplate.exchange("/login", HttpMethod.POST,
-				new HttpEntity<>(form, headers), String.class);
-		return entity.getHeaders().getFirst("Set-Cookie");
+	private void createSession(URI uri) {
+		RequestEntity<Object> request = getRequestEntity(uri);
+		this.restTemplate.exchange(request, String.class);
 	}
 
 	private RequestEntity<Object> getRequestEntity(URI uri) {
@@ -110,7 +86,7 @@ class SampleSessionMongoApplicationTests {
 
 	private ResponseEntity<Map<String, Object>> getSessions() {
 		RequestEntity<Object> request = getRequestEntity(URI.create("/actuator/sessions?username=user"));
-		ParameterizedTypeReference<Map<String, Object>> stringObjectMap = new ParameterizedTypeReference<>() {
+		ParameterizedTypeReference<Map<String, Object>> stringObjectMap = new ParameterizedTypeReference<Map<String, Object>>() {
 		};
 		return this.restTemplate.exchange(request, stringObjectMap);
 	}

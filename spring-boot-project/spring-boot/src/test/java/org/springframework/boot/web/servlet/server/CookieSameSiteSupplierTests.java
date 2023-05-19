@@ -19,7 +19,8 @@ package org.springframework.boot.web.servlet.server;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
-import jakarta.servlet.http.Cookie;
+import javax.servlet.http.Cookie;
+
 import org.junit.jupiter.api.Test;
 
 import org.springframework.boot.web.server.Cookie.SameSite;
