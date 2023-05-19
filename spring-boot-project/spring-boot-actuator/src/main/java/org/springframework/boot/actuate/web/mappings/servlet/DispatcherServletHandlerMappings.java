@@ -21,7 +21,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import jakarta.servlet.ServletException;
+import javax.servlet.ServletException;
+
 import org.apache.catalina.Container;
 import org.apache.catalina.Context;
 import org.apache.catalina.core.StandardWrapper;
@@ -66,15 +67,15 @@ final class DispatcherServletHandlerMappings {
 	}
 
 	private void initializeDispatcherServletIfPossible() {
-		if (!(this.applicationContext instanceof ServletWebServerApplicationContext webServerApplicationContext)) {
+		if (!(this.applicationContext instanceof ServletWebServerApplicationContext)) {
 			return;
 		}
-		WebServer webServer = webServerApplicationContext.getWebServer();
-		if (webServer instanceof UndertowServletWebServer undertowServletWebServer) {
-			new UndertowServletInitializer(undertowServletWebServer).initializeServlet(this.name);
+		WebServer webServer = ((ServletWebServerApplicationContext) this.applicationContext).getWebServer();
+		if (webServer instanceof UndertowServletWebServer) {
+			new UndertowServletInitializer((UndertowServletWebServer) webServer).initializeServlet(this.name);
 		}
-		else if (webServer instanceof TomcatWebServer tomcatWebServer) {
-			new TomcatServletInitializer(tomcatWebServer).initializeServlet(this.name);
+		else if (webServer instanceof TomcatWebServer) {
+			new TomcatServletInitializer((TomcatWebServer) webServer).initializeServlet(this.name);
 		}
 	}
 
@@ -103,8 +104,9 @@ final class DispatcherServletHandlerMappings {
 
 		private void initializeServlet(Context context, String name) {
 			Container child = context.findChild(name);
-			if (child instanceof StandardWrapper wrapper) {
+			if (child instanceof StandardWrapper) {
 				try {
+					StandardWrapper wrapper = (StandardWrapper) child;
 					wrapper.deallocate(wrapper.allocate());
 				}
 				catch (ServletException ex) {

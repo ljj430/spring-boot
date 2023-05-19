@@ -155,10 +155,7 @@ class HazelcastAutoConfigurationServerTests {
 	private ContextConsumer<AssertableApplicationContext> assertSpecificHazelcastServer(String location) {
 		return (context) -> {
 			Config config = context.getBean(HazelcastInstance.class).getConfig();
-			String configurationLocation = (config.getConfigurationUrl() != null)
-					? config.getConfigurationUrl().toString()
-					: config.getConfigurationFile().toURI().toURL().toString();
-			assertThat(configurationLocation).endsWith(location);
+			assertThat(config.getConfigurationUrl()).asString().endsWith(location);
 		};
 	}
 

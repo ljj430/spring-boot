@@ -17,6 +17,7 @@
 package org.springframework.boot.gradle.tasks.run;
 
 import java.io.File;
+import java.lang.reflect.Method;
 import java.util.Set;
 
 import org.gradle.api.file.SourceDirectorySet;
@@ -25,6 +26,7 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetOutput;
+import org.gradle.jvm.toolchain.JavaLauncher;
 import org.gradle.work.DisableCachingByDefault;
 
 /**
@@ -34,20 +36,30 @@ import org.gradle.work.DisableCachingByDefault;
  * @since 2.0.0
  */
 @DisableCachingByDefault(because = "Application should always run")
-public abstract class BootRun extends JavaExec {
+public class BootRun extends JavaExec {
 
-	public BootRun() {
-		getOptimizedLaunch().convention(true);
+	private boolean optimizedLaunch = true;
+
+	/**
+	 * Returns {@code true} if the JVM's launch should be optimized, otherwise
+	 * {@code false}. Defaults to {@code true}.
+	 * @return whether the JVM's launch should be optimized
+	 * @since 2.2.0
+	 */
+	@Input
+	public boolean isOptimizedLaunch() {
+		return this.optimizedLaunch;
 	}
 
 	/**
-	 * Returns the property for whether the JVM's launch should be optimized. The property
-	 * defaults to {@code true}.
-	 * @return whether the JVM's launch should be optimized
-	 * @since 3.0.0
+	 * Sets whether the JVM's launch should be optimized. Defaults to {@code true}.
+	 * @param optimizedLaunch {@code true} if the JVM's launch should be optimised,
+	 * otherwise {@code false}
+	 * @since 2.2.0
 	 */
-	@Input
-	public abstract Property<Boolean> getOptimizedLaunch();
+	public void setOptimizedLaunch(boolean optimizedLaunch) {
+		this.optimizedLaunch = optimizedLaunch;
+	}
 
 	/**
 	 * Adds the {@link SourceDirectorySet#getSrcDirs() source directories} of the given
@@ -64,8 +76,11 @@ public abstract class BootRun extends JavaExec {
 
 	@Override
 	public void exec() {
-		if (getOptimizedLaunch().get()) {
+		if (this.optimizedLaunch) {
 			setJvmArgs(getJvmArgs());
+			if (!isJava13OrLater()) {
+				jvmArgs("-Xverify:none");
+			}
 			jvmArgs("-XX:TieredStopAtLevel=1");
 		}
 		if (System.console() != null) {
@@ -73,6 +88,19 @@ public abstract class BootRun extends JavaExec {
 			getEnvironment().put("spring.output.ansi.console-available", true);
 		}
 		super.exec();
+	}
+
+	private boolean isJava13OrLater() {
+		Property<JavaLauncher> javaLauncher = this.getJavaLauncher();
+		if (javaLauncher.isPresent()) {
+			return javaLauncher.get().getMetadata().getLanguageVersion().asInt() >= 13;
+		}
+		for (Method method : String.class.getMethods()) {
+			if (method.getName().equals("stripIndent")) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 }

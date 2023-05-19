@@ -45,7 +45,8 @@ class PackageTangleCheckTests {
 	@Test
 	void whenPackagesAreTangledTaskFailsAndWritesAReport() throws Exception {
 		prepareTask("tangled", (packageTangleCheck) -> {
-			assertThatExceptionOfType(GradleException.class).isThrownBy(packageTangleCheck::checkForPackageTangles);
+			assertThatExceptionOfType(GradleException.class)
+				.isThrownBy(() -> packageTangleCheck.checkForPackageTangles());
 			assertThat(
 					new File(packageTangleCheck.getProject().getBuildDir(), "checkForPackageTangles/failure-report.txt")
 						.length())

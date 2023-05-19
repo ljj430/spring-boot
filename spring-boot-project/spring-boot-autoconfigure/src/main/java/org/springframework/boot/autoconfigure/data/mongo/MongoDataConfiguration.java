@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.mapping.model.FieldNamingStrategy;
-import org.springframework.data.mongodb.MongoManagedTypes;
 import org.springframework.data.mongodb.core.convert.MongoCustomConversions;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
@@ -44,18 +43,12 @@ class MongoDataConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	static MongoManagedTypes mongoManagedTypes(ApplicationContext applicationContext) throws ClassNotFoundException {
-		return MongoManagedTypes.fromIterable(new EntityScanner(applicationContext).scan(Document.class));
-	}
-
-	@Bean
-	@ConditionalOnMissingBean
-	MongoMappingContext mongoMappingContext(MongoProperties properties, MongoCustomConversions conversions,
-			MongoManagedTypes managedTypes) {
-		PropertyMapper map = PropertyMapper.get().alwaysApplyingWhenNonNull();
+	MongoMappingContext mongoMappingContext(ApplicationContext applicationContext, MongoProperties properties,
+			MongoCustomConversions conversions) throws ClassNotFoundException {
+		PropertyMapper mapper = PropertyMapper.get().alwaysApplyingWhenNonNull();
 		MongoMappingContext context = new MongoMappingContext();
-		map.from(properties.isAutoIndexCreation()).to(context::setAutoIndexCreation);
-		context.setManagedTypes(managedTypes);
+		mapper.from(properties.isAutoIndexCreation()).to(context::setAutoIndexCreation);
+		context.setInitialEntitySet(new EntityScanner(applicationContext).scan(Document.class));
 		Class<?> strategyClass = properties.getFieldNamingStrategy();
 		if (strategyClass != null) {
 			context.setFieldNamingStrategy((FieldNamingStrategy) BeanUtils.instantiateClass(strategyClass));

@@ -76,7 +76,7 @@ class SampleActuatorCustomSecurityApplicationTests extends AbstractSampleActuato
 				Object.class);
 		assertThat(entity.getStatusCode()).isEqualTo(HttpStatus.OK);
 		entity = beansRestTemplate().getForEntity(getManagementPath() + "/actuator/beans/", Object.class);
-		assertThat(entity.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+		assertThat(entity.getStatusCode()).isEqualTo(HttpStatus.OK);
 	}
 
 }

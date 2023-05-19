@@ -35,7 +35,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Tests for {@code log4j2.xml}.
  *
  * @author Andy Wilkinson
- * @author Scott Frederick
  */
 class Log4j2XmlTests {
 
@@ -70,7 +69,7 @@ class Log4j2XmlTests {
 
 	@Test
 	void whenLogLDateformatPatternIsNotConfiguredThenConsoleUsesDefault() {
-		assertThat(consolePattern()).contains("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+		assertThat(consolePattern()).contains("yyyy-MM-dd HH:mm:ss.SSS");
 	}
 
 	@Test

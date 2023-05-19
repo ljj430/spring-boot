@@ -19,7 +19,7 @@ package org.springframework.boot.autoconfigure.session;
 import java.util.EnumSet;
 import java.util.stream.Collectors;
 
-import jakarta.servlet.DispatcherType;
+import javax.servlet.DispatcherType;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;

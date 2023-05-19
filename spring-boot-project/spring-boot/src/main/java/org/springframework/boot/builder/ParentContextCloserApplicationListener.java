@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ import org.springframework.util.ObjectUtils;
 public class ParentContextCloserApplicationListener
 		implements ApplicationListener<ParentContextAvailableEvent>, ApplicationContextAware, Ordered {
 
-	private final int order = Ordered.LOWEST_PRECEDENCE - 10;
+	private int order = Ordered.LOWEST_PRECEDENCE - 10;
 
 	private ApplicationContext context;
 
@@ -60,7 +60,8 @@ public class ParentContextCloserApplicationListener
 	}
 
 	private void maybeInstallListenerInParent(ConfigurableApplicationContext child) {
-		if (child == this.context && child.getParent() instanceof ConfigurableApplicationContext parent) {
+		if (child == this.context && child.getParent() instanceof ConfigurableApplicationContext) {
+			ConfigurableApplicationContext parent = (ConfigurableApplicationContext) child.getParent();
 			parent.addApplicationListener(createContextCloserListener(child));
 		}
 	}
@@ -80,7 +81,7 @@ public class ParentContextCloserApplicationListener
 	 */
 	protected static class ContextCloserListener implements ApplicationListener<ContextClosedEvent> {
 
-		private final WeakReference<ConfigurableApplicationContext> childContext;
+		private WeakReference<ConfigurableApplicationContext> childContext;
 
 		public ContextCloserListener(ConfigurableApplicationContext childContext) {
 			this.childContext = new WeakReference<>(childContext);
@@ -102,7 +103,8 @@ public class ParentContextCloserApplicationListener
 			if (obj == null) {
 				return false;
 			}
-			if (obj instanceof ContextCloserListener other) {
+			if (obj instanceof ContextCloserListener) {
+				ContextCloserListener other = (ContextCloserListener) obj;
 				return ObjectUtils.nullSafeEquals(this.childContext.get(), other.childContext.get());
 			}
 			return super.equals(obj);

@@ -18,15 +18,15 @@ package org.springframework.boot.autoconfigure.security.oauth2.client.servlet;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
-import jakarta.servlet.Filter;
+import javax.servlet.Filter;
+
 import org.junit.jupiter.api.Test;
 
-import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.web.servlet.WebMvcAutoConfiguration;
 import org.springframework.boot.test.context.FilteredClassLoader;
-import org.springframework.boot.test.context.assertj.AssertableWebApplicationContext;
-import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
+import org.springframework.boot.test.context.assertj.AssertableApplicationContext;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -58,7 +58,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class OAuth2WebSecurityConfigurationTests {
 
-	private final WebApplicationContextRunner contextRunner = new WebApplicationContextRunner();
+	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner();
 
 	@Test
 	void securityConfigurerConfiguresOAuth2Login() {
@@ -120,9 +120,20 @@ class OAuth2WebSecurityConfigurationTests {
 	}
 
 	@Test
+	void securityFilterChainConfigBacksOffWhenOtherWebSecurityAdapterPresent() {
+		this.contextRunner
+			.withUserConfiguration(TestWebSecurityConfigurerConfig.class, OAuth2WebSecurityConfiguration.class)
+			.run((context) -> {
+				assertThat(getFilters(context, OAuth2LoginAuthenticationFilter.class)).isEmpty();
+				assertThat(getFilters(context, OAuth2AuthorizationCodeGrantFilter.class)).isEmpty();
+				assertThat(context).getBean(OAuth2AuthorizedClientService.class).isNotNull();
+			});
+	}
+
+	@Test
 	void securityFilterChainConfigBacksOffWhenOtherSecurityFilterChainBeanPresent() {
-		this.contextRunner.withConfiguration(AutoConfigurations.of(WebMvcAutoConfiguration.class))
-			.withUserConfiguration(TestSecurityFilterChainConfiguration.class, OAuth2WebSecurityConfiguration.class)
+		this.contextRunner
+			.withUserConfiguration(TestSecurityFilterChainConfig.class, OAuth2WebSecurityConfiguration.class)
 			.run((context) -> {
 				assertThat(getFilters(context, OAuth2LoginAuthenticationFilter.class)).isEmpty();
 				assertThat(getFilters(context, OAuth2AuthorizationCodeGrantFilter.class)).isEmpty();
@@ -164,11 +175,11 @@ class OAuth2WebSecurityConfigurationTests {
 			});
 	}
 
-	private List<Filter> getFilters(AssertableWebApplicationContext context, Class<? extends Filter> filter) {
+	private List<Filter> getFilters(AssertableApplicationContext context, Class<? extends Filter> filter) {
 		FilterChainProxy filterChain = (FilterChainProxy) context.getBean(BeanIds.SPRING_SECURITY_FILTER_CHAIN);
 		List<SecurityFilterChain> filterChains = filterChain.getFilterChains();
 		List<Filter> filters = filterChains.get(0).getFilters();
-		return filters.stream().filter(filter::isInstance).toList();
+		return filters.stream().filter(filter::isInstance).collect(Collectors.toList());
 	}
 
 	private boolean isEqual(ClientRegistration reg1, ClientRegistration reg2) {
@@ -233,12 +244,20 @@ class OAuth2WebSecurityConfigurationTests {
 
 	@Configuration(proxyBeanMethods = false)
 	@Import(ClientRegistrationRepositoryConfiguration.class)
-	static class TestSecurityFilterChainConfiguration {
+	@SuppressWarnings("deprecation")
+	static class TestWebSecurityConfigurerConfig
+			extends org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter {
+
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	@Import(ClientRegistrationRepositoryConfiguration.class)
+	static class TestSecurityFilterChainConfig {
 
 		@Bean
 		SecurityFilterChain testSecurityFilterChain(HttpSecurity http) throws Exception {
-			return http.securityMatcher("/**")
-				.authorizeHttpRequests((authorize) -> authorize.anyRequest().authenticated())
+			return http.antMatcher("/**")
+				.authorizeRequests((authorize) -> authorize.anyRequest().authenticated())
 				.build();
 
 		}

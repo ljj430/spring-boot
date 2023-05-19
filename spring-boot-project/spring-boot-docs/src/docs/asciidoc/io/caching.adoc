@@ -38,6 +38,7 @@ If you have not defined a bean of type `CacheManager` or a `CacheResolver` named
 
 . <<io#io.caching.provider.generic,Generic>>
 . <<io#io.caching.provider.jcache,JCache (JSR-107)>> (EhCache 3, Hazelcast, Infinispan, and others)
+. <<io#io.caching.provider.ehcache2,EhCache 2.x>>
 . <<io#io.caching.provider.hazelcast,Hazelcast>>
 . <<io#io.caching.provider.infinispan,Infinispan>>
 . <<io#io.caching.provider.couchbase,Couchbase>>
@@ -53,7 +54,7 @@ Use this property if you need to <<io#io.caching.provider.none,disable caching a
 
 TIP: Use the `spring-boot-starter-cache` "`Starter`" to quickly add basic caching dependencies.
 The starter brings in `spring-context-support`.
-If you add dependencies manually, you must include `spring-context-support` in order to use the JCache or Caffeine support.
+If you add dependencies manually, you must include `spring-context-support` in order to use the JCache, EhCache 2.x, or Caffeine support.
 
 If the `CacheManager` is auto-configured by Spring Boot, you can further tune its configuration before it is fully initialized by exposing a bean that implements the `CacheManagerCustomizer` interface.
 The following example sets a flag to say that `null` values should not be passed down to the underlying map:
@@ -108,6 +109,20 @@ No further customization is applied to it.
 
 
 
+[[io.caching.provider.ehcache2]]
+==== EhCache 2.x
+https://www.ehcache.org/[EhCache] 2.x is used if a file named `ehcache.xml` can be found at the root of the classpath.
+If EhCache 2.x is found, the `EhCacheCacheManager` provided by the `spring-boot-starter-cache` "`Starter`" is used to bootstrap the cache manager.
+An alternate configuration file can be provided as well, as shown in the following example:
+
+[source,yaml,indent=0,subs="verbatim",configprops,configblocks]
+----
+	spring:
+	  cache:
+	    ehcache:
+	      config: "classpath:config/another-config.xml"
+----
+
 [[io.caching.provider.hazelcast]]
 ==== Hazelcast
 
@@ -136,9 +151,9 @@ Otherwise, the default bootstrap is used.
 Caches can be created on startup by setting the configprop:spring.cache.cache-names[] property.
 If a custom `ConfigurationBuilder` bean is defined, it is used to customize the caches.
 
-To be compatible with Spring Boot's Jakarta EE 9 baseline, Infinispan's `-jakarta` modules must be used.
-For every module with a `-jakarta` variant, the variant must be used in place of the standard module.
-For example, `infinispan-core-jakarta` and `infinispan-commons-jakarta` must be used in place of `infinispan-core` and `infinispan-commons` respectively.
+NOTE: The support of Infinispan in Spring Boot is restricted to the embedded mode and is quite basic.
+If you want more options, you should use the official Infinispan Spring Boot starter instead.
+See https://github.com/infinispan/infinispan-spring-boot[Infinispan's documentation] for more details.
 
 
 

@@ -21,11 +21,12 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.data.redis.RedisServiceConnection;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testsupport.testcontainers.RedisContainer;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -34,7 +35,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 class SampleCacheApplicationRedisTests {
 
 	@Container
-	@RedisServiceConnection
 	private static final RedisContainer redis = new RedisContainer();
 
 	@Autowired
@@ -42,6 +42,11 @@ class SampleCacheApplicationRedisTests {
 
 	@Autowired
 	private CountryRepository countryRepository;
+
+	@DynamicPropertySource
+	static void redisProperties(DynamicPropertyRegistry properties) {
+		properties.add("spring.redis.url", () -> "redis://" + redis.getHost() + ":" + redis.getFirstMappedPort());
+	}
 
 	@Test
 	void validateCache() {

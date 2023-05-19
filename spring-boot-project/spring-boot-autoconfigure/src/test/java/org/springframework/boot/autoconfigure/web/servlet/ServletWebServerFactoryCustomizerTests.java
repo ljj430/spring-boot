@@ -98,7 +98,6 @@ class ServletWebServerFactoryCustomizerTests {
 	}
 
 	@Test
-	@SuppressWarnings("removal")
 	void customizeSessionProperties() {
 		Map<String, String> map = new HashMap<>();
 		map.put("server.servlet.session.timeout", "123");

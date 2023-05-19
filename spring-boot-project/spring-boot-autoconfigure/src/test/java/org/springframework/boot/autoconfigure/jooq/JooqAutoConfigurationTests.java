@@ -24,10 +24,16 @@ import org.jooq.ConverterProvider;
 import org.jooq.DSLContext;
 import org.jooq.ExecuteListener;
 import org.jooq.ExecuteListenerProvider;
+import org.jooq.ExecutorProvider;
+import org.jooq.RecordListenerProvider;
+import org.jooq.RecordMapperProvider;
+import org.jooq.RecordUnmapperProvider;
 import org.jooq.SQLDialect;
 import org.jooq.TransactionContext;
+import org.jooq.TransactionListenerProvider;
 import org.jooq.TransactionProvider;
 import org.jooq.TransactionalRunnable;
+import org.jooq.VisitListenerProvider;
 import org.jooq.impl.DataSourceConnectionProvider;
 import org.jooq.impl.DefaultExecuteListenerProvider;
 import org.junit.jupiter.api.Test;
@@ -114,17 +120,6 @@ class JooqAutoConfigurationTests {
 	}
 
 	@Test
-	void jooqWithDefaultTransactionProvider() {
-		this.contextRunner.withUserConfiguration(JooqDataSourceConfiguration.class, TxManagerConfiguration.class)
-			.run((context) -> {
-				DSLContext dsl = context.getBean(DSLContext.class);
-				TransactionProvider expectedTransactionProvider = context.getBean(TransactionProvider.class);
-				TransactionProvider transactionProvider = dsl.configuration().transactionProvider();
-				assertThat(transactionProvider).isSameAs(expectedTransactionProvider);
-			});
-	}
-
-	@Test
 	void jooqWithDefaultExecuteListenerProvider() {
 		this.contextRunner.withUserConfiguration(JooqDataSourceConfiguration.class).run((context) -> {
 			DSLContext dsl = context.getBean(DSLContext.class);
@@ -161,6 +156,34 @@ class JooqAutoConfigurationTests {
 	}
 
 	@Test
+	@Deprecated
+	void customProvidersArePickedUp() {
+		RecordMapperProvider recordMapperProvider = mock(RecordMapperProvider.class);
+		RecordUnmapperProvider recordUnmapperProvider = mock(RecordUnmapperProvider.class);
+		RecordListenerProvider recordListenerProvider = mock(RecordListenerProvider.class);
+		VisitListenerProvider visitListenerProvider = mock(VisitListenerProvider.class);
+		TransactionListenerProvider transactionListenerProvider = mock(TransactionListenerProvider.class);
+		ExecutorProvider executorProvider = mock(ExecutorProvider.class);
+		this.contextRunner.withUserConfiguration(JooqDataSourceConfiguration.class, TxManagerConfiguration.class)
+			.withBean(RecordMapperProvider.class, () -> recordMapperProvider)
+			.withBean(RecordUnmapperProvider.class, () -> recordUnmapperProvider)
+			.withBean(RecordListenerProvider.class, () -> recordListenerProvider)
+			.withBean(VisitListenerProvider.class, () -> visitListenerProvider)
+			.withBean(TransactionListenerProvider.class, () -> transactionListenerProvider)
+			.withBean(ExecutorProvider.class, () -> executorProvider)
+			.run((context) -> {
+				DSLContext dsl = context.getBean(DSLContext.class);
+				assertThat(dsl.configuration().recordMapperProvider()).isSameAs(recordMapperProvider);
+				assertThat(dsl.configuration().recordUnmapperProvider()).isSameAs(recordUnmapperProvider);
+				assertThat(dsl.configuration().executorProvider()).isSameAs(executorProvider);
+				assertThat(dsl.configuration().recordListenerProviders()).containsExactly(recordListenerProvider);
+				assertThat(dsl.configuration().visitListenerProviders()).containsExactly(visitListenerProvider);
+				assertThat(dsl.configuration().transactionListenerProviders())
+					.containsExactly(transactionListenerProvider);
+			});
+	}
+
+	@Test
 	void relaxedBindingOfSqlDialect() {
 		this.contextRunner.withUserConfiguration(JooqDataSourceConfiguration.class)
 			.withPropertyValues("spring.jooq.sql-dialect:PoSTGrES")
@@ -175,21 +198,6 @@ class JooqAutoConfigurationTests {
 			.run((context) -> {
 				TransactionProvider transactionProvider = context.getBean(TransactionProvider.class);
 				assertThat(transactionProvider).isInstanceOf(CustomTransactionProvider.class);
-				DSLContext dsl = context.getBean(DSLContext.class);
-				assertThat(dsl.configuration().transactionProvider()).isSameAs(transactionProvider);
-			});
-	}
-
-	@Test
-	void transactionProviderFromConfigurationCustomizerOverridesTransactionProviderBean() {
-		this.contextRunner
-			.withUserConfiguration(JooqDataSourceConfiguration.class, TxManagerConfiguration.class,
-					CustomTransactionProviderFromCustomizerConfiguration.class)
-			.run((context) -> {
-				TransactionProvider transactionProvider = context.getBean(TransactionProvider.class);
-				assertThat(transactionProvider).isInstanceOf(SpringTransactionProvider.class);
-				DSLContext dsl = context.getBean(DSLContext.class);
-				assertThat(dsl.configuration().transactionProvider()).isInstanceOf(CustomTransactionProvider.class);
 			});
 	}
 
@@ -209,7 +217,7 @@ class JooqAutoConfigurationTests {
 
 		@Override
 		public void run(org.jooq.Configuration configuration) {
-			assertThat(this.dsl.fetch(this.sql).getValue(0, 0)).hasToString(this.expected);
+			assertThat(this.dsl.fetch(this.sql).getValue(0, 0).toString()).isEqualTo(this.expected);
 		}
 
 	}
@@ -250,16 +258,6 @@ class JooqAutoConfigurationTests {
 		@Bean
 		TransactionProvider transactionProvider() {
 			return new CustomTransactionProvider();
-		}
-
-	}
-
-	@Configuration(proxyBeanMethods = false)
-	static class CustomTransactionProviderFromCustomizerConfiguration {
-
-		@Bean
-		DefaultConfigurationCustomizer transactionProviderCustomizer() {
-			return (configuration) -> configuration.setTransactionProvider(new CustomTransactionProvider());
 		}
 
 	}

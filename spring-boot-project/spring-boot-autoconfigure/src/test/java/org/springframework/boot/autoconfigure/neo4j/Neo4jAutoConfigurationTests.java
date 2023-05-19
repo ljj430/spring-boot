@@ -26,19 +26,20 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Config.ConfigBuilder;
 import org.neo4j.driver.Driver;
 
 import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.neo4j.Neo4jAutoConfiguration.PropertiesNeo4jConnectionDetails;
 import org.springframework.boot.autoconfigure.neo4j.Neo4jProperties.Authentication;
 import org.springframework.boot.autoconfigure.neo4j.Neo4jProperties.Security.TrustStrategy;
 import org.springframework.boot.context.properties.source.InvalidConfigurationPropertyValueException;
 import org.springframework.boot.test.context.FilteredClassLoader;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.springframework.context.annotation.Bean;
+import org.springframework.core.env.Environment;
+import org.springframework.mock.env.MockEnvironment;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -49,9 +50,6 @@ import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
  *
  * @author Michael J. Simons
  * @author Stephane Nicoll
- * @author Moritz Halbritter
- * @author Andy Wilkinson
- * @author Phillip Webb
  */
 class Neo4jAutoConfigurationTests {
 
@@ -105,22 +103,6 @@ class Neo4jAutoConfigurationTests {
 				.hasMessageContaining("'%s' is not a supported scheme.", invalidScheme));
 	}
 
-	@Bean
-	void usesCustomConnectionDetails() {
-		this.contextRunner.withBean(Neo4jConnectionDetails.class, () -> new Neo4jConnectionDetails() {
-
-			@Override
-			public URI getUri() {
-				return URI.create("bolt+ssc://localhost:12345");
-			}
-
-		}).run((context) -> {
-			assertThat(context).hasSingleBean(Driver.class);
-			Driver driver = context.getBean(Driver.class);
-			assertThat(driver.isEncrypted()).isTrue();
-		});
-	}
-
 	@Test
 	void connectionTimeout() {
 		Neo4jProperties properties = new Neo4jProperties();
@@ -132,12 +114,13 @@ class Neo4jAutoConfigurationTests {
 	void maxTransactionRetryTime() {
 		Neo4jProperties properties = new Neo4jProperties();
 		properties.setMaxTransactionRetryTime(Duration.ofSeconds(2));
-		assertThat(mapDriverConfig(properties).maxTransactionRetryTimeMillis()).isEqualTo(2000L);
+		assertThat(mapDriverConfig(properties)).extracting("retrySettings")
+			.hasFieldOrPropertyWithValue("maxRetryTimeMs", 2000L);
 	}
 
 	@Test
-	void uriShouldDefaultToLocalhost() {
-		assertThat(new PropertiesNeo4jConnectionDetails(new Neo4jProperties()).getUri())
+	void determineServerUriShouldDefaultToLocalhost() {
+		assertThat(determineServerUri(new Neo4jProperties(), new MockEnvironment()))
 			.isEqualTo(URI.create("bolt://localhost:7687"));
 	}
 
@@ -146,52 +129,83 @@ class Neo4jAutoConfigurationTests {
 		URI customUri = URI.create("bolt://localhost:4242");
 		Neo4jProperties properties = new Neo4jProperties();
 		properties.setUri(customUri);
-		assertThat(new PropertiesNeo4jConnectionDetails(properties).getUri()).isEqualTo(customUri);
+		assertThat(determineServerUri(properties, new MockEnvironment())).isEqualTo(customUri);
+	}
+
+	@Test
+	@Deprecated
+	void determineServerUriWithDeprecatedPropertyShouldOverrideDefault() {
+		URI customUri = URI.create("bolt://localhost:4242");
+		MockEnvironment environment = new MockEnvironment().withProperty("spring.data.neo4j.uri", customUri.toString());
+		assertThat(determineServerUri(new Neo4jProperties(), environment)).isEqualTo(customUri);
+	}
+
+	@Test
+	@Deprecated
+	void determineServerUriWithCustomUriShouldTakePrecedenceOverDeprecatedProperty() {
+		URI customUri = URI.create("bolt://localhost:4242");
+		URI anotherCustomURI = URI.create("bolt://localhost:2424");
+		Neo4jProperties properties = new Neo4jProperties();
+		properties.setUri(customUri);
+		MockEnvironment environment = new MockEnvironment().withProperty("spring.data.neo4j.uri",
+				anotherCustomURI.toString());
+		assertThat(determineServerUri(properties, environment)).isEqualTo(customUri);
 	}
 
 	@Test
 	void authenticationShouldDefaultToNone() {
-		assertThat(new PropertiesNeo4jConnectionDetails(new Neo4jProperties()).getAuthToken())
-			.isEqualTo(AuthTokens.none());
+		assertThat(mapAuthToken(new Authentication())).isEqualTo(AuthTokens.none());
 	}
 
 	@Test
 	void authenticationWithUsernameShouldEnableBasicAuth() {
-		Neo4jProperties properties = new Neo4jProperties();
-		properties.getAuthentication().setUsername("Farin");
-		properties.getAuthentication().setPassword("Urlaub");
-		assertThat(new PropertiesNeo4jConnectionDetails(properties).getAuthToken())
-			.isEqualTo(AuthTokens.basic("Farin", "Urlaub"));
+		Authentication authentication = new Authentication();
+		authentication.setUsername("Farin");
+		authentication.setPassword("Urlaub");
+		assertThat(mapAuthToken(authentication)).isEqualTo(AuthTokens.basic("Farin", "Urlaub"));
 	}
 
 	@Test
 	void authenticationWithUsernameAndRealmShouldEnableBasicAuth() {
-		Neo4jProperties properties = new Neo4jProperties();
-		Authentication authentication = properties.getAuthentication();
+		Authentication authentication = new Authentication();
 		authentication.setUsername("Farin");
 		authentication.setPassword("Urlaub");
 		authentication.setRealm("Test Realm");
-		assertThat(new PropertiesNeo4jConnectionDetails(properties).getAuthToken())
-			.isEqualTo(AuthTokens.basic("Farin", "Urlaub", "Test Realm"));
+		assertThat(mapAuthToken(authentication)).isEqualTo(AuthTokens.basic("Farin", "Urlaub", "Test Realm"));
+	}
+
+	@Test
+	@Deprecated
+	void authenticationWithUsernameUsingDeprecatedPropertiesShouldEnableBasicAuth() {
+		MockEnvironment environment = new MockEnvironment().withProperty("spring.data.neo4j.username", "user")
+			.withProperty("spring.data.neo4j.password", "secret");
+		assertThat(mapAuthToken(new Authentication(), environment)).isEqualTo(AuthTokens.basic("user", "secret"));
+	}
+
+	@Test
+	@Deprecated
+	void authenticationWithUsernameShouldTakePrecedenceOverDeprecatedPropertiesAndEnableBasicAuth() {
+		MockEnvironment environment = new MockEnvironment().withProperty("spring.data.neo4j.username", "user")
+			.withProperty("spring.data.neo4j.password", "secret");
+		Authentication authentication = new Authentication();
+		authentication.setUsername("Farin");
+		authentication.setPassword("Urlaub");
+		assertThat(mapAuthToken(authentication, environment)).isEqualTo(AuthTokens.basic("Farin", "Urlaub"));
 	}
 
 	@Test
 	void authenticationWithKerberosTicketShouldEnableKerberos() {
-		Neo4jProperties properties = new Neo4jProperties();
-		Authentication authentication = properties.getAuthentication();
+		Authentication authentication = new Authentication();
 		authentication.setKerberosTicket("AABBCCDDEE");
-		assertThat(new PropertiesNeo4jConnectionDetails(properties).getAuthToken())
-			.isEqualTo(AuthTokens.kerberos("AABBCCDDEE"));
+		assertThat(mapAuthToken(authentication)).isEqualTo(AuthTokens.kerberos("AABBCCDDEE"));
 	}
 
 	@Test
 	void authenticationWithBothUsernameAndKerberosShouldNotBeAllowed() {
-		Neo4jProperties properties = new Neo4jProperties();
-		Authentication authentication = properties.getAuthentication();
+		Authentication authentication = new Authentication();
 		authentication.setUsername("Farin");
 		authentication.setKerberosTicket("AABBCCDDEE");
-		assertThatIllegalStateException()
-			.isThrownBy(() -> new PropertiesNeo4jConnectionDetails(properties).getAuthToken())
+		assertThatIllegalStateException().isThrownBy(() -> mapAuthToken(authentication))
 			.withMessage("Cannot specify both username ('Farin') and kerberos ticket ('AABBCCDDEE')");
 	}
 
@@ -302,12 +316,24 @@ class Neo4jAutoConfigurationTests {
 
 	@Test
 	void driverConfigShouldBeConfiguredToUseUseSpringJclLogging() {
-		assertThat(mapDriverConfig(new Neo4jProperties()).logging()).isInstanceOf(Neo4jSpringJclLogging.class);
+		assertThat(mapDriverConfig(new Neo4jProperties()).logging()).isNotNull()
+			.isInstanceOf(Neo4jSpringJclLogging.class);
+	}
+
+	private URI determineServerUri(Neo4jProperties properties, Environment environment) {
+		return new Neo4jAutoConfiguration().determineServerUri(properties, environment);
+	}
+
+	private AuthToken mapAuthToken(Authentication authentication, Environment environment) {
+		return new Neo4jAutoConfiguration().mapAuthToken(authentication, environment);
+	}
+
+	private AuthToken mapAuthToken(Authentication authentication) {
+		return mapAuthToken(authentication, new MockEnvironment());
 	}
 
 	private Config mapDriverConfig(Neo4jProperties properties, ConfigBuilderCustomizer... customizers) {
-		return new Neo4jAutoConfiguration().mapDriverConfig(properties,
-				new PropertiesNeo4jConnectionDetails(properties), Arrays.asList(customizers));
+		return new Neo4jAutoConfiguration().mapDriverConfig(properties, Arrays.asList(customizers));
 	}
 
 }
