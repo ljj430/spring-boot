@@ -110,7 +110,7 @@ class ConfigurationPropertiesReportEndpointProxyTests {
 		}
 
 		@Bean
-		static MethodValidationPostProcessor testPostProcessor() {
+		MethodValidationPostProcessor testPostProcessor() {
 			return new MethodValidationPostProcessor();
 		}
 

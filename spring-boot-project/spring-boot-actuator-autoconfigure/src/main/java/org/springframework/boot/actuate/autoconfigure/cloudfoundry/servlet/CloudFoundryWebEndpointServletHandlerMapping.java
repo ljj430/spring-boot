@@ -36,7 +36,6 @@ import org.springframework.boot.actuate.autoconfigure.cloudfoundry.AccessLevel;
 import org.springframework.boot.actuate.autoconfigure.cloudfoundry.SecurityResponse;
 import org.springframework.boot.actuate.autoconfigure.cloudfoundry.servlet.CloudFoundryWebEndpointServletHandlerMapping.CloudFoundryWebEndpointServletHandlerMappingRuntimeHints;
 import org.springframework.boot.actuate.endpoint.EndpointId;
-import org.springframework.boot.actuate.endpoint.ExposableEndpoint;
 import org.springframework.boot.actuate.endpoint.web.EndpointLinksResolver;
 import org.springframework.boot.actuate.endpoint.web.EndpointMapping;
 import org.springframework.boot.actuate.endpoint.web.EndpointMediaTypes;
@@ -68,16 +67,13 @@ class CloudFoundryWebEndpointServletHandlerMapping extends AbstractWebMvcEndpoin
 
 	private final EndpointLinksResolver linksResolver;
 
-	private final Collection<ExposableEndpoint<?>> allEndpoints;
-
 	CloudFoundryWebEndpointServletHandlerMapping(EndpointMapping endpointMapping,
 			Collection<ExposableWebEndpoint> endpoints, EndpointMediaTypes endpointMediaTypes,
 			CorsConfiguration corsConfiguration, CloudFoundrySecurityInterceptor securityInterceptor,
-			Collection<ExposableEndpoint<?>> allEndpoints) {
+			EndpointLinksResolver linksResolver) {
 		super(endpointMapping, endpoints, endpointMediaTypes, corsConfiguration, true);
 		this.securityInterceptor = securityInterceptor;
-		this.linksResolver = new EndpointLinksResolver(allEndpoints);
-		this.allEndpoints = allEndpoints;
+		this.linksResolver = linksResolver;
 	}
 
 	@Override
@@ -89,10 +85,6 @@ class CloudFoundryWebEndpointServletHandlerMapping extends AbstractWebMvcEndpoin
 	@Override
 	protected LinksHandler getLinksHandler() {
 		return new CloudFoundryLinksHandler();
-	}
-
-	Collection<ExposableEndpoint<?>> getAllEndpoints() {
-		return this.allEndpoints;
 	}
 
 	class CloudFoundryLinksHandler implements LinksHandler {

@@ -2,7 +2,6 @@ plugins {
 	id "java-library"
 	id "org.jetbrains.kotlin.jvm"
 	id "org.springframework.boot.auto-configuration"
-	id "org.springframework.boot.configuration-properties"
 	id "org.springframework.boot.conventions"
 	id "org.springframework.boot.deployed"
 	id "org.springframework.boot.optional-dependencies"
@@ -48,7 +47,6 @@ dependencies {
 	optional("jakarta.ws.rs:jakarta.ws.rs-api")
 	optional("javax.cache:cache-api")
 	optional("javax.money:money-api")
-	optional("org.apache.activemq:activemq-client-jakarta")
 	optional("org.apache.activemq:artemis-jakarta-client") {
 		exclude group: "commons-logging", module: "commons-logging"
 	}
@@ -59,7 +57,6 @@ dependencies {
 		exclude group: "commons-logging", module: "commons-logging"
 	}
 	optional("org.apache.httpcomponents.client5:httpclient5")
-	optional("org.apache.httpcomponents.core5:httpcore5-reactive")
 	optional("org.apache.kafka:kafka-streams")
 	optional("org.apache.tomcat.embed:tomcat-embed-core")
 	optional("org.apache.tomcat.embed:tomcat-embed-el")
@@ -183,7 +180,6 @@ dependencies {
 		exclude group: "javax.xml.bind", module: "jaxb-api"
 	}
 	optional("org.springframework.security:spring-security-messaging")
-	optional("org.springframework.security:spring-security-oauth2-authorization-server")
 	optional("org.springframework.security:spring-security-oauth2-client")
 	optional("org.springframework.security:spring-security-oauth2-jose")
 	optional("org.springframework.security:spring-security-oauth2-resource-server")
@@ -239,8 +235,6 @@ dependencies {
 	testImplementation("org.junit.jupiter:junit-jupiter")
 	testImplementation("org.mockito:mockito-core")
 	testImplementation("org.mockito:mockito-junit-jupiter")
-	testImplementation("org.postgresql:postgresql")
-	testImplementation("org.postgresql:r2dbc-postgresql")
 	testImplementation("org.skyscreamer:jsonassert")
 	testImplementation("org.springframework:spring-test")
 	testImplementation("org.springframework:spring-core-test")

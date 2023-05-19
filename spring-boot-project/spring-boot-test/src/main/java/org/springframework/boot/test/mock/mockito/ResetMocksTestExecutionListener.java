@@ -22,8 +22,6 @@ import java.util.Set;
 
 import org.mockito.Mockito;
 
-import org.springframework.beans.factory.BeanFactory;
-import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
@@ -82,7 +80,7 @@ public class ResetMocksTestExecutionListener extends AbstractTestExecutionListen
 			BeanDefinition definition = beanFactory.getBeanDefinition(name);
 			if (definition.isSingleton() && instantiatedSingletons.contains(name)) {
 				Object bean = getBean(beanFactory, name);
-				if (bean != null && reset.equals(MockReset.get(bean))) {
+				if (reset.equals(MockReset.get(bean))) {
 					Mockito.reset(bean);
 				}
 			}
@@ -105,25 +103,11 @@ public class ResetMocksTestExecutionListener extends AbstractTestExecutionListen
 
 	private Object getBean(ConfigurableListableBeanFactory beanFactory, String name) {
 		try {
-			if (isStandardBeanOrSingletonFactoryBean(beanFactory, name)) {
-				return beanFactory.getBean(name);
-			}
+			return beanFactory.getBean(name);
 		}
 		catch (Exception ex) {
-			// Continue
+			return beanFactory.getSingleton(name);
 		}
-		return beanFactory.getSingleton(name);
-	}
-
-	private boolean isStandardBeanOrSingletonFactoryBean(ConfigurableListableBeanFactory beanFactory, String name) {
-		String factoryBeanName = BeanFactory.FACTORY_BEAN_PREFIX + name;
-		if (beanFactory.containsBean(factoryBeanName)) {
-			FactoryBean<?> factoryBean = (FactoryBean<?>) beanFactory.getBean(factoryBeanName);
-			if (!factoryBean.isSingleton()) {
-				return false;
-			}
-		}
-		return true;
 	}
 
 }

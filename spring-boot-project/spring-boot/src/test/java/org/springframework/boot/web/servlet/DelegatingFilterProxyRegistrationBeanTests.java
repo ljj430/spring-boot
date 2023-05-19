@@ -88,8 +88,7 @@ class DelegatingFilterProxyRegistrationBeanTests extends AbstractFilterRegistrat
 	@Test
 	void createServletRegistrationBeanMustNotBeNull() {
 		assertThatIllegalArgumentException()
-			.isThrownBy(
-					() -> new DelegatingFilterProxyRegistrationBean("mockFilter", (ServletRegistrationBean<?>[]) null))
+			.isThrownBy(() -> new DelegatingFilterProxyRegistrationBean("mockFilter", (ServletRegistrationBean[]) null))
 			.withMessageContaining("ServletRegistrationBeans must not be null");
 	}
 

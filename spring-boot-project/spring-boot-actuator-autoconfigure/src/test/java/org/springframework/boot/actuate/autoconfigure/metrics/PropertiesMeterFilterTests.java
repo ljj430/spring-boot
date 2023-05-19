@@ -175,33 +175,33 @@ class PropertiesMeterFilterTests {
 	@Test
 	void configureWhenHasPercentilesShouldSetPercentilesToValue() {
 		PropertiesMeterFilter filter = new PropertiesMeterFilter(
-				createProperties("distribution.percentiles.spring.boot=0.2,0.4,0.8"));
+				createProperties("distribution.percentiles.spring.boot=1,1.5,2"));
 		assertThat(filter.configure(createMeterId("spring.boot"), DistributionStatisticConfig.DEFAULT).getPercentiles())
-			.containsExactly(0.2, 0.4, 0.8);
+			.containsExactly(1, 1.5, 2);
 	}
 
 	@Test
 	void configureWhenHasHigherPercentilesShouldSetPercentilesToValue() {
 		PropertiesMeterFilter filter = new PropertiesMeterFilter(
-				createProperties("distribution.percentiles.spring=0.2,0.4,0.8"));
+				createProperties("distribution.percentiles.spring=1,1.5,2"));
 		assertThat(filter.configure(createMeterId("spring.boot"), DistributionStatisticConfig.DEFAULT).getPercentiles())
-			.containsExactly(0.2, 0.4, 0.8);
+			.containsExactly(1, 1.5, 2);
 	}
 
 	@Test
 	void configureWhenHasHigherPercentilesAndLowerShouldSetPercentilesToLower() {
 		PropertiesMeterFilter filter = new PropertiesMeterFilter(createProperties(
-				"distribution.percentiles.spring=0.2,0.4,0.8", "distribution.percentiles.spring.boot=0.85,0.9,0.95"));
+				"distribution.percentiles.spring=1,1.5,2", "distribution.percentiles.spring.boot=3,3.5,4"));
 		assertThat(filter.configure(createMeterId("spring.boot"), DistributionStatisticConfig.DEFAULT).getPercentiles())
-			.containsExactly(0.85, 0.9, 0.95);
+			.containsExactly(3, 3.5, 4);
 	}
 
 	@Test
 	void configureWhenAllPercentilesSetShouldSetPercentilesToValue() {
 		PropertiesMeterFilter filter = new PropertiesMeterFilter(
-				createProperties("distribution.percentiles.all=0.2,0.4,0.8"));
+				createProperties("distribution.percentiles.all=1,1.5,2"));
 		assertThat(filter.configure(createMeterId("spring.boot"), DistributionStatisticConfig.DEFAULT).getPercentiles())
-			.containsExactly(0.2, 0.4, 0.8);
+			.containsExactly(1, 1.5, 2);
 	}
 
 	@Test

@@ -20,7 +20,6 @@ anchors:
     DOCKER_HUB_MIRROR: ((docker-hub-mirror))
     DOCKER_HUB_USERNAME: ((docker-hub-username))
     DOCKER_HUB_PASSWORD: ((docker-hub-password))
-    DOCKER_HUB_AUTH: ((docker-hub-auth))
   github-task-params: &github-task-params
     GITHUB_REPO: spring-boot
     GITHUB_ORGANIZATION: spring-projects
@@ -633,7 +632,7 @@ jobs:
         <<: *sdkman-task-params
         RELEASE_TYPE: RELEASE
         BRANCH: ((branch))
-        LATEST_GA: false
+        LATEST_GA: true
 - name: update-homebrew-tap
   serial: true
   plan:
@@ -649,7 +648,7 @@ jobs:
       image: ci-image
       file: git-repo/ci/tasks/update-homebrew-tap.yml
       params:
-        LATEST_GA: false
+        LATEST_GA: true
     - put: homebrew-tap-repo
       params:
         repository: updated-homebrew-tap-repo

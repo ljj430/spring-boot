@@ -90,7 +90,10 @@ class AopAutoConfigurationTests {
 	void whenGlobalMethodSecurityIsEnabledAndAspectJIsNotAvailableThenClassProxyingIsStillUsedByDefault() {
 		this.contextRunner.withClassLoader(new FilteredClassLoader(Advice.class))
 			.withUserConfiguration(ExampleController.class, EnableGlobalMethodSecurityConfiguration.class)
-			.run((context) -> assertThat(context).getBean(ExampleController.class).matches(AopUtils::isCglibProxy));
+			.run((context) -> {
+				ExampleController exampleController = context.getBean(ExampleController.class);
+				assertThat(AopUtils.isCglibProxy(exampleController)).isTrue();
+			});
 	}
 
 	private ContextConsumer<AssertableApplicationContext> proxyTargetClassEnabled() {

@@ -87,7 +87,7 @@ class PropertySourcesDeducerTests {
 	static class PropertySourcesPlaceholderConfigurerConfiguration {
 
 		@Bean
-		static PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer() {
+		PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer() {
 			PropertySourcesPlaceholderConfigurer configurer = new PropertySourcesPlaceholderConfigurer();
 			MutablePropertySources propertySources = new MutablePropertySources();
 			propertySources.addFirst(new TestPropertySource());
@@ -106,12 +106,12 @@ class PropertySourcesDeducerTests {
 	static class MultiplePropertySourcesPlaceholderConfigurerConfiguration {
 
 		@Bean
-		static PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer1() {
+		PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer1() {
 			return new PropertySourcesPlaceholderConfigurer();
 		}
 
 		@Bean
-		static PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer2() {
+		PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer2() {
 			return new PropertySourcesPlaceholderConfigurer();
 		}
 

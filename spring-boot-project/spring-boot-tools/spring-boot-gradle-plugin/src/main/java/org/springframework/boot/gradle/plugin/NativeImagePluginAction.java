@@ -24,6 +24,7 @@ import org.graalvm.buildtools.gradle.NativeImagePlugin;
 import org.graalvm.buildtools.gradle.dsl.GraalVMExtension;
 import org.graalvm.buildtools.gradle.dsl.GraalVMReachabilityMetadataRepositoryExtension;
 import org.gradle.api.Action;
+import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
@@ -59,11 +60,10 @@ class NativeImagePluginAction implements PluginApplicationAction {
 			SourceSetContainer sourceSets = javaPluginExtension.getSourceSets();
 			GraalVMExtension graalVmExtension = configureGraalVmExtension(project);
 			configureMainNativeBinaryClasspath(project, sourceSets, graalVmExtension);
-			configureTestNativeBinaryClasspath(sourceSets, graalVmExtension);
+			configureTestNativeBinaryClasspath(project, sourceSets, graalVmExtension);
 			configureGraalVmReachabilityExtension(graalVmExtension);
 			copyReachabilityMetadataToBootJar(project);
 			configureBootBuildImageToProduceANativeImage(project);
-			configureJarManifestNativeAttribute(project);
 		});
 	}
 
@@ -86,7 +86,8 @@ class NativeImagePluginAction implements PluginApplicationAction {
 		return !SpringBootPlugin.DEVELOPMENT_ONLY_CONFIGURATION_NAME.equals(configuration.getName());
 	}
 
-	private void configureTestNativeBinaryClasspath(SourceSetContainer sourceSets, GraalVMExtension graalVmExtension) {
+	private void configureTestNativeBinaryClasspath(Project project, SourceSetContainer sourceSets,
+			GraalVMExtension graalVmExtension) {
 		FileCollection runtimeClasspath = sourceSets.getByName(SpringBootAotPlugin.AOT_TEST_SOURCE_SET_NAME)
 			.getRuntimeClasspath();
 		graalVmExtension.getBinaries().getByName(NativeImagePlugin.NATIVE_TEST_EXTENSION).classpath(runtimeClasspath);
@@ -95,6 +96,15 @@ class NativeImagePluginAction implements PluginApplicationAction {
 	private GraalVMExtension configureGraalVmExtension(Project project) {
 		GraalVMExtension extension = project.getExtensions().getByType(GraalVMExtension.class);
 		extension.getToolchainDetection().set(false);
+		extension.getBinaries().configureEach((options) -> {
+			try {
+				options.getRequiredVersion().convention("22.3");
+			}
+			catch (NoSuchMethodError ex) {
+				throw new GradleException("Incompatible version of org.graalvm.buildtools.native plugin. "
+						+ "Please upgrade to 0.9.17 or later.");
+			}
+		});
 		return extension;
 	}
 
@@ -117,13 +127,6 @@ class NativeImagePluginAction implements PluginApplicationAction {
 				bootBuildImage.getBuilder().convention("paketobuildpacks/builder:tiny");
 				bootBuildImage.getEnvironment().put("BP_NATIVE_IMAGE", "true");
 			});
-	}
-
-	private void configureJarManifestNativeAttribute(Project project) {
-		project.getTasks()
-			.named(SpringBootPlugin.BOOT_JAR_TASK_NAME, BootJar.class)
-			.configure((bootJar) -> bootJar
-				.manifest(((manifest) -> manifest.getAttributes().put("Spring-Boot-Native-Processed", true))));
 	}
 
 }

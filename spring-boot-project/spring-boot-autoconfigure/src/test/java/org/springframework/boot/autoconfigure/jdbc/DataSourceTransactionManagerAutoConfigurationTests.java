@@ -38,7 +38,6 @@ import static org.mockito.Mockito.mock;
  * @author Dave Syer
  * @author Stephane Nicoll
  * @author Kazuki Shimizu
- * @author Davin Byeon
  */
 class DataSourceTransactionManagerAutoConfigurationTests {
 
@@ -77,10 +76,9 @@ class DataSourceTransactionManagerAutoConfigurationTests {
 
 	@Test
 	void transactionManagerWithExistingTransactionManagerIsNotOverridden() {
-		this.contextRunner.withConfiguration(AutoConfigurations.of(DataSourceAutoConfiguration.class))
+		this.contextRunner
 			.withBean("myTransactionManager", TransactionManager.class, () -> mock(TransactionManager.class))
-			.run((context) -> assertThat(context).hasSingleBean(DataSource.class)
-				.hasSingleBean(TransactionManager.class)
+			.run((context) -> assertThat(context).hasSingleBean(TransactionManager.class)
 				.hasBean("myTransactionManager"));
 	}
 

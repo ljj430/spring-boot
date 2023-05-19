@@ -37,7 +37,7 @@ import org.springframework.boot.sql.init.DatabaseInitializationSettings;
 import org.springframework.boot.test.context.FilteredClassLoader;
 import org.springframework.boot.test.context.assertj.AssertableWebApplicationContext;
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
-import org.springframework.boot.web.servlet.AbstractFilterRegistrationBean;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -97,7 +97,7 @@ class SessionAutoConfigurationJdbcTests extends AbstractSessionAutoConfiguration
 	@Test
 	void filterOrderCanBeCustomized() {
 		this.contextRunner.withPropertyValues("spring.session.servlet.filter-order=123").run((context) -> {
-			AbstractFilterRegistrationBean<?> registration = context.getBean(AbstractFilterRegistrationBean.class);
+			FilterRegistrationBean<?> registration = context.getBean(FilterRegistrationBean.class);
 			assertThat(registration.getOrder()).isEqualTo(123);
 		});
 	}

@@ -19,7 +19,6 @@ package org.springframework.boot.autoconfigure.data.mongo;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 
-import com.mongodb.ConnectionString;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import org.junit.jupiter.api.Test;
@@ -32,8 +31,6 @@ import org.springframework.boot.autoconfigure.data.mongo.city.City;
 import org.springframework.boot.autoconfigure.data.mongo.country.Country;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration;
-import org.springframework.boot.autoconfigure.mongo.MongoConnectionDetails;
-import org.springframework.boot.autoconfigure.mongo.PropertiesMongoConnectionDetails;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -61,9 +58,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Josh Long
  * @author Oliver Gierke
  * @author Mark Paluch
- * @author Moritz Halbritter
- * @author Andy Wilkinson
- * @author Phillip Webb
  */
 class MongoDataAutoConfigurationTests {
 
@@ -83,17 +77,6 @@ class MongoDataAutoConfigurationTests {
 			GridFsTemplate template = context.getBean(GridFsTemplate.class);
 			MongoDatabaseFactory factory = (MongoDatabaseFactory) ReflectionTestUtils.getField(template, "dbFactory");
 			assertThat(factory.getMongoDatabase().getName()).isEqualTo("grid");
-		});
-	}
-
-	@Test
-	void usesMongoConnectionDetailsIfAvailable() {
-		this.contextRunner.withUserConfiguration(ConnectionDetailsConfiguration.class).run((context) -> {
-			assertThat(context).hasSingleBean(GridFsTemplate.class);
-			GridFsTemplate template = context.getBean(GridFsTemplate.class);
-			assertThat(template).hasFieldOrPropertyWithValue("bucket", "connection-details-bucket");
-			MongoDatabaseFactory factory = (MongoDatabaseFactory) ReflectionTestUtils.getField(template, "dbFactory");
-			assertThat(factory.getMongoDatabase().getName()).isEqualTo("grid-database-1");
 		});
 	}
 
@@ -226,25 +209,6 @@ class MongoDataAutoConfigurationTests {
 			.run((context) -> assertThat(context).hasSingleBean(MongoTemplate.class));
 	}
 
-	@Test
-	void definesPropertiesBasedConnectionDetailsByDefault() {
-		this.contextRunner.run((context) -> assertThat(context).hasSingleBean(PropertiesMongoConnectionDetails.class));
-	}
-
-	@Test
-	void shouldUseCustomConnectionDetailsWhenDefined() {
-		this.contextRunner.withBean(MongoConnectionDetails.class, () -> new MongoConnectionDetails() {
-
-			@Override
-			public ConnectionString getConnectionString() {
-				return new ConnectionString("mongodb://localhost/testdb");
-			}
-
-		})
-			.run((context) -> assertThat(context).hasSingleBean(MongoConnectionDetails.class)
-				.doesNotHaveBean(PropertiesMongoConnectionDetails.class));
-	}
-
 	private static void assertDomainTypesDiscovered(MongoMappingContext mappingContext, Class<?>... types) {
 		ManagedTypes managedTypes = (ManagedTypes) ReflectionTestUtils.getField(mappingContext, "managedTypes");
 		assertThat(managedTypes.toList()).containsOnly(types);
@@ -282,28 +246,6 @@ class MongoDataAutoConfigurationTests {
 		@Bean
 		MongoDatabaseFactory mongoDatabaseFactory() {
 			return new SimpleMongoClientDatabaseFactory(MongoClients.create(), "test");
-		}
-
-	}
-
-	@Configuration(proxyBeanMethods = false)
-	static class ConnectionDetailsConfiguration {
-
-		@Bean
-		MongoConnectionDetails mongoConnectionDetails() {
-			return new MongoConnectionDetails() {
-
-				@Override
-				public ConnectionString getConnectionString() {
-					return new ConnectionString("mongodb://localhost/db");
-				}
-
-				@Override
-				public GridFs getGridFs() {
-					return GridFs.of("grid-database-1", "connection-details-bucket");
-				}
-
-			};
 		}
 
 	}

@@ -35,7 +35,6 @@ import okhttp3.mockwebserver.MockWebServer;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
 
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.web.servlet.WebMvcAutoConfiguration;
@@ -44,7 +43,6 @@ import org.springframework.boot.test.context.assertj.AssertableWebApplicationCon
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -69,8 +67,6 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 
 /**
@@ -109,18 +105,7 @@ class OAuth2ResourceServerAutoConfigurationTests {
 			.run((context) -> {
 				assertThat(context).hasSingleBean(JwtDecoder.class);
 				assertThat(getBearerTokenFilter(context)).isNotNull();
-				assertJwkSetUriJwtDecoderBuilderCustomization(context);
 			});
-	}
-
-	private void assertJwkSetUriJwtDecoderBuilderCustomization(AssertableWebApplicationContext context) {
-		JwkSetUriJwtDecoderBuilderCustomizer customizer = context.getBean("decoderBuilderCustomizer",
-				JwkSetUriJwtDecoderBuilderCustomizer.class);
-		JwkSetUriJwtDecoderBuilderCustomizer anotherCustomizer = context.getBean("anotherDecoderBuilderCustomizer",
-				JwkSetUriJwtDecoderBuilderCustomizer.class);
-		InOrder inOrder = inOrder(customizer, anotherCustomizer);
-		inOrder.verify(customizer).customize(any());
-		inOrder.verify(anotherCustomizer).customize(any());
 	}
 
 	@Test
@@ -207,9 +192,8 @@ class OAuth2ResourceServerAutoConfigurationTests {
 				assertThat(context.containsBean("jwtDecoderByIssuerUri")).isTrue();
 				SupplierJwtDecoder supplierJwtDecoderBean = context.getBean(SupplierJwtDecoder.class);
 				Supplier<JwtDecoder> jwtDecoderSupplier = (Supplier<JwtDecoder>) ReflectionTestUtils
-					.getField(supplierJwtDecoderBean, "delegate");
+					.getField(supplierJwtDecoderBean, "jwtDecoderSupplier");
 				jwtDecoderSupplier.get();
-				assertJwkSetUriJwtDecoderBuilderCustomization(context);
 			});
 		// The last request is to the JWK Set endpoint to look up the algorithm
 		assertThat(this.server.getRequestCount()).isEqualTo(2);
@@ -232,9 +216,8 @@ class OAuth2ResourceServerAutoConfigurationTests {
 				assertThat(context.containsBean("jwtDecoderByIssuerUri")).isTrue();
 				SupplierJwtDecoder supplierJwtDecoderBean = context.getBean(SupplierJwtDecoder.class);
 				Supplier<JwtDecoder> jwtDecoderSupplier = (Supplier<JwtDecoder>) ReflectionTestUtils
-					.getField(supplierJwtDecoderBean, "delegate");
+					.getField(supplierJwtDecoderBean, "jwtDecoderSupplier");
 				jwtDecoderSupplier.get();
-				assertJwkSetUriJwtDecoderBuilderCustomization(context);
 			});
 		// The last request is to the JWK Set endpoint to look up the algorithm
 		assertThat(this.server.getRequestCount()).isEqualTo(3);
@@ -258,9 +241,8 @@ class OAuth2ResourceServerAutoConfigurationTests {
 				assertThat(context.containsBean("jwtDecoderByIssuerUri")).isTrue();
 				SupplierJwtDecoder supplierJwtDecoderBean = context.getBean(SupplierJwtDecoder.class);
 				Supplier<JwtDecoder> jwtDecoderSupplier = (Supplier<JwtDecoder>) ReflectionTestUtils
-					.getField(supplierJwtDecoderBean, "delegate");
+					.getField(supplierJwtDecoderBean, "jwtDecoderSupplier");
 				jwtDecoderSupplier.get();
-				assertJwkSetUriJwtDecoderBuilderCustomization(context);
 			});
 		// The last request is to the JWK Set endpoint to look up the algorithm
 		assertThat(this.server.getRequestCount()).isEqualTo(4);
@@ -534,7 +516,7 @@ class OAuth2ResourceServerAutoConfigurationTests {
 			.run((context) -> {
 				SupplierJwtDecoder supplierJwtDecoderBean = context.getBean(SupplierJwtDecoder.class);
 				Supplier<JwtDecoder> jwtDecoderSupplier = (Supplier<JwtDecoder>) ReflectionTestUtils
-					.getField(supplierJwtDecoderBean, "delegate");
+					.getField(supplierJwtDecoderBean, "jwtDecoderSupplier");
 				JwtDecoder jwtDecoder = jwtDecoderSupplier.get();
 				validate(issuerUri, jwtDecoder);
 			});
@@ -682,31 +664,21 @@ class OAuth2ResourceServerAutoConfigurationTests {
 	}
 
 	static Jwt.Builder jwt() {
+		// @formatter:off
 		return Jwt.withTokenValue("token")
-			.header("alg", "none")
-			.expiresAt(Instant.MAX)
-			.issuedAt(Instant.MIN)
-			.issuer("https://issuer.example.org")
-			.jti("jti")
-			.notBefore(Instant.MIN)
-			.subject("mock-test-subject");
+				.header("alg", "none")
+				.expiresAt(Instant.MAX)
+				.issuedAt(Instant.MIN)
+				.issuer("https://issuer.example.org")
+				.jti("jti")
+				.notBefore(Instant.MIN)
+				.subject("mock-test-subject");
+		// @formatter:on
 	}
 
 	@Configuration(proxyBeanMethods = false)
 	@EnableWebSecurity
 	static class TestConfig {
-
-		@Bean
-		@Order(1)
-		JwkSetUriJwtDecoderBuilderCustomizer decoderBuilderCustomizer() {
-			return mock(JwkSetUriJwtDecoderBuilderCustomizer.class);
-		}
-
-		@Bean
-		@Order(2)
-		JwkSetUriJwtDecoderBuilderCustomizer anotherDecoderBuilderCustomizer() {
-			return mock(JwkSetUriJwtDecoderBuilderCustomizer.class);
-		}
 
 	}
 
@@ -739,7 +711,7 @@ class OAuth2ResourceServerAutoConfigurationTests {
 		@Bean
 		SecurityFilterChain testSecurityFilterChain(HttpSecurity http) throws Exception {
 			http.securityMatcher("/**");
-			http.authorizeHttpRequests((requests) -> requests.anyRequest().authenticated());
+			http.authorizeHttpRequests().anyRequest().authenticated();
 			return http.build();
 		}
 

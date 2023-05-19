@@ -21,14 +21,12 @@ import java.util.stream.Collectors;
 
 import jakarta.servlet.DispatcherType;
 
-import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.web.servlet.DelegatingFilterProxyRegistrationBean;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.session.web.http.SessionRepositoryFilter;
-import org.springframework.util.Assert;
 
 /**
  * Configuration for customizing the registration of the {@link SessionRepositoryFilter}.
@@ -41,12 +39,9 @@ import org.springframework.util.Assert;
 class SessionRepositoryFilterConfiguration {
 
 	@Bean
-	DelegatingFilterProxyRegistrationBean sessionRepositoryFilterRegistration(SessionProperties sessionProperties,
-			ListableBeanFactory beanFactory) {
-		String[] targetBeanNames = beanFactory.getBeanNamesForType(SessionRepositoryFilter.class, false, false);
-		Assert.state(targetBeanNames.length == 1, "Expected single SessionRepositoryFilter bean");
-		DelegatingFilterProxyRegistrationBean registration = new DelegatingFilterProxyRegistrationBean(
-				targetBeanNames[0]);
+	FilterRegistrationBean<SessionRepositoryFilter<?>> sessionRepositoryFilterRegistration(
+			SessionProperties sessionProperties, SessionRepositoryFilter<?> filter) {
+		FilterRegistrationBean<SessionRepositoryFilter<?>> registration = new FilterRegistrationBean<>(filter);
 		registration.setDispatcherTypes(getDispatcherTypes(sessionProperties));
 		registration.setOrder(sessionProperties.getServlet().getFilterOrder());
 		return registration;

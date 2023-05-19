@@ -24,10 +24,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.SortedMap;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -49,7 +49,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.entry;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.assertArg;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.BDDMockito.given;
@@ -245,7 +244,7 @@ class MapBinderTests {
 		existing.put("baz", 1001);
 		Bindable<Map<String, Integer>> target = STRING_INTEGER_MAP.withExistingValue(existing);
 		Map<String, Integer> result = this.binder.bind("foo", target).get();
-		assertThat(result).isInstanceOf(HashMap.class);
+		assertThat(result).isExactlyInstanceOf(HashMap.class);
 		assertThat(result).hasSize(2);
 		assertThat(result).containsEntry("bar", 1);
 		assertThat(result).containsEntry("baz", 1001);
@@ -254,10 +253,10 @@ class MapBinderTests {
 	@Test
 	void bindToMapShouldRespectMapType() {
 		this.sources.add(new MockConfigurationPropertySource("foo.bar", "1"));
-		ResolvableType type = ResolvableType.forClassWithGenerics(SortedMap.class, String.class, Integer.class);
+		ResolvableType type = ResolvableType.forClassWithGenerics(HashMap.class, String.class, Integer.class);
 		Object defaultMap = this.binder.bind("foo", STRING_INTEGER_MAP).get();
 		Object customMap = this.binder.bind("foo", Bindable.of(type)).get();
-		assertThat(customMap).isInstanceOf(SortedMap.class).isNotInstanceOf(defaultMap.getClass());
+		assertThat(customMap).isExactlyInstanceOf(HashMap.class).isNotInstanceOf(defaultMap.getClass());
 	}
 
 	@Test
@@ -349,9 +348,11 @@ class MapBinderTests {
 		Bindable<Map<String, String[]>> target = STRING_ARRAY_MAP;
 		this.binder.bind("foo", target, handler);
 		InOrder ordered = inOrder(handler);
+		ArgumentCaptor<String[]> array = ArgumentCaptor.forClass(String[].class);
 		ordered.verify(handler)
 			.onSuccess(eq(ConfigurationPropertyName.of("foo.bar")), eq(Bindable.of(String[].class)), any(),
-					assertArg((array) -> assertThat((String[]) array).containsExactly("a", "b", "c")));
+					array.capture());
+		assertThat(array.getValue()).containsExactly("a", "b", "c");
 		ordered.verify(handler).onSuccess(eq(ConfigurationPropertyName.of("foo")), eq(target), any(), isA(Map.class));
 	}
 

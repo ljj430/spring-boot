@@ -71,7 +71,6 @@ import org.springframework.boot.util.LambdaSafe;
 import org.springframework.boot.web.server.Cookie.SameSite;
 import org.springframework.boot.web.server.ErrorPage;
 import org.springframework.boot.web.server.MimeMappings;
-import org.springframework.boot.web.server.Ssl;
 import org.springframework.boot.web.server.WebServer;
 import org.springframework.boot.web.servlet.ServletContextInitializer;
 import org.springframework.boot.web.servlet.server.AbstractServletWebServerFactory;
@@ -340,7 +339,7 @@ public class TomcatServletWebServerFactory extends AbstractServletWebServerFacto
 		if (getHttp2() != null && getHttp2().isEnabled()) {
 			connector.addUpgradeProtocol(new Http2Protocol());
 		}
-		if (Ssl.isEnabled(getSsl())) {
+		if (getSsl() != null && getSsl().isEnabled()) {
 			customizeSsl(connector);
 		}
 		TomcatConnectorCustomizer compression = new CompressionConnectorCustomizer(getCompression());
@@ -364,7 +363,7 @@ public class TomcatServletWebServerFactory extends AbstractServletWebServerFacto
 	}
 
 	private void customizeSsl(Connector connector) {
-		new SslConnectorCustomizer(getSsl().getClientAuth(), getSslBundle()).customize(connector);
+		new SslConnectorCustomizer(getSsl(), getOrCreateSslStoreProvider()).customize(connector);
 	}
 
 	/**

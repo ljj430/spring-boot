@@ -19,9 +19,6 @@ tasks.named<BootJar>("bootJar") {
 			intoLayer("application")
 		}
 		dependencies {
-			intoLayer("application") {
-				includeProjectDependencies()
-			}
 			intoLayer("snapshot-dependencies") {
 				include("*:*:*SNAPSHOT")
 			}

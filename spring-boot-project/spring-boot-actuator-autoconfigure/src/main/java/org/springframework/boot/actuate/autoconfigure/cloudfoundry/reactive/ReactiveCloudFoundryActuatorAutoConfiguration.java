@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Supplier;
 
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.ObjectProvider;
@@ -33,10 +32,10 @@ import org.springframework.boot.actuate.autoconfigure.health.HealthEndpointAutoC
 import org.springframework.boot.actuate.autoconfigure.info.InfoEndpointAutoConfiguration;
 import org.springframework.boot.actuate.endpoint.ExposableEndpoint;
 import org.springframework.boot.actuate.endpoint.invoke.ParameterValueMapper;
+import org.springframework.boot.actuate.endpoint.web.EndpointLinksResolver;
 import org.springframework.boot.actuate.endpoint.web.EndpointMapping;
 import org.springframework.boot.actuate.endpoint.web.EndpointMediaTypes;
 import org.springframework.boot.actuate.endpoint.web.ExposableWebEndpoint;
-import org.springframework.boot.actuate.endpoint.web.PathMappedEndpoints;
 import org.springframework.boot.actuate.endpoint.web.annotation.ControllerEndpointsSupplier;
 import org.springframework.boot.actuate.health.HealthEndpoint;
 import org.springframework.boot.actuate.health.ReactiveHealthEndpointWebExtension;
@@ -64,7 +63,6 @@ import org.springframework.security.web.server.MatcherSecurityWebFilterChain;
 import org.springframework.security.web.server.WebFilterChainProxy;
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatcher;
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers;
-import org.springframework.util.function.SingletonSupplier;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.WebFilter;
@@ -81,8 +79,6 @@ import org.springframework.web.server.WebFilter;
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.REACTIVE)
 @ConditionalOnCloudPlatform(CloudPlatform.CLOUD_FOUNDRY)
 public class ReactiveCloudFoundryActuatorAutoConfiguration {
-
-	private static final String BASE_PATH = "/cloudfoundryapplication";
 
 	@Bean
 	@ConditionalOnMissingBean
@@ -119,8 +115,9 @@ public class ReactiveCloudFoundryActuatorAutoConfiguration {
 		List<ExposableEndpoint<?>> allEndpoints = new ArrayList<>();
 		allEndpoints.addAll(webEndpoints);
 		allEndpoints.addAll(controllerEndpointsSupplier.getEndpoints());
-		return new CloudFoundryWebFluxEndpointHandlerMapping(new EndpointMapping(BASE_PATH), webEndpoints,
-				endpointMediaTypes, getCorsConfiguration(), securityInterceptor, allEndpoints);
+		return new CloudFoundryWebFluxEndpointHandlerMapping(new EndpointMapping("/cloudfoundryapplication"),
+				webEndpoints, endpointMediaTypes, getCorsConfiguration(), securityInterceptor,
+				new EndpointLinksResolver(allEndpoints));
 	}
 
 	private CloudFoundrySecurityInterceptor getSecurityInterceptor(WebClient.Builder webClientBuilder,
@@ -156,48 +153,31 @@ public class ReactiveCloudFoundryActuatorAutoConfiguration {
 	static class IgnoredPathsSecurityConfiguration {
 
 		@Bean
-		static WebFilterChainPostProcessor webFilterChainPostProcessor(
-				ObjectProvider<CloudFoundryWebFluxEndpointHandlerMapping> handlerMapping) {
-			return new WebFilterChainPostProcessor(handlerMapping);
+		WebFilterChainPostProcessor webFilterChainPostProcessor() {
+			return new WebFilterChainPostProcessor();
 		}
 
 	}
 
 	static class WebFilterChainPostProcessor implements BeanPostProcessor {
 
-		private Supplier<PathMappedEndpoints> pathMappedEndpoints;
-
-		WebFilterChainPostProcessor(ObjectProvider<CloudFoundryWebFluxEndpointHandlerMapping> handlerMapping) {
-			this.pathMappedEndpoints = SingletonSupplier
-				.of(() -> new PathMappedEndpoints(BASE_PATH, () -> handlerMapping.getObject().getAllEndpoints()));
-		}
-
 		@Override
 		public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
 			if (bean instanceof WebFilterChainProxy webFilterChainProxy) {
-				return postProcess(webFilterChainProxy, this.pathMappedEndpoints.get());
+				return postProcess(webFilterChainProxy);
 			}
 			return bean;
 		}
 
-		private WebFilterChainProxy postProcess(WebFilterChainProxy existing, PathMappedEndpoints pathMappedEndpoints) {
-			List<String> paths = getPaths(pathMappedEndpoints);
+		private WebFilterChainProxy postProcess(WebFilterChainProxy existing) {
 			ServerWebExchangeMatcher cloudFoundryRequestMatcher = ServerWebExchangeMatchers
-				.pathMatchers(paths.toArray(new String[] {}));
+				.pathMatchers("/cloudfoundryapplication/**");
 			WebFilter noOpFilter = (exchange, chain) -> chain.filter(exchange);
 			MatcherSecurityWebFilterChain ignoredRequestFilterChain = new MatcherSecurityWebFilterChain(
 					cloudFoundryRequestMatcher, Collections.singletonList(noOpFilter));
 			MatcherSecurityWebFilterChain allRequestsFilterChain = new MatcherSecurityWebFilterChain(
 					ServerWebExchangeMatchers.anyExchange(), Collections.singletonList(existing));
 			return new WebFilterChainProxy(ignoredRequestFilterChain, allRequestsFilterChain);
-		}
-
-		private static List<String> getPaths(PathMappedEndpoints pathMappedEndpoints) {
-			List<String> paths = new ArrayList<>();
-			pathMappedEndpoints.getAllPaths().forEach((path) -> paths.add(path + "/**"));
-			paths.add(BASE_PATH);
-			paths.add(BASE_PATH + "/");
-			return paths;
 		}
 
 	}
