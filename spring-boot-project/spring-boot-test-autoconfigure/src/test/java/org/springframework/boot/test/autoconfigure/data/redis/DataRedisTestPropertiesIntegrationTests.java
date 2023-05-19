@@ -24,6 +24,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.testsupport.testcontainers.RedisContainer;
 import org.springframework.core.env.Environment;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -32,20 +34,22 @@ import static org.assertj.core.api.Assertions.assertThat;
  * {@link DataRedisTest @DataRedisTest}.
  *
  * @author Artsiom Yudovin
- * @author Moritz Halbritter
- * @author Andy Wilkinson
- * @author Phillip Webb
  */
 @Testcontainers(disabledWithoutDocker = true)
 @DataRedisTest(properties = "spring.profiles.active=test")
 class DataRedisTestPropertiesIntegrationTests {
 
 	@Container
-	@RedisServiceConnection
 	static final RedisContainer redis = new RedisContainer();
 
 	@Autowired
 	private Environment environment;
+
+	@DynamicPropertySource
+	static void redisProperties(DynamicPropertyRegistry registry) {
+		registry.add("spring.data.redis.host", redis::getHost);
+		registry.add("spring.data.redis.port", redis::getFirstMappedPort);
+	}
 
 	@Test
 	void environmentWithNewProfile() {
