@@ -16,8 +16,7 @@
 
 package org.springframework.boot.autoconfigure.security.servlet;
 
-import javax.servlet.http.HttpServletRequest;
-
+import jakarta.servlet.http.HttpServletRequest;
 import org.assertj.core.api.AssertDelegateTarget;
 import org.junit.jupiter.api.Test;
 
@@ -39,7 +38,7 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
  */
 class StaticResourceRequestTests {
 
-	private StaticResourceRequest resourceRequest = StaticResourceRequest.INSTANCE;
+	private final StaticResourceRequest resourceRequest = StaticResourceRequest.INSTANCE;
 
 	@Test
 	void atCommonLocationsShouldMatchCommonLocations() {

@@ -154,7 +154,7 @@ class JdbcTemplateAutoConfigurationTests {
 			.withUserConfiguration(DataSourceInitializationValidator.class)
 			.run((context) -> {
 				assertThat(context).hasNotFailed();
-				assertThat(context.getBean(DataSourceInitializationValidator.class).count).isEqualTo(1);
+				assertThat(context.getBean(DataSourceInitializationValidator.class).count).isOne();
 			});
 	}
 
@@ -165,7 +165,7 @@ class JdbcTemplateAutoConfigurationTests {
 			.withConfiguration(AutoConfigurations.of(FlywayAutoConfiguration.class))
 			.run((context) -> {
 				assertThat(context).hasNotFailed();
-				assertThat(context.getBean(DataSourceMigrationValidator.class).count).isEqualTo(0);
+				assertThat(context.getBean(DataSourceMigrationValidator.class).count).isZero();
 			});
 	}
 
@@ -177,7 +177,7 @@ class JdbcTemplateAutoConfigurationTests {
 			.run((context) -> {
 				assertThat(context).hasNotFailed();
 				assertThat(context.getBean(JdbcTemplate.class)).isNotNull();
-				assertThat(context.getBean(NamedParameterDataSourceMigrationValidator.class).count).isEqualTo(0);
+				assertThat(context.getBean(NamedParameterDataSourceMigrationValidator.class).count).isZero();
 			});
 	}
 
@@ -188,7 +188,7 @@ class JdbcTemplateAutoConfigurationTests {
 			.withConfiguration(AutoConfigurations.of(LiquibaseAutoConfiguration.class))
 			.run((context) -> {
 				assertThat(context).hasNotFailed();
-				assertThat(context.getBean(DataSourceMigrationValidator.class).count).isEqualTo(0);
+				assertThat(context.getBean(DataSourceMigrationValidator.class).count).isZero();
 			});
 	}
 
@@ -200,7 +200,7 @@ class JdbcTemplateAutoConfigurationTests {
 			.run((context) -> {
 				assertThat(context).hasNotFailed();
 				assertThat(context.getBean(JdbcTemplate.class)).isNotNull();
-				assertThat(context.getBean(NamedParameterDataSourceMigrationValidator.class).count).isEqualTo(0);
+				assertThat(context.getBean(NamedParameterDataSourceMigrationValidator.class).count).isZero();
 			});
 	}
 

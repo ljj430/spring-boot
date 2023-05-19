@@ -98,9 +98,9 @@ public class ServerProperties {
 	private String serverHeader;
 
 	/**
-	 * Maximum size of the HTTP message header.
+	 * Maximum size of the HTTP request header.
 	 */
-	private DataSize maxHttpHeaderSize = DataSize.ofKilobytes(8);
+	private DataSize maxHttpRequestHeaderSize = DataSize.ofKilobytes(8);
 
 	/**
 	 * Type of shutdown that the server will support.
@@ -152,12 +152,23 @@ public class ServerProperties {
 		this.serverHeader = serverHeader;
 	}
 
+	@Deprecated(since = "3.0.0", forRemoval = true)
+	@DeprecatedConfigurationProperty
 	public DataSize getMaxHttpHeaderSize() {
-		return this.maxHttpHeaderSize;
+		return getMaxHttpRequestHeaderSize();
 	}
 
+	@Deprecated(since = "3.0.0", forRemoval = true)
 	public void setMaxHttpHeaderSize(DataSize maxHttpHeaderSize) {
-		this.maxHttpHeaderSize = maxHttpHeaderSize;
+		setMaxHttpRequestHeaderSize(maxHttpHeaderSize);
+	}
+
+	public DataSize getMaxHttpRequestHeaderSize() {
+		return this.maxHttpRequestHeaderSize;
+	}
+
+	public void setMaxHttpRequestHeaderSize(DataSize maxHttpRequestHeaderSize) {
+		this.maxHttpRequestHeaderSize = maxHttpRequestHeaderSize;
 	}
 
 	public Shutdown getShutdown() {
@@ -263,7 +274,10 @@ public class ServerProperties {
 		}
 
 		private String cleanContextPath(String contextPath) {
-			String candidate = StringUtils.trimWhitespace(contextPath);
+			String candidate = null;
+			if (StringUtils.hasLength(contextPath)) {
+				candidate = contextPath.strip();
+			}
 			if (StringUtils.hasText(candidate) && candidate.endsWith("/")) {
 				return candidate.substring(0, candidate.length() - 1);
 			}
@@ -996,6 +1010,12 @@ public class ServerProperties {
 			 */
 			private String remoteIpHeader;
 
+			/**
+			 * Regular expression defining proxies that are trusted when they appear in
+			 * the "remote-ip-header" header.
+			 */
+			private String trustedProxies;
+
 			public String getInternalProxies() {
 				return this.internalProxies;
 			}
@@ -1042,6 +1062,14 @@ public class ServerProperties {
 
 			public void setRemoteIpHeader(String remoteIpHeader) {
 				this.remoteIpHeader = remoteIpHeader;
+			}
+
+			public String getTrustedProxies() {
+				return this.trustedProxies;
+			}
+
+			public void setTrustedProxies(String trustedProxies) {
+				this.trustedProxies = trustedProxies;
 			}
 
 		}
@@ -1388,10 +1416,13 @@ public class ServerProperties {
 			this.initialBufferSize = initialBufferSize;
 		}
 
+		@Deprecated(since = "3.0.0", forRemoval = true)
+		@DeprecatedConfigurationProperty(reason = "Deprecated for removal in Reactor Netty")
 		public DataSize getMaxChunkSize() {
 			return this.maxChunkSize;
 		}
 
+		@Deprecated(since = "3.0.0", forRemoval = true)
 		public void setMaxChunkSize(DataSize maxChunkSize) {
 			this.maxChunkSize = maxChunkSize;
 		}
@@ -1480,9 +1511,18 @@ public class ServerProperties {
 		 * Whether the server should decode percent encoded slash characters. Enabling
 		 * encoded slashes can have security implications due to different servers
 		 * interpreting the slash differently. Only enable this if you have a legacy
-		 * application that requires it.
+		 * application that requires it. Has no effect when server.undertow.decode-slash
+		 * is set.
 		 */
 		private boolean allowEncodedSlash = false;
+
+		/**
+		 * Whether encoded slash characters (%2F) should be decoded. Decoding can cause
+		 * security problems if a front-end proxy does not perform the same decoding. Only
+		 * enable this if you have a legacy application that requires it. When set,
+		 * server.undertow.allow-encoded-slash has no effect.
+		 */
+		private Boolean decodeSlash;
 
 		/**
 		 * Whether the URL should be decoded. When disabled, percent-encoded characters in
@@ -1577,15 +1617,23 @@ public class ServerProperties {
 			this.maxCookies = maxCookies;
 		}
 
-		@Deprecated
-		@DeprecatedConfigurationProperty(reason = "This option was interpreted improperly")
+		@DeprecatedConfigurationProperty(replacement = "server.undertow.decode-slash")
+		@Deprecated(forRemoval = true, since = "3.0.3")
 		public boolean isAllowEncodedSlash() {
 			return this.allowEncodedSlash;
 		}
 
-		@Deprecated
+		@Deprecated(forRemoval = true, since = "3.0.3")
 		public void setAllowEncodedSlash(boolean allowEncodedSlash) {
 			this.allowEncodedSlash = allowEncodedSlash;
+		}
+
+		public Boolean getDecodeSlash() {
+			return this.decodeSlash;
+		}
+
+		public void setDecodeSlash(Boolean decodeSlash) {
+			this.decodeSlash = decodeSlash;
 		}
 
 		public boolean isDecodeUrl() {
@@ -1764,12 +1812,12 @@ public class ServerProperties {
 			/**
 			 * Socket options as defined in org.xnio.Options.
 			 */
-			private Map<String, String> socket = new LinkedHashMap<>();
+			private final Map<String, String> socket = new LinkedHashMap<>();
 
 			/**
 			 * Server options as defined in io.undertow.UndertowOptions.
 			 */
-			private Map<String, String> server = new LinkedHashMap<>();
+			private final Map<String, String> server = new LinkedHashMap<>();
 
 			public Map<String, String> getServer() {
 				return this.server;

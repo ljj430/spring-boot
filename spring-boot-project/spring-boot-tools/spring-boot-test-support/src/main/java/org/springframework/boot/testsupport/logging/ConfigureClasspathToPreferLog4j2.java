@@ -35,8 +35,8 @@ import org.springframework.boot.testsupport.classpath.ClassPathOverrides;
 @Target(ElementType.TYPE)
 @Documented
 @ClassPathExclusions("log4j-to-slf4j-*.jar")
-@ClassPathOverrides({ "org.apache.logging.log4j:log4j-core:2.17.2",
-		"org.apache.logging.log4j:log4j-slf4j-impl:2.17.2" })
+@ClassPathOverrides({ "org.apache.logging.log4j:log4j-core:2.19.0",
+		"org.apache.logging.log4j:log4j-slf4j-impl:2.19.0" })
 public @interface ConfigureClasspathToPreferLog4j2 {
 
 }
