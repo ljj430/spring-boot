@@ -298,8 +298,8 @@ public class ApplicationContextAssert<C extends ApplicationContext>
 	private boolean isPrimary(String name, Scope scope) {
 		ApplicationContext context = getApplicationContext();
 		while (context != null) {
-			if (context instanceof ConfigurableApplicationContext) {
-				ConfigurableListableBeanFactory factory = ((ConfigurableApplicationContext) context).getBeanFactory();
+			if (context instanceof ConfigurableApplicationContext configurableContext) {
+				ConfigurableListableBeanFactory factory = configurableContext.getBeanFactory();
 				if (factory.containsBean(name) && factory.getMergedBeanDefinition(name).isPrimary()) {
 					return true;
 				}

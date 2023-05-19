@@ -73,8 +73,8 @@ public class MockitoTestExecutionListener extends AbstractTestExecutionListener 
 	@Override
 	public void afterTestMethod(TestContext testContext) throws Exception {
 		Object mocks = testContext.getAttribute(MOCKS_ATTRIBUTE_NAME);
-		if (mocks instanceof AutoCloseable) {
-			((AutoCloseable) mocks).close();
+		if (mocks instanceof AutoCloseable closeable) {
+			closeable.close();
 		}
 	}
 

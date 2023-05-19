@@ -91,7 +91,7 @@ class KafkaAutoConfigurationIntegrationTests {
 
 		DefaultKafkaProducerFactory producerFactory = this.context.getBean(DefaultKafkaProducerFactory.class);
 		Producer producer = producerFactory.createProducer();
-		assertThat(producer.partitionsFor(ADMIN_CREATED_TOPIC).size()).isEqualTo(10);
+		assertThat(producer.partitionsFor(ADMIN_CREATED_TOPIC)).hasSize(10);
 		producer.close();
 	}
 
@@ -184,7 +184,7 @@ class KafkaAutoConfigurationIntegrationTests {
 		private volatile String key;
 
 		@KafkaListener(topics = TEST_TOPIC)
-		void listen(String foo, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key) {
+		void listen(String foo, @Header(KafkaHeaders.RECEIVED_KEY) String key) {
 			this.received = foo;
 			this.key = key;
 			this.latch.countDown();
@@ -203,7 +203,7 @@ class KafkaAutoConfigurationIntegrationTests {
 		private volatile String key;
 
 		@KafkaListener(topics = TEST_RETRY_TOPIC)
-		void listen(String foo, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
+		void listen(String foo, @Header(KafkaHeaders.RECEIVED_KEY) String key,
 				@Header(KafkaHeaders.RECEIVED_TOPIC) String topic) {
 			this.received = foo;
 			this.key = key;

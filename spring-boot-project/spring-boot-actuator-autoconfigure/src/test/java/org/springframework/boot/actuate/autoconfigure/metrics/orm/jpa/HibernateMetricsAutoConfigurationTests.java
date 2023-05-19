@@ -19,15 +19,15 @@ package org.springframework.boot.actuate.autoconfigure.metrics.orm.jpa;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.persistence.Entity;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.PersistenceException;
 import javax.sql.DataSource;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.PersistenceException;
 import org.hibernate.SessionFactory;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
@@ -145,7 +145,7 @@ class HibernateMetricsAutoConfigurationTests {
 					() -> (builder) -> builder.setBootstrapExecutor(new SimpleAsyncTaskExecutor()))
 			.run((context) -> {
 				JdbcTemplate jdbcTemplate = new JdbcTemplate(context.getBean(DataSource.class));
-				assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) from CITY", Integer.class)).isEqualTo(1);
+				assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) from CITY", Integer.class)).isOne();
 				MeterRegistry registry = context.getBean(MeterRegistry.class);
 				registry.get("hibernate.statements").tags("entityManagerFactory", "entityManagerFactory").meter();
 			});

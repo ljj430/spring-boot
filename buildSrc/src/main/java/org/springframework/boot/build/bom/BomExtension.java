@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -106,7 +105,7 @@ public class BomExtension {
 	}
 
 	public void library(String name, Action<LibraryHandler> action) {
-		this.library(name, null, action);
+		library(name, null, action);
 	}
 
 	public void library(String name, String version, Action<LibraryHandler> action) {
@@ -306,8 +305,8 @@ public class BomExtension {
 
 			public void setModules(List<Object> modules) {
 				this.modules = modules.stream()
-					.map((input) -> (input instanceof Module) ? (Module) input : new Module((String) input))
-					.collect(Collectors.toList());
+					.map((input) -> (input instanceof Module module) ? module : new Module((String) input))
+					.toList();
 			}
 
 			public void setImports(List<String> imports) {
@@ -321,9 +320,8 @@ public class BomExtension {
 			public Object methodMissing(String name, Object args) {
 				if (args instanceof Object[] && ((Object[]) args).length == 1) {
 					Object arg = ((Object[]) args)[0];
-					if (arg instanceof Closure) {
+					if (arg instanceof Closure<?> closure) {
 						ModuleHandler moduleHandler = new ModuleHandler();
-						Closure<?> closure = (Closure<?>) arg;
 						closure.setResolveStrategy(Closure.DELEGATE_FIRST);
 						closure.setDelegate(moduleHandler);
 						closure.call(moduleHandler);
