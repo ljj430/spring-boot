@@ -100,8 +100,8 @@ public enum CloudPlatform {
 
 		@Override
 		public boolean isDetected(Environment environment) {
-			if (environment instanceof ConfigurableEnvironment configurableEnvironment) {
-				return isAutoDetected(configurableEnvironment);
+			if (environment instanceof ConfigurableEnvironment) {
+				return isAutoDetected((ConfigurableEnvironment) environment);
 			}
 			return false;
 		}

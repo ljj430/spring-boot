@@ -35,14 +35,14 @@ class SpringBootConfigurationTests {
 	void proxyBeanMethodsIsEnabledByDefault() {
 		AnnotationAttributes attributes = AnnotatedElementUtils
 			.getMergedAnnotationAttributes(DefaultSpringBootConfiguration.class, Configuration.class);
-		assertThat(attributes).containsEntry("proxyBeanMethods", true);
+		assertThat(attributes.get("proxyBeanMethods")).isEqualTo(true);
 	}
 
 	@Test
 	void proxyBeanMethodsCanBeDisabled() {
 		AnnotationAttributes attributes = AnnotatedElementUtils
 			.getMergedAnnotationAttributes(NoBeanMethodProxyingSpringBootConfiguration.class, Configuration.class);
-		assertThat(attributes).containsEntry("proxyBeanMethods", false);
+		assertThat(attributes.get("proxyBeanMethods")).isEqualTo(false);
 	}
 
 	@SpringBootConfiguration

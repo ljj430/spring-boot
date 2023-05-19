@@ -21,8 +21,9 @@ import java.util.EnumSet;
 import java.util.Locale;
 import java.util.Map;
 
-import jakarta.servlet.DispatcherType;
-import jakarta.servlet.http.HttpServletRequest;
+import javax.servlet.DispatcherType;
+import javax.servlet.http.HttpServletRequest;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -119,7 +120,7 @@ class FreeMarkerAutoConfigurationServletIntegrationTests {
 	@Test
 	void disableCache() {
 		load("spring.freemarker.cache:false");
-		assertThat(this.context.getBean(FreeMarkerViewResolver.class).getCacheLimit()).isZero();
+		assertThat(this.context.getBean(FreeMarkerViewResolver.class).getCacheLimit()).isEqualTo(0);
 	}
 
 	@Test

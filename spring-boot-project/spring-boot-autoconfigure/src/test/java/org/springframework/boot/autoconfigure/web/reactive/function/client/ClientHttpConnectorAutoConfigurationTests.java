@@ -16,7 +16,6 @@
 
 package org.springframework.boot.autoconfigure.web.reactive.function.client;
 
-import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
 import org.eclipse.jetty.reactive.client.ReactiveRequest;
 import org.junit.jupiter.api.Test;
 import reactor.netty.http.client.HttpClient;
@@ -82,20 +81,6 @@ class ClientHttpConnectorAutoConfigurationTests {
 				assertThat(customizerDefinition.isLazyInit()).isTrue();
 				BeanDefinition connectorDefinition = context.getBeanFactory()
 					.getBeanDefinition("httpComponentsClientHttpConnector");
-				assertThat(connectorDefinition.isLazyInit()).isTrue();
-			});
-	}
-
-	@Test
-	void whenReactorJettyAndHttpClientBeansAreUnavailableThenJdkClientBeansAreDefined() {
-		this.contextRunner
-			.withClassLoader(new FilteredClassLoader(HttpClient.class, ReactiveRequest.class, HttpAsyncClients.class))
-			.run((context) -> {
-				BeanDefinition customizerDefinition = context.getBeanFactory()
-					.getBeanDefinition("clientConnectorCustomizer");
-				assertThat(customizerDefinition.isLazyInit()).isTrue();
-				BeanDefinition connectorDefinition = context.getBeanFactory()
-					.getBeanDefinition("jdkClientHttpConnector");
 				assertThat(connectorDefinition.isLazyInit()).isTrue();
 			});
 	}

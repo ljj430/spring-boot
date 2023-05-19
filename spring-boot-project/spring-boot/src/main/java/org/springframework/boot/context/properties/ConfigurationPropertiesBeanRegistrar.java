@@ -72,12 +72,12 @@ final class ConfigurationPropertiesBeanRegistrar {
 	}
 
 	private boolean containsBeanDefinition(BeanFactory beanFactory, String name) {
-		if (beanFactory instanceof ListableBeanFactory listableBeanFactory
-				&& listableBeanFactory.containsBeanDefinition(name)) {
+		if (beanFactory instanceof ListableBeanFactory
+				&& ((ListableBeanFactory) beanFactory).containsBeanDefinition(name)) {
 			return true;
 		}
-		if (beanFactory instanceof HierarchicalBeanFactory hierarchicalBeanFactory) {
-			return containsBeanDefinition(hierarchicalBeanFactory.getParentBeanFactory(), name);
+		if (beanFactory instanceof HierarchicalBeanFactory) {
+			return containsBeanDefinition(((HierarchicalBeanFactory) beanFactory).getParentBeanFactory(), name);
 		}
 		return false;
 	}
@@ -90,13 +90,24 @@ final class ConfigurationPropertiesBeanRegistrar {
 	}
 
 	private BeanDefinition createBeanDefinition(String beanName, Class<?> type) {
-		BindMethod bindMethod = BindMethod.get(type);
+		BindMethod bindMethod = BindMethod.forType(type);
 		RootBeanDefinition definition = new RootBeanDefinition(type);
 		definition.setAttribute(BindMethod.class.getName(), bindMethod);
 		if (bindMethod == BindMethod.VALUE_OBJECT) {
-			definition.setInstanceSupplier(() -> ConstructorBound.from(this.beanFactory, beanName, type));
+			definition.setInstanceSupplier(() -> createValueObject(beanName, type));
 		}
 		return definition;
+	}
+
+	private Object createValueObject(String beanName, Class<?> beanType) {
+		ConfigurationPropertiesBean bean = ConfigurationPropertiesBean.forValueObject(beanType, beanName);
+		ConfigurationPropertiesBinder binder = ConfigurationPropertiesBinder.get(this.beanFactory);
+		try {
+			return binder.bindOrCreate(bean);
+		}
+		catch (Exception ex) {
+			throw new ConfigurationPropertiesBindException(bean, ex);
+		}
 	}
 
 }

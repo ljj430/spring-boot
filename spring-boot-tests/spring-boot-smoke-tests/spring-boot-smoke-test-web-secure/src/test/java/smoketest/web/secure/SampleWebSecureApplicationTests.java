@@ -18,7 +18,6 @@ package smoketest.web.secure;
 
 import java.util.Collections;
 
-import jakarta.servlet.DispatcherType;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -96,9 +95,8 @@ class SampleWebSecureApplicationTests {
 		@Bean
 		SecurityFilterChain configure(HttpSecurity http) throws Exception {
 			http.csrf().disable();
-			http.authorizeHttpRequests((requests) -> {
-				requests.requestMatchers("/public/**").permitAll();
-				requests.dispatcherTypeMatchers(DispatcherType.FORWARD).permitAll();
+			http.authorizeRequests((requests) -> {
+				requests.antMatchers("/public/**").permitAll();
 				requests.anyRequest().fullyAuthenticated();
 			});
 			http.httpBasic();

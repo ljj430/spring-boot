@@ -61,9 +61,9 @@ class JmxEndpointExporterTests {
 	@Spy
 	private EndpointObjectNameFactory objectNameFactory = new TestEndpointObjectNameFactory();
 
-	private final JmxOperationResponseMapper responseMapper = new TestJmxOperationResponseMapper();
+	private JmxOperationResponseMapper responseMapper = new TestJmxOperationResponseMapper();
 
-	private final List<ExposableJmxEndpoint> endpoints = new ArrayList<>();
+	private List<ExposableJmxEndpoint> endpoints = new ArrayList<>();
 
 	@Captor
 	private ArgumentCaptor<Object> objectCaptor;

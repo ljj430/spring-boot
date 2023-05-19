@@ -56,7 +56,7 @@ class RepositoryMetricsAutoConfigurationIntegrationTests {
 			assertThat(registry.get("spring.data.repository.invocations")
 				.tag("repository", "CityRepository")
 				.timer()
-				.count()).isOne();
+				.count()).isEqualTo(1);
 		});
 	}
 

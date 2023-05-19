@@ -32,6 +32,7 @@ import org.springframework.boot.test.context.runner.ContextConsumer;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
 import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
+import org.springframework.cache.ehcache.EhCacheCacheManager;
 import org.springframework.cache.support.SimpleCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -72,7 +73,7 @@ abstract class AbstractCacheAutoConfigurationTests {
 					assertThat(value.cacheManager).isNull();
 				}
 			});
-			assertThat(expected).isEmpty();
+			assertThat(expected).hasSize(0);
 		};
 	}
 
@@ -81,63 +82,70 @@ abstract class AbstractCacheAutoConfigurationTests {
 
 		@Bean
 		CacheManagerCustomizer<CacheManager> allCacheManagerCustomizer() {
-			return new CacheManagerTestCustomizer<>() {
+			return new CacheManagerTestCustomizer<CacheManager>() {
 
 			};
 		}
 
 		@Bean
 		CacheManagerCustomizer<ConcurrentMapCacheManager> simpleCacheManagerCustomizer() {
-			return new CacheManagerTestCustomizer<>() {
+			return new CacheManagerTestCustomizer<ConcurrentMapCacheManager>() {
 
 			};
 		}
 
 		@Bean
 		CacheManagerCustomizer<SimpleCacheManager> genericCacheManagerCustomizer() {
-			return new CacheManagerTestCustomizer<>() {
+			return new CacheManagerTestCustomizer<SimpleCacheManager>() {
 
 			};
 		}
 
 		@Bean
 		CacheManagerCustomizer<CouchbaseCacheManager> couchbaseCacheManagerCustomizer() {
-			return new CacheManagerTestCustomizer<>() {
+			return new CacheManagerTestCustomizer<CouchbaseCacheManager>() {
 
 			};
 		}
 
 		@Bean
 		CacheManagerCustomizer<RedisCacheManager> redisCacheManagerCustomizer() {
-			return new CacheManagerTestCustomizer<>() {
+			return new CacheManagerTestCustomizer<RedisCacheManager>() {
+
+			};
+		}
+
+		@Bean
+		CacheManagerCustomizer<EhCacheCacheManager> ehcacheCacheManagerCustomizer() {
+			return new CacheManagerTestCustomizer<EhCacheCacheManager>() {
 
 			};
 		}
 
 		@Bean
 		CacheManagerCustomizer<HazelcastCacheManager> hazelcastCacheManagerCustomizer() {
-			return new CacheManagerTestCustomizer<>() {
+			return new CacheManagerTestCustomizer<HazelcastCacheManager>() {
 
 			};
 		}
 
 		@Bean
 		CacheManagerCustomizer<SpringEmbeddedCacheManager> infinispanCacheManagerCustomizer() {
-			return new CacheManagerTestCustomizer<>() {
+			return new CacheManagerTestCustomizer<SpringEmbeddedCacheManager>() {
 
 			};
 		}
 
 		@Bean
 		CacheManagerCustomizer<SpringCache2kCacheManager> cache2kCacheManagerCustomizer() {
-			return new CacheManagerTestCustomizer<>() {
+			return new CacheManagerTestCustomizer<SpringCache2kCacheManager>() {
 
 			};
 		}
 
 		@Bean
 		CacheManagerCustomizer<CaffeineCacheManager> caffeineCacheManagerCustomizer() {
-			return new CacheManagerTestCustomizer<>() {
+			return new CacheManagerTestCustomizer<CaffeineCacheManager>() {
 
 			};
 		}

@@ -17,7 +17,7 @@
 package org.springframework.boot.autoconfigure.jersey;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.module.jakarta.xmlbind.JakartaXmlBindAnnotationIntrospector;
+import com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.junit.jupiter.api.Test;
 
@@ -76,35 +76,35 @@ class JerseyAutoConfigurationTests {
 				.getAnnotationIntrospector()
 				.allIntrospectors()
 				.stream()
-				.filter(JakartaXmlBindAnnotationIntrospector.class::isInstance)).hasSize(1);
+				.filter(JaxbAnnotationIntrospector.class::isInstance)).hasSize(1);
 		});
 	}
 
 	@Test
 	void whenJaxbIsNotAvailableTheObjectMapperCustomizationBacksOff() {
 		this.contextRunner.withConfiguration(AutoConfigurations.of(JacksonAutoConfiguration.class))
-			.withClassLoader(new FilteredClassLoader("jakarta.xml.bind.annotation"))
+			.withClassLoader(new FilteredClassLoader("javax.xml.bind.annotation"))
 			.run((context) -> {
 				ObjectMapper objectMapper = context.getBean(ObjectMapper.class);
 				assertThat(objectMapper.getSerializationConfig()
 					.getAnnotationIntrospector()
 					.allIntrospectors()
 					.stream()
-					.filter(JakartaXmlBindAnnotationIntrospector.class::isInstance)).isEmpty();
+					.filter(JaxbAnnotationIntrospector.class::isInstance)).isEmpty();
 			});
 	}
 
 	@Test
 	void whenJacksonJaxbModuleIsNotAvailableTheObjectMapperCustomizationBacksOff() {
 		this.contextRunner.withConfiguration(AutoConfigurations.of(JacksonAutoConfiguration.class))
-			.withClassLoader(new FilteredClassLoader(JakartaXmlBindAnnotationIntrospector.class))
+			.withClassLoader(new FilteredClassLoader(JaxbAnnotationIntrospector.class))
 			.run((context) -> {
 				ObjectMapper objectMapper = context.getBean(ObjectMapper.class);
 				assertThat(objectMapper.getSerializationConfig()
 					.getAnnotationIntrospector()
 					.allIntrospectors()
 					.stream()
-					.filter(JakartaXmlBindAnnotationIntrospector.class::isInstance)).isEmpty();
+					.filter(JaxbAnnotationIntrospector.class::isInstance)).isEmpty();
 			});
 	}
 

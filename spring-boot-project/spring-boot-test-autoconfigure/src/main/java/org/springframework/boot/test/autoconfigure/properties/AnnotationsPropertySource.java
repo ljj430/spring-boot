@@ -113,7 +113,7 @@ public class AnnotationsPropertySource extends EnumerablePropertySource<Class<?>
 
 	private String toKebabCase(String name) {
 		Matcher matcher = CAMEL_CASE_PATTERN.matcher(name);
-		StringBuilder result = new StringBuilder();
+		StringBuffer result = new StringBuffer();
 		while (matcher.find()) {
 			matcher.appendReplacement(result, matcher.group(1) + '-' + StringUtils.uncapitalize(matcher.group(2)));
 		}
@@ -136,7 +136,8 @@ public class AnnotationsPropertySource extends EnumerablePropertySource<Class<?>
 				putProperties(name + "[" + i + "]", defaultSkip, array[i], properties);
 			}
 		}
-		else if (value instanceof MergedAnnotation<?> annotation) {
+		else if (value instanceof MergedAnnotation<?>) {
+			MergedAnnotation<?> annotation = (MergedAnnotation<?>) value;
 			for (Method attribute : annotation.getType().getDeclaredMethods()) {
 				collectProperties(name, defaultSkip, (MergedAnnotation<?>) value, attribute, properties);
 			}

@@ -48,17 +48,10 @@ bom {
 			]
 		}
 	}
-	library("Jakarta Inject", "2.0.1") {
+	library("Jakarta Inject", "1.0.5") {
 		group("jakarta.inject") {
 			modules = [
 				"jakarta.inject-api"
-			]
-		}
-	}
-	library("Janino", "3.1.8") {
-		group("org.codehaus.janino") {
-			imports = [
-				"janino"
 			]
 		}
 	}
@@ -144,13 +137,6 @@ bom {
 			]
 		}
 	}
-	library("Native Gradle Plugin", "${nativeBuildToolsVersion}") {
-		group("org.graalvm.buildtools") {
-			modules = [
-				"native-gradle-plugin"
-			]
-		}
-	}
 	library("Plexus Build API", "0.0.7") {
 		group("org.sonatype.plexus") {
 			modules = [
@@ -179,10 +165,18 @@ bom {
 			]
 		}
 	}
-	library("Spock Framework", "2.2-M1-groovy-4.0") {
+	library("SnakeYAML", "1.32") {
+		group("org.yaml") {
+			modules = [
+				"snakeyaml"
+			]
+		}
+	}
+	library("Spock Framework", "2.0-groovy-3.0") {
 		group("org.spockframework") {
-			imports = [
-				"spock-bom"
+			modules = [
+				"spock-core",
+				"spock-spring"
 			]
 		}
 	}

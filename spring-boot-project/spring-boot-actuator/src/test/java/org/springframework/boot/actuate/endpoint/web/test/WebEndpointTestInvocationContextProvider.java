@@ -17,7 +17,6 @@
 package org.springframework.boot.actuate.endpoint.web.test;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -146,7 +145,7 @@ class WebEndpointTestInvocationContextProvider implements TestTemplateInvocation
 			List<Class<?>> configurationClasses = Stream
 				.of(extensionContext.getRequiredTestClass().getDeclaredClasses())
 				.filter(this::isConfiguration)
-				.collect(Collectors.toCollection(ArrayList::new));
+				.collect(Collectors.toList());
 			this.context = this.contextFactory.apply(configurationClasses);
 		}
 
@@ -206,8 +205,8 @@ class WebEndpointTestInvocationContextProvider implements TestTemplateInvocation
 		}
 
 		private int determinePort() {
-			if (this.context instanceof AnnotationConfigServletWebServerApplicationContext webServerContext) {
-				return webServerContext.getWebServer().getPort();
+			if (this.context instanceof AnnotationConfigServletWebServerApplicationContext) {
+				return ((AnnotationConfigServletWebServerApplicationContext) this.context).getWebServer().getPort();
 			}
 			return this.context.getBean(PortHolder.class).getPort();
 		}

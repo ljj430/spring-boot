@@ -7,12 +7,12 @@ plugins {
 
 // tag::image-name[]
 tasks.named<BootBuildImage>("bootBuildImage") {
-	imageName.set("example.com/library/${project.name}")
+	imageName = "example.com/library/${project.name}"
 }
 // end::image-name[]
 
 tasks.register("bootBuildImageName") {
 	doFirst {
-		println(tasks.getByName<BootBuildImage>("bootBuildImage").imageName.get())
+		println(tasks.getByName<BootBuildImage>("bootBuildImage").imageName)
 	}
 }

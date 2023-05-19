@@ -55,15 +55,14 @@ public class SecurityConfiguration {
 
 	@Bean
 	SecurityFilterChain configure(HttpSecurity http) throws Exception {
-		http.authorizeHttpRequests((requests) -> {
-			requests.requestMatchers("/actuator/beans").hasRole("BEANS");
+		http.authorizeRequests((requests) -> {
+			requests.mvcMatchers("/actuator/beans").hasRole("BEANS");
 			requests.requestMatchers(EndpointRequest.to("health")).permitAll();
 			requests.requestMatchers(EndpointRequest.toAnyEndpoint().excluding(MappingsEndpoint.class))
 				.hasRole("ACTUATOR");
 			requests.requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll();
-			requests.requestMatchers("/foo").permitAll();
-			requests.requestMatchers("/error").permitAll();
-			requests.requestMatchers("/**").hasRole("USER");
+			requests.antMatchers("/foo").permitAll();
+			requests.antMatchers("/**").hasRole("USER");
 		});
 		http.cors(Customizer.withDefaults());
 		http.httpBasic();

@@ -18,8 +18,9 @@ package org.springframework.boot.validation;
 
 import java.util.Locale;
 
-import jakarta.validation.MessageInterpolator;
-import jakarta.validation.MessageInterpolator.Context;
+import javax.validation.MessageInterpolator;
+import javax.validation.MessageInterpolator.Context;
+
 import org.junit.jupiter.api.Test;
 
 import org.springframework.context.support.StaticMessageSource;
