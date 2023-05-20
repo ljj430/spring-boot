@@ -43,9 +43,9 @@ class CustomServletPathUnauthenticatedErrorPageTests extends AbstractUnauthentic
 
 		@Bean
 		SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
-			http.authorizeRequests((requests) -> {
-				requests.antMatchers("/custom/servlet/path/error").permitAll();
-				requests.antMatchers("/custom/servlet/path/public/**").permitAll();
+			http.authorizeHttpRequests((requests) -> {
+				requests.requestMatchers("/error").permitAll();
+				requests.requestMatchers("/public/**").permitAll();
 				requests.anyRequest().authenticated();
 			});
 			http.httpBasic();

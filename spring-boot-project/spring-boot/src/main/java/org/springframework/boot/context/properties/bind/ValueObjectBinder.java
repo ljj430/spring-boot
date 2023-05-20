@@ -101,8 +101,8 @@ class ValueObjectBinder implements DataObjectBinder {
 		ResolvableType type = parameter.getType();
 		Annotation[] annotations = parameter.getAnnotations();
 		for (Annotation annotation : annotations) {
-			if (annotation instanceof DefaultValue) {
-				String[] defaultValue = ((DefaultValue) annotation).value();
+			if (annotation instanceof DefaultValue defaultValueAnnotation) {
+				String[] defaultValue = defaultValueAnnotation.value();
 				if (defaultValue.length == 0) {
 					return getNewDefaultValueInstanceIfPossible(context, type);
 				}

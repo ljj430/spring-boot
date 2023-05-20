@@ -16,27 +16,22 @@
 
 package org.springframework.boot.configurationprocessor;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
-
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledForJreRange;
-import org.junit.jupiter.api.condition.JRE;
-import org.junit.jupiter.api.io.TempDir;
 
 import org.springframework.boot.configurationprocessor.metadata.ConfigurationMetadata;
 import org.springframework.boot.configurationprocessor.metadata.ItemMetadata;
 import org.springframework.boot.configurationprocessor.metadata.Metadata;
+import org.springframework.boot.configurationsample.record.RecordWithGetter;
 import org.springframework.boot.configurationsample.recursive.RecursiveProperties;
 import org.springframework.boot.configurationsample.simple.ClassWithNestedProperties;
 import org.springframework.boot.configurationsample.simple.DeprecatedFieldSingleProperty;
+import org.springframework.boot.configurationsample.simple.DeprecatedRecord;
 import org.springframework.boot.configurationsample.simple.DeprecatedSingleProperty;
 import org.springframework.boot.configurationsample.simple.DescriptionProperties;
 import org.springframework.boot.configurationsample.simple.HierarchicalProperties;
 import org.springframework.boot.configurationsample.simple.HierarchicalPropertiesGrandparent;
 import org.springframework.boot.configurationsample.simple.HierarchicalPropertiesParent;
+import org.springframework.boot.configurationsample.simple.InnerClassWithPrivateConstructor;
 import org.springframework.boot.configurationsample.simple.NotAnnotated;
 import org.springframework.boot.configurationsample.simple.SimpleArrayProperties;
 import org.springframework.boot.configurationsample.simple.SimpleCollectionProperties;
@@ -62,9 +57,10 @@ import org.springframework.boot.configurationsample.specific.InvalidDefaultValue
 import org.springframework.boot.configurationsample.specific.InvalidDoubleRegistrationProperties;
 import org.springframework.boot.configurationsample.specific.SimplePojo;
 import org.springframework.boot.configurationsample.specific.StaticAccessor;
+import org.springframework.core.test.tools.CompilationException;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
  * Tests for {@link ConfigurationMetadataAnnotationProcessor}.
@@ -74,6 +70,8 @@ import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
  * @author Andy Wilkinson
  * @author Kris De Volder
  * @author Jonas Keßler
+ * @author Pavel Anisimov
+ * @author Scott Frederick
  * @author Moritz Halbritter
  */
 class ConfigurationMetadataAnnotationProcessorTests extends AbstractMetadataGenerationTests {
@@ -151,7 +149,7 @@ class ConfigurationMetadataAnnotationProcessorTests extends AbstractMetadataGene
 		assertThat(metadata).has(Metadata.withProperty("simple.type.my-primitive-double", Double.class));
 		assertThat(metadata).has(Metadata.withProperty("simple.type.my-float", Float.class));
 		assertThat(metadata).has(Metadata.withProperty("simple.type.my-primitive-float", Float.class));
-		assertThat(metadata.getItems().size()).isEqualTo(18);
+		assertThat(metadata.getItems()).hasSize(18);
 	}
 
 	@Test
@@ -242,25 +240,14 @@ class ConfigurationMetadataAnnotationProcessorTests extends AbstractMetadataGene
 	}
 
 	@Test
-	@EnabledForJreRange(min = JRE.JAVA_16)
-	void deprecatedPropertyOnRecord(@TempDir File temp) throws IOException {
-		File exampleRecord = new File(temp, "DeprecatedRecord.java");
-		try (PrintWriter writer = new PrintWriter(new FileWriter(exampleRecord))) {
-			writer.println("@org.springframework.boot.configurationsample.ConstructorBinding");
-			writer.println(
-					"@org.springframework.boot.configurationsample.ConfigurationProperties(\"deprecated-record\")");
-			writer.println("public record DeprecatedRecord(String alpha, String bravo) {");
-			writer.println("@java.lang.Deprecated");
-			writer.println(
-					"@org.springframework.boot.configurationsample.DeprecatedConfigurationProperty(reason = \"some-reason\")");
-			writer.println("public String alpha() { return this.alpha; }");
-			writer.println("}");
-		}
-		ConfigurationMetadata metadata = compile(exampleRecord);
-		assertThat(metadata).has(Metadata.withGroup("deprecated-record"));
-		assertThat(metadata)
-			.has(Metadata.withProperty("deprecated-record.alpha", String.class).withDeprecation("some-reason", null));
-		assertThat(metadata).has(Metadata.withProperty("deprecated-record.bravo", String.class));
+	void deprecatedPropertyOnRecord() {
+		Class<?> type = DeprecatedRecord.class;
+		ConfigurationMetadata metadata = compile(type);
+		assertThat(metadata).has(Metadata.withGroup("deprecated-record").fromSource(type));
+		assertThat(metadata).has(Metadata.withProperty("deprecated-record.alpha", String.class)
+			.fromSource(type)
+			.withDeprecation("some-reason", null));
+		assertThat(metadata).has(Metadata.withProperty("deprecated-record.bravo", String.class).fromSource(type));
 	}
 
 	@Test
@@ -419,26 +406,30 @@ class ConfigurationMetadataAnnotationProcessorTests extends AbstractMetadataGene
 
 	@Test
 	void invalidDoubleRegistration() {
-		assertThatIllegalStateException().isThrownBy(() -> compile(InvalidDoubleRegistrationProperties.class))
-			.withMessageContaining("Compilation failed");
+		assertThatExceptionOfType(CompilationException.class)
+			.isThrownBy(() -> compile(InvalidDoubleRegistrationProperties.class))
+			.withMessageContaining("Unable to compile source");
 	}
 
 	@Test
 	void constructorParameterPropertyWithInvalidDefaultValueOnNumber() {
-		assertThatIllegalStateException().isThrownBy(() -> compile(InvalidDefaultValueNumberProperties.class))
-			.withMessageContaining("Compilation failed");
+		assertThatExceptionOfType(CompilationException.class)
+			.isThrownBy(() -> compile(InvalidDefaultValueNumberProperties.class))
+			.withMessageContaining("Unable to compile source");
 	}
 
 	@Test
 	void constructorParameterPropertyWithInvalidDefaultValueOnFloatingPoint() {
-		assertThatIllegalStateException().isThrownBy(() -> compile(InvalidDefaultValueFloatingPointProperties.class))
-			.withMessageContaining("Compilation failed");
+		assertThatExceptionOfType(CompilationException.class)
+			.isThrownBy(() -> compile(InvalidDefaultValueFloatingPointProperties.class))
+			.withMessageContaining("Unable to compile source");
 	}
 
 	@Test
 	void constructorParameterPropertyWithInvalidDefaultValueOnCharacter() {
-		assertThatIllegalStateException().isThrownBy(() -> compile(InvalidDefaultValueCharacterProperties.class))
-			.withMessageContaining("Compilation failed");
+		assertThatExceptionOfType(CompilationException.class)
+			.isThrownBy(() -> compile(InvalidDefaultValueCharacterProperties.class))
+			.withMessageContaining("Unable to compile source");
 	}
 
 	@Test
@@ -459,35 +450,27 @@ class ConfigurationMetadataAnnotationProcessorTests extends AbstractMetadataGene
 	}
 
 	@Test
-	@EnabledForJreRange(min = JRE.JAVA_16)
-	void explicityBoundRecordProperties(@TempDir File temp) throws IOException {
-		File exampleRecord = new File(temp, "ExampleRecord.java");
-		try (PrintWriter writer = new PrintWriter(new FileWriter(exampleRecord))) {
-			writer.println("@org.springframework.boot.configurationsample.ConstructorBinding");
-			writer.println("@org.springframework.boot.configurationsample.ConfigurationProperties(\"explicit\")");
-			writer.println("public record ExampleRecord(String someString, Integer someInteger) {");
-			writer.println("}");
-		}
-		ConfigurationMetadata metadata = compile(exampleRecord);
-		assertThat(metadata).has(Metadata.withProperty("explicit.some-string"));
-		assertThat(metadata).has(Metadata.withProperty("explicit.some-integer"));
+	void recordProperties() {
+		String source = """
+				@org.springframework.boot.configurationsample.ConfigurationProperties("implicit")
+				public record ExampleRecord(String someString, Integer someInteger) {
+				}
+				""";
+		ConfigurationMetadata metadata = compile(source);
+		assertThat(metadata).has(Metadata.withProperty("implicit.some-string"));
+		assertThat(metadata).has(Metadata.withProperty("implicit.some-integer"));
 	}
 
 	@Test
-	@EnabledForJreRange(min = JRE.JAVA_16)
-	void explicitlyBoundRecordPropertiesWithDefaultValues(@TempDir File temp) throws IOException {
-		File exampleRecord = new File(temp, "ExampleRecord.java");
-		try (PrintWriter writer = new PrintWriter(new FileWriter(exampleRecord))) {
-			writer.println("@org.springframework.boot.configurationsample.ConstructorBinding");
-			writer
-				.println("@org.springframework.boot.configurationsample.ConfigurationProperties(\"record.defaults\")");
-			writer.println("public record ExampleRecord(");
-			writer.println("@org.springframework.boot.configurationsample.DefaultValue(\"An1s9n\") String someString,");
-			writer.println("@org.springframework.boot.configurationsample.DefaultValue(\"594\") Integer someInteger");
-			writer.println(") {");
-			writer.println("}");
-		}
-		ConfigurationMetadata metadata = compile(exampleRecord);
+	void recordPropertiesWithDefaultValues() {
+		String source = """
+				@org.springframework.boot.configurationsample.ConfigurationProperties("record.defaults")
+				public record ExampleRecord(
+					@org.springframework.boot.configurationsample.DefaultValue("An1s9n") String someString,
+					@org.springframework.boot.configurationsample.DefaultValue("594") Integer someInteger) {
+				}
+				""";
+		ConfigurationMetadata metadata = compile(source);
 		assertThat(metadata)
 			.has(Metadata.withProperty("record.defaults.some-string", String.class).withDefaultValue("An1s9n"));
 		assertThat(metadata)
@@ -495,53 +478,34 @@ class ConfigurationMetadataAnnotationProcessorTests extends AbstractMetadataGene
 	}
 
 	@Test
-	@EnabledForJreRange(min = JRE.JAVA_16)
-	void implicitlyBoundRecordProperties(@TempDir File temp) throws IOException {
-		File exampleRecord = new File(temp, "ExampleRecord.java");
-		try (PrintWriter writer = new PrintWriter(new FileWriter(exampleRecord))) {
-			writer.println("@org.springframework.boot.configurationsample.ConfigurationProperties(\"implicit\")");
-			writer.println("public record ExampleRecord(String someString, Integer someInteger) {");
-			writer.println("}");
-		}
-		ConfigurationMetadata metadata = compile(exampleRecord);
-		assertThat(metadata).has(Metadata.withProperty("implicit.some-string"));
-		assertThat(metadata).has(Metadata.withProperty("implicit.some-integer"));
-	}
-
-	@Test
-	@EnabledForJreRange(min = JRE.JAVA_16)
-	void multiConstructorRecordProperties(@TempDir File temp) throws IOException {
-		File exampleRecord = new File(temp, "ExampleRecord.java");
-		try (PrintWriter writer = new PrintWriter(new FileWriter(exampleRecord))) {
-			writer.println("@org.springframework.boot.configurationsample.ConfigurationProperties(\"multi\")");
-			writer.println("public record ExampleRecord(String someString, Integer someInteger) {");
-			writer.println("    @org.springframework.boot.configurationsample.ConstructorBinding");
-			writer.println("    public ExampleRecord(String someString) {");
-			writer.println("        this(someString, 42);");
-			writer.println("    }");
-			writer.println("    public ExampleRecord(Integer someInteger) {");
-			writer.println("        this(\"someString\", someInteger);");
-			writer.println("    }");
-			writer.println("}");
-		}
-		ConfigurationMetadata metadata = compile(exampleRecord);
+	void multiConstructorRecordProperties() {
+		String source = """
+				@org.springframework.boot.configurationsample.ConfigurationProperties("multi")
+				public record ExampleRecord(String someString, Integer someInteger) {
+					@org.springframework.boot.configurationsample.ConstructorBinding
+					public ExampleRecord(String someString) {
+						this(someString, 42);
+					}
+					public ExampleRecord(Integer someInteger) {
+						this("someString", someInteger);
+					}
+				}
+				""";
+		ConfigurationMetadata metadata = compile(source);
 		assertThat(metadata).has(Metadata.withProperty("multi.some-string"));
 		assertThat(metadata).doesNotHave(Metadata.withProperty("multi.some-integer"));
 	}
 
 	@Test
-	@EnabledForJreRange(min = JRE.JAVA_16)
-	void recordWithGetter(@TempDir File temp) throws IOException {
-		File exampleRecord = new File(temp, "ExampleRecord.java");
-		try (PrintWriter writer = new PrintWriter(new FileWriter(exampleRecord))) {
-			writer.println(
-					"@org.springframework.boot.configurationsample.ConfigurationProperties(\"record-with-getter\")");
-			writer.println("@org.springframework.boot.configurationsample.ConstructorBinding");
-			writer.println("public record ExampleRecord(String alpha) {");
-			writer.println("    public String getBravo() { return alpha; }");
-			writer.println("}");
-		}
-		ConfigurationMetadata metadata = compile(exampleRecord);
+	void innerClassWithPrivateConstructor() {
+		ConfigurationMetadata metadata = compile(InnerClassWithPrivateConstructor.class);
+		assertThat(metadata).has(Metadata.withProperty("config.nested.name"));
+		assertThat(metadata).doesNotHave(Metadata.withProperty("config.nested.ignored"));
+	}
+
+	@Test
+	void recordWithGetter() {
+		ConfigurationMetadata metadata = compile(RecordWithGetter.class);
 		assertThat(metadata).has(Metadata.withProperty("record-with-getter.alpha"));
 		assertThat(metadata).doesNotHave(Metadata.withProperty("record-with-getter.bravo"));
 	}
