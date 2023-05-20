@@ -23,7 +23,7 @@ package org.springframework.boot.test.autoconfigure.json.app;
  */
 public class ExampleCustomObject {
 
-	private final String value;
+	private String value;
 
 	public ExampleCustomObject(String value) {
 		this.value = value;

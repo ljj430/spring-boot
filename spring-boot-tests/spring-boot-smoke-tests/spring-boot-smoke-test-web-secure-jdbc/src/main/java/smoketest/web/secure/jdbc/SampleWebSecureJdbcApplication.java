@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 package smoketest.web.secure.jdbc;
 
 import javax.sql.DataSource;
-
-import jakarta.servlet.DispatcherType;
 
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -49,10 +47,7 @@ public class SampleWebSecureJdbcApplication implements WebMvcConfigurer {
 		@Bean
 		SecurityFilterChain configure(HttpSecurity http) throws Exception {
 			http.csrf().disable();
-			http.authorizeHttpRequests((requests) -> {
-				requests.dispatcherTypeMatchers(DispatcherType.FORWARD).permitAll();
-				requests.anyRequest().fullyAuthenticated();
-			});
+			http.authorizeRequests((requests) -> requests.anyRequest().fullyAuthenticated());
 			http.formLogin((form) -> form.loginPage("/login").permitAll());
 			return http.build();
 		}

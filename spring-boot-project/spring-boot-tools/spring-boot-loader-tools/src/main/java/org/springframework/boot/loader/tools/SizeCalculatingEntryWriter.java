@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,8 +43,11 @@ final class SizeCalculatingEntryWriter implements EntryWriter {
 
 	private SizeCalculatingEntryWriter(EntryWriter entryWriter) throws IOException {
 		SizeCalculatingOutputStream outputStream = new SizeCalculatingOutputStream();
-		try (outputStream) {
+		try {
 			entryWriter.write(outputStream);
+		}
+		finally {
+			outputStream.close();
 		}
 		this.content = outputStream.getContent();
 		this.size = outputStream.getSize();
@@ -57,15 +60,18 @@ final class SizeCalculatingEntryWriter implements EntryWriter {
 	}
 
 	private InputStream getContentInputStream() throws FileNotFoundException {
-		if (this.content instanceof File file) {
-			return new FileInputStream(file);
+		if (this.content instanceof File) {
+			return new FileInputStream((File) this.content);
 		}
 		return new ByteArrayInputStream((byte[]) this.content);
 	}
 
 	private void copy(InputStream inputStream, OutputStream outputStream) throws IOException {
-		try (inputStream) {
+		try {
 			StreamUtils.copy(inputStream, outputStream);
+		}
+		finally {
+			inputStream.close();
 		}
 	}
 
@@ -104,8 +110,8 @@ final class SizeCalculatingEntryWriter implements EntryWriter {
 		@Override
 		public void write(byte[] b, int off, int len) throws IOException {
 			int updatedSize = this.size + len;
-			if (updatedSize > THRESHOLD && this.outputStream instanceof ByteArrayOutputStream byteArrayOutputStream) {
-				this.outputStream = convertToFileOutputStream(byteArrayOutputStream);
+			if (updatedSize > THRESHOLD && this.outputStream instanceof ByteArrayOutputStream) {
+				this.outputStream = convertToFileOutputStream((ByteArrayOutputStream) this.outputStream);
 			}
 			this.outputStream.write(b, off, len);
 			this.size = updatedSize;
@@ -131,8 +137,8 @@ final class SizeCalculatingEntryWriter implements EntryWriter {
 		}
 
 		Object getContent() {
-			return (this.outputStream instanceof ByteArrayOutputStream byteArrayOutputStream)
-					? byteArrayOutputStream.toByteArray() : this.tempFile;
+			return (this.outputStream instanceof ByteArrayOutputStream)
+					? ((ByteArrayOutputStream) this.outputStream).toByteArray() : this.tempFile;
 		}
 
 		int getSize() {

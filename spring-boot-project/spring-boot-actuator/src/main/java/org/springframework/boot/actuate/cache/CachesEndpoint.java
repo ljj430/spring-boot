@@ -21,8 +21,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
-import org.springframework.boot.actuate.endpoint.OperationResponseBody;
 import org.springframework.boot.actuate.endpoint.annotation.DeleteOperation;
 import org.springframework.boot.actuate.endpoint.annotation.Endpoint;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
@@ -52,11 +52,11 @@ public class CachesEndpoint {
 	}
 
 	/**
-	 * Return a {@link CachesDescriptor} of all available {@link Cache caches}.
+	 * Return a {@link CachesReport} of all available {@link Cache caches}.
 	 * @return a caches reports
 	 */
 	@ReadOperation
-	public CachesDescriptor caches() {
+	public CachesReport caches() {
 		Map<String, Map<String, CacheDescriptor>> descriptors = new LinkedHashMap<>();
 		getCacheEntries(matchAll(), matchAll()).forEach((entry) -> {
 			String cacheName = entry.getName();
@@ -67,7 +67,7 @@ public class CachesEndpoint {
 		});
 		Map<String, CacheManagerDescriptor> cacheManagerDescriptors = new LinkedHashMap<>();
 		descriptors.forEach((name, entries) -> cacheManagerDescriptors.put(name, new CacheManagerDescriptor(entries)));
-		return new CachesDescriptor(cacheManagerDescriptors);
+		return new CachesReport(cacheManagerDescriptors);
 	}
 
 	/**
@@ -79,7 +79,7 @@ public class CachesEndpoint {
 	 * {@code cacheManager} was provided to identify a unique candidate
 	 */
 	@ReadOperation
-	public CacheEntryDescriptor cache(@Selector String cache, @Nullable String cacheManager) {
+	public CacheEntry cache(@Selector String cache, @Nullable String cacheManager) {
 		return extractUniqueCacheEntry(cache, getCacheEntries((name) -> name.equals(cache), isNameMatch(cacheManager)));
 	}
 
@@ -102,40 +102,40 @@ public class CachesEndpoint {
 	 */
 	@DeleteOperation
 	public boolean clearCache(@Selector String cache, @Nullable String cacheManager) {
-		CacheEntryDescriptor entry = extractUniqueCacheEntry(cache,
+		CacheEntry entry = extractUniqueCacheEntry(cache,
 				getCacheEntries((name) -> name.equals(cache), isNameMatch(cacheManager)));
 		return (entry != null && clearCache(entry));
 	}
 
-	private List<CacheEntryDescriptor> getCacheEntries(Predicate<String> cacheNamePredicate,
+	private List<CacheEntry> getCacheEntries(Predicate<String> cacheNamePredicate,
 			Predicate<String> cacheManagerNamePredicate) {
 		return this.cacheManagers.keySet()
 			.stream()
 			.filter(cacheManagerNamePredicate)
 			.flatMap((cacheManagerName) -> getCacheEntries(cacheManagerName, cacheNamePredicate).stream())
-			.toList();
+			.collect(Collectors.toList());
 	}
 
-	private List<CacheEntryDescriptor> getCacheEntries(String cacheManagerName, Predicate<String> cacheNamePredicate) {
+	private List<CacheEntry> getCacheEntries(String cacheManagerName, Predicate<String> cacheNamePredicate) {
 		CacheManager cacheManager = this.cacheManagers.get(cacheManagerName);
 		return cacheManager.getCacheNames()
 			.stream()
 			.filter(cacheNamePredicate)
 			.map(cacheManager::getCache)
 			.filter(Objects::nonNull)
-			.map((cache) -> new CacheEntryDescriptor(cache, cacheManagerName))
-			.toList();
+			.map((cache) -> new CacheEntry(cache, cacheManagerName))
+			.collect(Collectors.toList());
 	}
 
-	private CacheEntryDescriptor extractUniqueCacheEntry(String cache, List<CacheEntryDescriptor> entries) {
+	private CacheEntry extractUniqueCacheEntry(String cache, List<CacheEntry> entries) {
 		if (entries.size() > 1) {
 			throw new NonUniqueCacheException(cache,
-					entries.stream().map(CacheEntryDescriptor::getCacheManager).distinct().toList());
+					entries.stream().map(CacheEntry::getCacheManager).distinct().collect(Collectors.toList()));
 		}
 		return (!entries.isEmpty() ? entries.get(0) : null);
 	}
 
-	private boolean clearCache(CacheEntryDescriptor entry) {
+	private boolean clearCache(CacheEntry entry) {
 		String cacheName = entry.getName();
 		String cacheManager = entry.getCacheManager();
 		Cache cache = this.cacheManagers.get(cacheManager).getCache(cacheName);
@@ -155,13 +155,14 @@ public class CachesEndpoint {
 	}
 
 	/**
-	 * Description of the caches.
+	 * A report of available {@link Cache caches}, primarily intended for serialization to
+	 * JSON.
 	 */
-	public static final class CachesDescriptor implements OperationResponseBody {
+	public static final class CachesReport {
 
 		private final Map<String, CacheManagerDescriptor> cacheManagers;
 
-		public CachesDescriptor(Map<String, CacheManagerDescriptor> cacheManagers) {
+		public CachesReport(Map<String, CacheManagerDescriptor> cacheManagers) {
 			this.cacheManagers = cacheManagers;
 		}
 
@@ -172,7 +173,8 @@ public class CachesEndpoint {
 	}
 
 	/**
-	 * Description of a {@link CacheManager}.
+	 * Description of a {@link CacheManager}, primarily intended for serialization to
+	 * JSON.
 	 */
 	public static final class CacheManagerDescriptor {
 
@@ -189,9 +191,9 @@ public class CachesEndpoint {
 	}
 
 	/**
-	 * Description of a {@link Cache}.
+	 * Basic description of a {@link Cache}, primarily intended for serialization to JSON.
 	 */
-	public static class CacheDescriptor implements OperationResponseBody {
+	public static class CacheDescriptor {
 
 		private final String target;
 
@@ -210,15 +212,15 @@ public class CachesEndpoint {
 	}
 
 	/**
-	 * Description of a {@link Cache} entry.
+	 * Description of a {@link Cache}, primarily intended for serialization to JSON.
 	 */
-	public static final class CacheEntryDescriptor extends CacheDescriptor {
+	public static final class CacheEntry extends CacheDescriptor {
 
 		private final String name;
 
 		private final String cacheManager;
 
-		public CacheEntryDescriptor(Cache cache, String cacheManager) {
+		public CacheEntry(Cache cache, String cacheManager) {
 			super(cache.getNativeCache().getClass().getName());
 			this.name = cache.getName();
 			this.cacheManager = cacheManager;

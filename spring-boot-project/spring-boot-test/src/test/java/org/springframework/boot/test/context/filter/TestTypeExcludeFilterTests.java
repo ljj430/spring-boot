@@ -35,9 +35,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class TestTypeExcludeFilterTests {
 
-	private final TestTypeExcludeFilter filter = new TestTypeExcludeFilter();
+	private TestTypeExcludeFilter filter = new TestTypeExcludeFilter();
 
-	private final MetadataReaderFactory metadataReaderFactory = new SimpleMetadataReaderFactory();
+	private MetadataReaderFactory metadataReaderFactory = new SimpleMetadataReaderFactory();
 
 	@Test
 	void matchesJUnit4TestClass() throws Exception {

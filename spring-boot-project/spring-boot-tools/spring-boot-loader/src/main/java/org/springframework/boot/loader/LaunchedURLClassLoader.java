@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ import java.net.JarURLConnection;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.URLConnection;
+import java.security.AccessController;
+import java.security.PrivilegedExceptionAction;
 import java.util.Enumeration;
 import java.util.function.Supplier;
 import java.util.jar.JarFile;
@@ -139,10 +141,10 @@ public class LaunchedURLClassLoader extends URLClassLoader {
 			}
 			catch (IllegalArgumentException ex) {
 				// Tolerate race condition due to being parallel capable
-				if (getDefinedPackage(name) == null) {
+				if (getPackage(name) == null) {
 					// This should never happen as the IllegalArgumentException indicates
 					// that the package has already been defined and, therefore,
-					// getDefinedPackage(name) should not return null.
+					// getPackage(name) should not return null.
 					throw new AssertionError("Package " + name + " has already been defined but it could not be found");
 				}
 			}
@@ -192,17 +194,16 @@ public class LaunchedURLClassLoader extends URLClassLoader {
 		int lastDot = className.lastIndexOf('.');
 		if (lastDot >= 0) {
 			String packageName = className.substring(0, lastDot);
-			if (getDefinedPackage(packageName) == null) {
+			if (getPackage(packageName) == null) {
 				try {
 					definePackage(className, packageName);
 				}
 				catch (IllegalArgumentException ex) {
 					// Tolerate race condition due to being parallel capable
-					if (getDefinedPackage(packageName) == null) {
+					if (getPackage(packageName) == null) {
 						// This should never happen as the IllegalArgumentException
 						// indicates that the package has already been defined and,
-						// therefore, getDefinedPackage(name) should not have returned
-						// null.
+						// therefore, getPackage(name) should not have returned null.
 						throw new AssertionError(
 								"Package " + packageName + " has already been defined but it could not be found");
 					}
@@ -212,23 +213,31 @@ public class LaunchedURLClassLoader extends URLClassLoader {
 	}
 
 	private void definePackage(String className, String packageName) {
-		String packageEntryName = packageName.replace('.', '/') + "/";
-		String classEntryName = className.replace('.', '/') + ".class";
-		for (URL url : getURLs()) {
-			try {
-				URLConnection connection = url.openConnection();
-				if (connection instanceof JarURLConnection jarURLConnection) {
-					JarFile jarFile = jarURLConnection.getJarFile();
-					if (jarFile.getEntry(classEntryName) != null && jarFile.getEntry(packageEntryName) != null
-							&& jarFile.getManifest() != null) {
-						definePackage(packageName, jarFile.getManifest(), url);
-						return;
+		try {
+			AccessController.doPrivileged((PrivilegedExceptionAction<Object>) () -> {
+				String packageEntryName = packageName.replace('.', '/') + "/";
+				String classEntryName = className.replace('.', '/') + ".class";
+				for (URL url : getURLs()) {
+					try {
+						URLConnection connection = url.openConnection();
+						if (connection instanceof JarURLConnection) {
+							JarFile jarFile = ((JarURLConnection) connection).getJarFile();
+							if (jarFile.getEntry(classEntryName) != null && jarFile.getEntry(packageEntryName) != null
+									&& jarFile.getManifest() != null) {
+								definePackage(packageName, jarFile.getManifest(), url);
+								return null;
+							}
+						}
+					}
+					catch (IOException ex) {
+						// Ignore
 					}
 				}
-			}
-			catch (IOException ex) {
-				// Ignore
-			}
+				return null;
+			}, AccessController.getContext());
+		}
+		catch (java.security.PrivilegedActionException ex) {
+			// Ignore
 		}
 	}
 

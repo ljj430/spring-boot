@@ -19,6 +19,7 @@ package org.springframework.boot.maven;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.apache.maven.artifact.Artifact;
 
@@ -206,14 +207,15 @@ public class Image {
 			request = request.withPublish(this.publish);
 		}
 		if (!CollectionUtils.isEmpty(this.buildpacks)) {
-			request = request.withBuildpacks(this.buildpacks.stream().map(BuildpackReference::of).toList());
+			request = request
+				.withBuildpacks(this.buildpacks.stream().map(BuildpackReference::of).collect(Collectors.toList()));
 		}
 		if (!CollectionUtils.isEmpty(this.bindings)) {
-			request = request.withBindings(this.bindings.stream().map(Binding::of).toList());
+			request = request.withBindings(this.bindings.stream().map(Binding::of).collect(Collectors.toList()));
 		}
 		request = request.withNetwork(this.network);
 		if (!CollectionUtils.isEmpty(this.tags)) {
-			request = request.withTags(this.tags.stream().map(ImageReference::of).toList());
+			request = request.withTags(this.tags.stream().map(ImageReference::of).collect(Collectors.toList()));
 		}
 		if (this.buildCache != null) {
 			request = request.withBuildCache(this.buildCache.asCache());
