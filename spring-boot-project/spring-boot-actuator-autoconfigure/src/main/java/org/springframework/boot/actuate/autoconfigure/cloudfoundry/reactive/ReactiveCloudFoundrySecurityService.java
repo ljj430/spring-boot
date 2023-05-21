@@ -31,6 +31,7 @@ import org.springframework.boot.actuate.autoconfigure.cloudfoundry.CloudFoundryA
 import org.springframework.boot.actuate.autoconfigure.cloudfoundry.CloudFoundryAuthorizationException.Reason;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.util.Assert;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -45,7 +46,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
  */
 class ReactiveCloudFoundrySecurityService {
 
-	private static final ParameterizedTypeReference<Map<String, Object>> STRING_OBJECT_MAP = new ParameterizedTypeReference<Map<String, Object>>() {
+	private static final ParameterizedTypeReference<Map<String, Object>> STRING_OBJECT_MAP = new ParameterizedTypeReference<>() {
 	};
 
 	private final WebClient webClient;
@@ -56,7 +57,7 @@ class ReactiveCloudFoundrySecurityService {
 
 	ReactiveCloudFoundrySecurityService(WebClient.Builder webClientBuilder, String cloudControllerUrl,
 			boolean skipSslValidation) {
-		Assert.notNull(webClientBuilder, "Webclient must not be null");
+		Assert.notNull(webClientBuilder, "WebClient must not be null");
 		Assert.notNull(cloudControllerUrl, "CloudControllerUrl must not be null");
 		if (skipSslValidation) {
 			webClientBuilder.clientConnector(buildTrustAllSslConnector());
@@ -95,8 +96,8 @@ class ReactiveCloudFoundrySecurityService {
 	}
 
 	private Throwable mapError(Throwable throwable) {
-		if (throwable instanceof WebClientResponseException) {
-			HttpStatus statusCode = ((WebClientResponseException) throwable).getStatusCode();
+		if (throwable instanceof WebClientResponseException webClientResponseException) {
+			HttpStatusCode statusCode = webClientResponseException.getStatusCode();
 			if (statusCode.equals(HttpStatus.FORBIDDEN)) {
 				return new CloudFoundryAuthorizationException(Reason.ACCESS_DENIED, "Access denied");
 			}

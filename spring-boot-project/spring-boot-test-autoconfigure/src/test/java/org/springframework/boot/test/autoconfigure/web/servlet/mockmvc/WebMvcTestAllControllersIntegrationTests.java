@@ -16,8 +16,8 @@
 
 package org.springframework.boot.test.autoconfigure.web.servlet.mockmvc;
 
-import javax.validation.ConstraintViolationException;
-
+import jakarta.servlet.ServletException;
+import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +25,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.web.servlet.error.ErrorAttributes;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.web.util.NestedServletException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -71,8 +70,7 @@ class WebMvcTestAllControllersIntegrationTests {
 
 	@Test
 	void shouldRunValidationFailure() {
-		assertThatExceptionOfType(NestedServletException.class)
-			.isThrownBy(() -> this.mvc.perform(get("/three/invalid")))
+		assertThatExceptionOfType(ServletException.class).isThrownBy(() -> this.mvc.perform(get("/three/invalid")))
 			.withCauseInstanceOf(ConstraintViolationException.class);
 	}
 

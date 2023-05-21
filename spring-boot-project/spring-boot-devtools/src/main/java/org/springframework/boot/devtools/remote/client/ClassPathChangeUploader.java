@@ -42,6 +42,7 @@ import org.springframework.core.log.LogMessage;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpRequest;
 import org.springframework.http.client.ClientHttpRequestFactory;
@@ -109,10 +110,11 @@ public class ClassPathChangeUploader implements ApplicationListener<ClassPathCha
 					headers.setContentLength(bytes.length);
 					FileCopyUtils.copy(bytes, request.getBody());
 					logUpload(event);
-					ClientHttpResponse response = request.execute();
-					HttpStatus statusCode = response.getStatusCode();
-					Assert.state(statusCode == HttpStatus.OK,
-							() -> "Unexpected " + statusCode + " response uploading class files");
+					try (ClientHttpResponse response = request.execute()) {
+						HttpStatusCode statusCode = response.getStatusCode();
+						Assert.state(statusCode == HttpStatus.OK,
+								() -> "Unexpected " + statusCode + " response uploading class files");
+					}
 					return;
 				}
 				catch (SocketException ex) {

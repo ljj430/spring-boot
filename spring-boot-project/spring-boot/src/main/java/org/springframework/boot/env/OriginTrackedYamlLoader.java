@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.LoaderOptions;
@@ -45,7 +44,6 @@ import org.springframework.boot.origin.OriginTrackedValue;
 import org.springframework.boot.origin.TextResourceOrigin;
 import org.springframework.boot.origin.TextResourceOrigin.Location;
 import org.springframework.core.io.Resource;
-import org.springframework.util.ReflectionUtils;
 
 /**
  * Class to load {@code .yml} files into a map of {@code String} to
@@ -55,9 +53,6 @@ import org.springframework.util.ReflectionUtils;
  * @author Phillip Webb
  */
 class OriginTrackedYamlLoader extends YamlProcessor {
-
-	private static final boolean HAS_RESOLVER_LIMIT = ReflectionUtils.findMethod(Resolver.class, "addImplicitResolver",
-			Tag.class, Pattern.class, String.class, int.class) != null;
 
 	private final Resource resource;
 
@@ -79,12 +74,12 @@ class OriginTrackedYamlLoader extends YamlProcessor {
 		BaseConstructor constructor = new OriginTrackingConstructor(loaderOptions);
 		DumperOptions dumperOptions = new DumperOptions();
 		Representer representer = new Representer(dumperOptions);
-		Resolver resolver = HAS_RESOLVER_LIMIT ? new NoTimestampResolverWithLimit() : new NoTimestampResolver();
+		NoTimestampResolver resolver = new NoTimestampResolver();
 		return new Yaml(constructor, representer, dumperOptions, loaderOptions, resolver);
 	}
 
 	List<Map<String, Object>> load() {
-		final List<Map<String, Object>> result = new ArrayList<>();
+		List<Map<String, Object>> result = new ArrayList<>();
 		process((properties, map) -> result.add(getFlattenedMap(map)));
 		return result;
 	}
@@ -101,7 +96,7 @@ class OriginTrackedYamlLoader extends YamlProcessor {
 		@Override
 		public Object getData() throws NoSuchElementException {
 			Object data = super.getData();
-			if (data instanceof CharSequence && ((CharSequence) data).length() == 0) {
+			if (data instanceof CharSequence charSequence && charSequence.isEmpty()) {
 				return null;
 			}
 			return data;
@@ -117,14 +112,16 @@ class OriginTrackedYamlLoader extends YamlProcessor {
 					return constructTrackedObject(node, super.constructObject(node));
 				}
 			}
-			if (node instanceof MappingNode) {
-				replaceMappingNodeKeys((MappingNode) node);
+			if (node instanceof MappingNode mappingNode) {
+				replaceMappingNodeKeys(mappingNode);
 			}
 			return super.constructObject(node);
 		}
 
 		private void replaceMappingNodeKeys(MappingNode node) {
-			node.setValue(node.getValue().stream().map(KeyScalarNode::get).collect(Collectors.toList()));
+			List<NodeTuple> newValue = new ArrayList<>();
+			node.getValue().stream().map(KeyScalarNode::get).forEach(newValue::add);
+			node.setValue(newValue);
 		}
 
 		private Object constructTrackedObject(Node node, Object value) {
@@ -160,8 +157,8 @@ class OriginTrackedYamlLoader extends YamlProcessor {
 		}
 
 		private static Node get(Node node) {
-			if (node instanceof ScalarNode) {
-				return new KeyScalarNode((ScalarNode) node);
+			if (node instanceof ScalarNode scalarNode) {
+				return new KeyScalarNode(scalarNode);
 			}
 			return node;
 		}
@@ -172,21 +169,6 @@ class OriginTrackedYamlLoader extends YamlProcessor {
 	 * {@link Resolver} that limits {@link Tag#TIMESTAMP} tags.
 	 */
 	private static class NoTimestampResolver extends Resolver {
-
-		@Override
-		public void addImplicitResolver(Tag tag, Pattern regexp, String first) {
-			if (tag == Tag.TIMESTAMP) {
-				return;
-			}
-			super.addImplicitResolver(tag, regexp, first);
-		}
-
-	}
-
-	/**
-	 * {@link Resolver} that limits {@link Tag#TIMESTAMP} tags.
-	 */
-	private static class NoTimestampResolverWithLimit extends Resolver {
 
 		@Override
 		public void addImplicitResolver(Tag tag, Pattern regexp, String first, int limit) {
