@@ -17,6 +17,7 @@
 package org.springframework.boot.maven;
 
 import java.io.File;
+import java.lang.reflect.Method;
 
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.condition.DisabledOnOs;
@@ -37,9 +38,29 @@ class RunIntegrationTests {
 	@TestTemplate
 	void whenTheRunGoalIsExecutedTheApplicationIsForkedWithOptimizedJvmArguments(MavenBuild mavenBuild) {
 		mavenBuild.project("run").goals("spring-boot:run", "-X").execute((project) -> {
-			String jvmArguments = "JVM argument(s): -XX:TieredStopAtLevel=1";
+			String jvmArguments = isJava13OrLater() ? "JVM argument(s): -XX:TieredStopAtLevel=1"
+					: "JVM argument(s): -Xverify:none -XX:TieredStopAtLevel=1";
 			assertThat(buildLog(project)).contains("I haz been run").contains(jvmArguments);
 		});
+	}
+
+	@TestTemplate
+	@Deprecated
+	void whenForkingIsDisabledAndDevToolsIsPresentDevToolsIsDisabled(MavenBuild mavenBuild) {
+		mavenBuild.project("run-devtools")
+			.goals("spring-boot:run")
+			.execute((project) -> assertThat(buildLog(project)).contains("I haz been run")
+				.contains("Fork mode disabled, devtools will be disabled"));
+	}
+
+	@TestTemplate
+	@Deprecated
+	void whenForkingIsDisabledJvmArgumentsAndWorkingDirectoryAreIgnored(MavenBuild mavenBuild) {
+		mavenBuild.project("run-disable-fork")
+			.goals("spring-boot:run")
+			.execute((project) -> assertThat(buildLog(project)).contains("I haz been run")
+				.contains("Fork mode disabled, ignoring JVM argument(s) [-Dproperty1=value1 -Dproperty2 -Dfoo=bar]")
+				.contains("Fork mode disabled, ignoring working directory configuration"));
 	}
 
 	@TestTemplate
@@ -90,6 +111,14 @@ class RunIntegrationTests {
 	void whenProfilesAreConfiguredTheyArePassedToTheApplication(MavenBuild mavenBuild) {
 		mavenBuild.project("run-profiles")
 			.goals("spring-boot:run", "-X")
+			.execute((project) -> assertThat(buildLog(project)).contains("I haz been run with profile(s) 'foo,bar'"));
+	}
+
+	@TestTemplate
+	@Deprecated
+	void whenProfilesAreConfiguredAndForkingIsDisabledTheyArePassedToTheApplication(MavenBuild mavenBuild) {
+		mavenBuild.project("run-profiles-fork-disabled")
+			.goals("spring-boot:run")
 			.execute((project) -> assertThat(buildLog(project)).contains("I haz been run with profile(s) 'foo,bar'"));
 	}
 
@@ -146,6 +175,15 @@ class RunIntegrationTests {
 
 	private String buildLog(File project) {
 		return contentOf(new File(project, "target/build.log"));
+	}
+
+	private boolean isJava13OrLater() {
+		for (Method method : String.class.getMethods()) {
+			if (method.getName().equals("stripIndent")) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 }

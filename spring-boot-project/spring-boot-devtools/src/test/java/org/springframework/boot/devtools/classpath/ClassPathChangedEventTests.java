@@ -33,7 +33,7 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
  */
 class ClassPathChangedEventTests {
 
-	private final Object source = new Object();
+	private Object source = new Object();
 
 	@Test
 	void changeSetMustNotBeNull() {

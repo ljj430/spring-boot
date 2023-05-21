@@ -120,7 +120,7 @@ class CassandraDriverHealthIndicatorTests {
 		CassandraDriverHealthIndicator healthIndicator = new CassandraDriverHealthIndicator(session);
 		Health health = healthIndicator.health();
 		assertThat(health.getStatus()).isEqualTo(Status.UP);
-		assertThat(health.getDetails()).containsEntry("version", Version.V4_0_0);
+		assertThat(health.getDetails().get("version")).isEqualTo(Version.V4_0_0);
 	}
 
 	@Test
@@ -129,7 +129,7 @@ class CassandraDriverHealthIndicatorTests {
 		CassandraDriverHealthIndicator healthIndicator = new CassandraDriverHealthIndicator(session);
 		Health health = healthIndicator.health();
 		assertThat(health.getStatus()).isEqualTo(Status.UP);
-		assertThat(health.getDetails()).doesNotContainKey("version");
+		assertThat(health.getDetails().get("version")).isNull();
 	}
 
 	@Test
@@ -139,8 +139,8 @@ class CassandraDriverHealthIndicatorTests {
 		CassandraDriverHealthIndicator healthIndicator = new CassandraDriverHealthIndicator(session);
 		Health health = healthIndicator.health();
 		assertThat(health.getStatus()).isEqualTo(Status.DOWN);
-		assertThat(health.getDetails()).containsEntry("error",
-				DriverTimeoutException.class.getName() + ": Test Exception");
+		assertThat(health.getDetails().get("error"))
+			.isEqualTo(DriverTimeoutException.class.getName() + ": Test Exception");
 	}
 
 	private CqlSession mockCqlSessionWithNodeState(NodeState... nodeStates) {

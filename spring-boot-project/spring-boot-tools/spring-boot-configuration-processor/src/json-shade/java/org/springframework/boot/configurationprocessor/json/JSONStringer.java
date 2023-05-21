@@ -321,20 +321,40 @@ public class JSONStringer {
 			 * reverse solidus, and the control characters (U+0000 through U+001F)."
 			 */
 			switch (c) {
-				case '"', '\\', '/' -> this.out.append('\\').append(c);
-				case '\t' -> this.out.append("\\t");
-				case '\b' -> this.out.append("\\b");
-				case '\n' -> this.out.append("\\n");
-				case '\r' -> this.out.append("\\r");
-				case '\f' -> this.out.append("\\f");
-				default -> {
+				case '"':
+				case '\\':
+				case '/':
+					this.out.append('\\').append(c);
+					break;
+
+				case '\t':
+					this.out.append("\\t");
+					break;
+
+				case '\b':
+					this.out.append("\\b");
+					break;
+
+				case '\n':
+					this.out.append("\\n");
+					break;
+
+				case '\r':
+					this.out.append("\\r");
+					break;
+
+				case '\f':
+					this.out.append("\\f");
+					break;
+
+				default:
 					if (c <= 0x1F) {
 						this.out.append(String.format("\\u%04x", (int) c));
 					}
 					else {
 						this.out.append(c);
 					}
-				}
+					break;
 			}
 
 		}
@@ -347,7 +367,9 @@ public class JSONStringer {
 		}
 
 		this.out.append("\n");
-		this.out.append(this.indent.repeat(this.stack.size()));
+		for (int i = 0; i < this.stack.size(); i++) {
+			this.out.append(this.indent);
+		}
 	}
 
 	/**

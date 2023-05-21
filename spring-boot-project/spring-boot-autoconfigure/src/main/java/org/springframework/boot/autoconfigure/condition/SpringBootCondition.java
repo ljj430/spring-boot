@@ -62,17 +62,19 @@ public abstract class SpringBootCondition implements Condition {
 	}
 
 	private String getName(AnnotatedTypeMetadata metadata) {
-		if (metadata instanceof AnnotationMetadata annotationMetadata) {
-			return annotationMetadata.getClassName();
+		if (metadata instanceof AnnotationMetadata) {
+			return ((AnnotationMetadata) metadata).getClassName();
 		}
-		if (metadata instanceof MethodMetadata methodMetadata) {
+		if (metadata instanceof MethodMetadata) {
+			MethodMetadata methodMetadata = (MethodMetadata) metadata;
 			return methodMetadata.getDeclaringClassName() + "." + methodMetadata.getMethodName();
 		}
 		return metadata.toString();
 	}
 
 	private static String getClassOrMethodName(AnnotatedTypeMetadata metadata) {
-		if (metadata instanceof ClassMetadata classMetadata) {
+		if (metadata instanceof ClassMetadata) {
+			ClassMetadata classMetadata = (ClassMetadata) metadata;
 			return classMetadata.getClassName();
 		}
 		MethodMetadata methodMetadata = (MethodMetadata) metadata;
@@ -139,8 +141,8 @@ public abstract class SpringBootCondition implements Condition {
 	 * @return {@code true} if the condition matches.
 	 */
 	protected final boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata, Condition condition) {
-		if (condition instanceof SpringBootCondition springBootCondition) {
-			return springBootCondition.getMatchOutcome(context, metadata).isMatch();
+		if (condition instanceof SpringBootCondition) {
+			return ((SpringBootCondition) condition).getMatchOutcome(context, metadata).isMatch();
 		}
 		return condition.matches(context, metadata);
 	}

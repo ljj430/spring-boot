@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,8 @@
 
 package org.springframework.boot.test.autoconfigure.data.r2dbc;
 
-import java.util.Map;
-
 import io.r2dbc.spi.ConnectionFactory;
 import org.junit.jupiter.api.Test;
-import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,8 +46,7 @@ class DataR2dbcTestIntegrationTests {
 
 	@Test
 	void testDatabaseClient() {
-		Flux<Map<String, Object>> all = this.databaseClient.sql("SELECT * FROM example").fetch().all();
-		StepVerifier.create(all).expectNextCount(1).verifyComplete();
+		this.databaseClient.sql("SELECT * FROM example").fetch().all().as(StepVerifier::create).verifyComplete();
 	}
 
 	@Test

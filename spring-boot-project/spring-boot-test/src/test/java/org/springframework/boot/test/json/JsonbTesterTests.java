@@ -18,8 +18,9 @@ package org.springframework.boot.test.json;
 
 import java.util.List;
 
-import jakarta.json.bind.Jsonb;
-import jakarta.json.bind.JsonbBuilder;
+import javax.json.bind.Jsonb;
+import javax.json.bind.JsonbBuilder;
+
 import org.junit.jupiter.api.Test;
 
 import org.springframework.core.ResolvableType;

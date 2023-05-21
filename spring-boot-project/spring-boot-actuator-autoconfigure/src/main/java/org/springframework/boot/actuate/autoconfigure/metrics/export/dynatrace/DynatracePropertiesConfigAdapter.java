@@ -41,7 +41,7 @@ class DynatracePropertiesConfigAdapter extends StepRegistryPropertiesConfigAdapt
 
 	@Override
 	public String prefix() {
-		return "management.dynatrace.metrics.export";
+		return "management.metrics.export.dynatrace";
 	}
 
 	@Override

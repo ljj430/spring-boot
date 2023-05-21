@@ -16,7 +16,7 @@
 
 package org.springframework.boot.docs.howto.messaging.disabletransactedjmssession;
 
-import jakarta.jms.ConnectionFactory;
+import javax.jms.ConnectionFactory;
 
 import org.springframework.boot.autoconfigure.jms.DefaultJmsListenerContainerFactoryConfigurer;
 import org.springframework.context.annotation.Bean;

@@ -17,7 +17,6 @@
 package org.springframework.boot.testsupport.gradle.testkit;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -29,7 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Properties;
 import java.util.jar.JarFile;
 
 import com.fasterxml.jackson.annotation.JsonView;
@@ -59,7 +57,6 @@ import org.springframework.util.FileCopyUtils;
 import org.springframework.util.FileSystemUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * A {@code GradleBuild} is used to run a Gradle build using {@link GradleRunner}.
@@ -83,11 +80,11 @@ public class GradleBuild {
 
 	private GradleVersion expectDeprecationWarnings;
 
-	private final List<String> expectedDeprecationMessages = new ArrayList<>();
+	private List<String> expectedDeprecationMessages = new ArrayList<>();
 
 	private boolean configurationCache = false;
 
-	private final Map<String, String> scriptProperties = new HashMap<>();
+	private Map<String, String> scriptProperties = new HashMap<>();
 
 	public GradleBuild() {
 		this(Dsl.GROOVY);
@@ -127,10 +124,7 @@ public class GradleBuild {
 				new File(pathOfJarContaining(Versioned.class)),
 				new File(pathOfJarContaining(ParameterNamesModule.class)),
 				new File(pathOfJarContaining(JsonView.class)), new File(pathOfJarContaining(Platform.class)),
-				new File(pathOfJarContaining(Toml.class)), new File(pathOfJarContaining(Lexer.class)),
-				new File(pathOfJarContaining("org.graalvm.buildtools.gradle.NativeImagePlugin")),
-				new File(pathOfJarContaining("org.graalvm.reachability.GraalVMReachabilityMetadataRepository")),
-				new File(pathOfJarContaining("org.graalvm.buildtools.utils.SharedConstants")));
+				new File(pathOfJarContaining(Toml.class)), new File(pathOfJarContaining(Lexer.class)));
 	}
 
 	private String pathOfJarContaining(String className) {
@@ -176,11 +170,6 @@ public class GradleBuild {
 
 	public GradleBuild scriptProperty(String key, String value) {
 		this.scriptProperties.put(key, value);
-		return this;
-	}
-
-	public GradleBuild scriptPropertyFrom(File propertiesFile, String key) {
-		this.scriptProperties.put(key, getProperty(propertiesFile, key));
 		return this;
 	}
 
@@ -297,28 +286,6 @@ public class GradleBuild {
 		}
 		catch (Exception ex) {
 			throw new IllegalStateException("Failed to find dependency management plugin version", ex);
-		}
-	}
-
-	private String getProperty(File propertiesFile, String key) {
-		try {
-			assertThat(propertiesFile)
-				.withFailMessage("Expecting properties file to exist at path '%s'", propertiesFile.getCanonicalFile())
-				.exists();
-			Properties properties = new Properties();
-			try (FileInputStream input = new FileInputStream(propertiesFile)) {
-				properties.load(input);
-				String value = properties.getProperty(key);
-				assertThat(value)
-					.withFailMessage("Expecting properties file '%s' to contain the key '%s'",
-							propertiesFile.getCanonicalFile(), key)
-					.isNotEmpty();
-				return value;
-			}
-		}
-		catch (IOException ex) {
-			fail("Error reading properties file '" + propertiesFile + "'");
-			return null;
 		}
 	}
 
