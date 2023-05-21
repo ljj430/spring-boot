@@ -24,6 +24,7 @@ dependencies {
 		exclude(group: "javax.inject", module: "javax.inject")
 	}
 
+	implementation("org.springframework:spring-context")
 	implementation(project(":spring-boot-project:spring-boot-tools:spring-boot-buildpack-platform"))
 	implementation(project(":spring-boot-project:spring-boot-tools:spring-boot-loader-tools"))
 
@@ -42,6 +43,9 @@ dependencies {
 		exclude(group: "javax.enterprise", module: "cdi-api")
 		exclude(group: "javax.inject", module: "javax.inject")
 	}
+
+	mavenRepository(project(path: ":spring-boot-project:spring-boot", configuration: "mavenRepository"))
+	mavenRepository(project(path: ":spring-boot-project:spring-boot-test", configuration: "mavenRepository"))
 
 	runtimeOnly("org.sonatype.plexus:plexus-build-api")
 

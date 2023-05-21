@@ -36,7 +36,7 @@ class ConfigurationPropertyTests {
 
 	private static final ConfigurationPropertyName NAME = ConfigurationPropertyName.of("foo");
 
-	private ConfigurationPropertySource source = ConfigurationPropertySource.from(mock(PropertySource.class));
+	private final ConfigurationPropertySource source = ConfigurationPropertySource.from(mock(PropertySource.class));
 
 	@Test
 	void createWhenNameIsNullShouldThrowException() {
@@ -82,7 +82,7 @@ class ConfigurationPropertyTests {
 		ConfigurationProperty property2 = new ConfigurationProperty(ConfigurationPropertyName.of("foo"), "bar", null);
 		ConfigurationProperty property3 = new ConfigurationProperty(ConfigurationPropertyName.of("foo"), "baz", null);
 		ConfigurationProperty property4 = new ConfigurationProperty(ConfigurationPropertyName.of("baz"), "bar", null);
-		assertThat(property1.hashCode()).isEqualTo(property2.hashCode());
+		assertThat(property1).hasSameHashCodeAs(property2);
 		assertThat(property1).isEqualTo(property2).isNotEqualTo(property3).isNotEqualTo(property4);
 	}
 

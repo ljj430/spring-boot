@@ -16,11 +16,14 @@
 
 package org.springframework.boot.actuate.context.properties;
 
+import java.util.Collections;
+
 import org.junit.jupiter.api.Test;
 
-import org.springframework.boot.actuate.context.properties.ConfigurationPropertiesReportEndpoint.ApplicationConfigurationProperties;
 import org.springframework.boot.actuate.context.properties.ConfigurationPropertiesReportEndpoint.ConfigurationPropertiesBeanDescriptor;
-import org.springframework.boot.actuate.context.properties.ConfigurationPropertiesReportEndpoint.ContextConfigurationProperties;
+import org.springframework.boot.actuate.context.properties.ConfigurationPropertiesReportEndpoint.ConfigurationPropertiesDescriptor;
+import org.springframework.boot.actuate.context.properties.ConfigurationPropertiesReportEndpoint.ContextConfigurationPropertiesDescriptor;
+import org.springframework.boot.actuate.endpoint.Show;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -44,9 +47,10 @@ class ConfigurationPropertiesReportEndpointMethodAnnotationsTests {
 		contextRunner.run((context) -> {
 			ConfigurationPropertiesReportEndpoint endpoint = context
 				.getBean(ConfigurationPropertiesReportEndpoint.class);
-			ApplicationConfigurationProperties applicationProperties = endpoint.configurationProperties();
+			ConfigurationPropertiesDescriptor applicationProperties = endpoint.configurationProperties();
 			assertThat(applicationProperties.getContexts()).containsOnlyKeys(context.getId());
-			ContextConfigurationProperties contextProperties = applicationProperties.getContexts().get(context.getId());
+			ContextConfigurationPropertiesDescriptor contextProperties = applicationProperties.getContexts()
+				.get(context.getId());
 			ConfigurationPropertiesBeanDescriptor other = contextProperties.getBeans().get("other");
 			assertThat(other).isNotNull();
 			assertThat(other.getPrefix()).isEqualTo("other");
@@ -63,9 +67,10 @@ class ConfigurationPropertiesReportEndpointMethodAnnotationsTests {
 		contextRunner.run((context) -> {
 			ConfigurationPropertiesReportEndpoint endpoint = context
 				.getBean(ConfigurationPropertiesReportEndpoint.class);
-			ApplicationConfigurationProperties applicationProperties = endpoint.configurationProperties();
+			ConfigurationPropertiesDescriptor applicationProperties = endpoint.configurationProperties();
 			assertThat(applicationProperties.getContexts()).containsOnlyKeys(context.getId());
-			ContextConfigurationProperties contextProperties = applicationProperties.getContexts().get(context.getId());
+			ContextConfigurationPropertiesDescriptor contextProperties = applicationProperties.getContexts()
+				.get(context.getId());
 			ConfigurationPropertiesBeanDescriptor bar = contextProperties.getBeans().get("bar");
 			assertThat(bar).isNotNull();
 			assertThat(bar.getPrefix()).isEqualTo("other");
@@ -80,7 +85,7 @@ class ConfigurationPropertiesReportEndpointMethodAnnotationsTests {
 
 		@Bean
 		ConfigurationPropertiesReportEndpoint endpoint() {
-			return new ConfigurationPropertiesReportEndpoint();
+			return new ConfigurationPropertiesReportEndpoint(Collections.emptyList(), Show.ALWAYS);
 		}
 
 		@Bean
@@ -103,7 +108,7 @@ class ConfigurationPropertiesReportEndpointMethodAnnotationsTests {
 
 		@Bean
 		ConfigurationPropertiesReportEndpoint endpoint() {
-			return new ConfigurationPropertiesReportEndpoint();
+			return new ConfigurationPropertiesReportEndpoint(Collections.emptyList(), Show.ALWAYS);
 		}
 
 		@Bean

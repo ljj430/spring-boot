@@ -18,15 +18,10 @@ package org.springframework.boot.autoconfigure.elasticsearch;
 
 import java.io.InputStream;
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.elasticsearch.action.get.GetRequest;
-import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.client.Request;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.Test;
@@ -58,25 +53,6 @@ class ElasticsearchRestClientAutoConfigurationIntegrationTests {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(ElasticsearchRestClientAutoConfiguration.class));
-
-	@Test
-	@SuppressWarnings("deprecation")
-	void restHighLevelClientCanQueryElasticsearchNode() {
-		this.contextRunner
-			.withPropertyValues("spring.elasticsearch.uris=" + elasticsearch.getHttpHostAddress(),
-					"spring.elasticsearch.connection-timeout=120s", "spring.elasticsearch.socket-timeout=120s")
-			.run((context) -> {
-				org.elasticsearch.client.RestHighLevelClient client = context
-					.getBean(org.elasticsearch.client.RestHighLevelClient.class);
-				Map<String, String> source = new HashMap<>();
-				source.put("a", "alpha");
-				source.put("b", "bravo");
-				IndexRequest index = new IndexRequest("test").id("1").source(source);
-				client.index(index, RequestOptions.DEFAULT);
-				GetRequest getRequest = new GetRequest("test").id("1");
-				assertThat(client.get(getRequest, RequestOptions.DEFAULT).isExists()).isTrue();
-			});
-	}
 
 	@Test
 	void restClientCanQueryElasticsearchNode() {

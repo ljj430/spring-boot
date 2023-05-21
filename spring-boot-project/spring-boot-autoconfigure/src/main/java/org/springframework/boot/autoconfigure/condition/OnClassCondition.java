@@ -16,7 +16,6 @@
 
 package org.springframework.boot.autoconfigure.condition;
 
-import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -78,12 +77,7 @@ class OnClassCondition extends FilteringSpringBootCondition {
 			AutoConfigurationMetadata autoConfigurationMetadata) {
 		OutcomesResolver outcomesResolver = new StandardOutcomesResolver(autoConfigurationClasses, start, end,
 				autoConfigurationMetadata, getBeanClassLoader());
-		try {
-			return new ThreadedOutcomesResolver(outcomesResolver);
-		}
-		catch (AccessControlException ex) {
-			return outcomesResolver;
-		}
+		return new ThreadedOutcomesResolver(outcomesResolver);
 	}
 
 	@Override
