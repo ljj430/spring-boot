@@ -18,14 +18,14 @@ package org.springframework.boot.autoconfigure.graphql.servlet;
 
 import java.util.Collections;
 import java.util.Map;
-import java.util.stream.Collectors;
-
-import javax.websocket.server.ServerContainer;
 
 import graphql.GraphQL;
+import jakarta.websocket.server.ServerContainer;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.springframework.aot.hint.RuntimeHints;
+import org.springframework.aot.hint.RuntimeHintsRegistrar;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -41,11 +41,11 @@ import org.springframework.boot.autoconfigure.http.HttpMessageConverters;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.ImportRuntimeHints;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.log.LogMessage;
 import org.springframework.graphql.ExecutionGraphQlService;
 import org.springframework.graphql.execution.GraphQlSource;
-import org.springframework.graphql.execution.ThreadLocalAccessor;
 import org.springframework.graphql.server.WebGraphQlHandler;
 import org.springframework.graphql.server.WebGraphQlInterceptor;
 import org.springframework.graphql.server.webmvc.GraphQlHttpHandler;
@@ -83,12 +83,14 @@ import org.springframework.web.socket.server.support.WebSocketHandlerMapping;
 @ConditionalOnClass({ GraphQL.class, GraphQlHttpHandler.class })
 @ConditionalOnBean(ExecutionGraphQlService.class)
 @EnableConfigurationProperties(GraphQlCorsProperties.class)
+@ImportRuntimeHints(GraphQlWebMvcAutoConfiguration.GraphiQlResourceHints.class)
 public class GraphQlWebMvcAutoConfiguration {
 
 	private static final Log logger = LogFactory.getLog(GraphQlWebMvcAutoConfiguration.class);
 
-	private static MediaType[] SUPPORTED_MEDIA_TYPES = new MediaType[] { MediaType.APPLICATION_GRAPHQL,
-			MediaType.APPLICATION_JSON };
+	@SuppressWarnings("removal")
+	private static final MediaType[] SUPPORTED_MEDIA_TYPES = new MediaType[] { MediaType.APPLICATION_GRAPHQL_RESPONSE,
+			MediaType.APPLICATION_JSON, MediaType.APPLICATION_GRAPHQL };
 
 	@Bean
 	@ConditionalOnMissingBean
@@ -99,12 +101,8 @@ public class GraphQlWebMvcAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public WebGraphQlHandler webGraphQlHandler(ExecutionGraphQlService service,
-			ObjectProvider<WebGraphQlInterceptor> interceptorsProvider,
-			ObjectProvider<ThreadLocalAccessor> accessorsProvider) {
-		return WebGraphQlHandler.builder(service)
-			.interceptors(interceptorsProvider.orderedStream().collect(Collectors.toList()))
-			.threadLocalAccessors(accessorsProvider.orderedStream().collect(Collectors.toList()))
-			.build();
+			ObjectProvider<WebGraphQlInterceptor> interceptors) {
+		return WebGraphQlHandler.builder(service).interceptors(interceptors.orderedStream().toList()).build();
 	}
 
 	@Bean
@@ -115,7 +113,7 @@ public class GraphQlWebMvcAutoConfiguration {
 		logger.info(LogMessage.format("GraphQL endpoint HTTP POST %s", path));
 		RouterFunctions.Builder builder = RouterFunctions.route();
 		builder = builder.GET(path, this::onlyAllowPost);
-		builder = builder.POST(path, RequestPredicates.contentType(SUPPORTED_MEDIA_TYPES)
+		builder = builder.POST(path, RequestPredicates.contentType(MediaType.APPLICATION_JSON)
 			.and(RequestPredicates.accept(SUPPORTED_MEDIA_TYPES)), httpHandler::handleRequest);
 		if (properties.getGraphiql().isEnabled()) {
 			GraphiQlHandler graphiQLHandler = new GraphiQlHandler(path, properties.getWebsocket().getPath());
@@ -196,9 +194,18 @@ public class GraphQlWebMvcAutoConfiguration {
 			WebSocketHandlerMapping mapping = new WebSocketHandlerMapping();
 			mapping.setWebSocketUpgradeMatch(true);
 			mapping.setUrlMap(Collections.singletonMap(path,
-					handler.asWebSocketHttpRequestHandler(new DefaultHandshakeHandler())));
+					handler.initWebSocketHttpRequestHandler(new DefaultHandshakeHandler())));
 			mapping.setOrder(2); // Ahead of HTTP endpoint ("routerFunctionMapping" bean)
 			return mapping;
+		}
+
+	}
+
+	static class GraphiQlResourceHints implements RuntimeHintsRegistrar {
+
+		@Override
+		public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
+			hints.resources().registerPattern("graphiql/index.html");
 		}
 
 	}

@@ -230,8 +230,8 @@ public class ApplicationConversionService extends FormattingConversionService {
 		registry.addConverter(new InputStreamSourceToByteArrayConverter());
 		registry.addConverterFactory(new LenientStringToEnumConverterFactory());
 		registry.addConverterFactory(new LenientBooleanToEnumConverterFactory());
-		if (registry instanceof ConversionService) {
-			addApplicationConverters(registry, (ConversionService) registry);
+		if (registry instanceof ConversionService conversionService) {
+			addApplicationConverters(registry, conversionService);
 		}
 	}
 

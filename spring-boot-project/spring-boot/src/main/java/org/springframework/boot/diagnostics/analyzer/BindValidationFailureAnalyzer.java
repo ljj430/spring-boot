@@ -64,8 +64,8 @@ class BindValidationFailureAnalyzer extends AbstractFailureAnalyzer<Throwable> {
 		StringBuilder description = new StringBuilder(
 				String.format("Binding to target %s failed:%n", details.getTarget()));
 		for (ObjectError error : details.getErrors()) {
-			if (error instanceof FieldError) {
-				appendFieldError(description, (FieldError) error);
+			if (error instanceof FieldError fieldError) {
+				appendFieldError(description, fieldError);
 			}
 			description.append(String.format("%n    Reason: %s%n", error.getDefaultMessage()));
 		}
@@ -87,11 +87,11 @@ class BindValidationFailureAnalyzer extends AbstractFailureAnalyzer<Throwable> {
 
 	private static class ExceptionDetails {
 
-		private List<ObjectError> errors;
+		private final List<ObjectError> errors;
 
-		private Object target;
+		private final Object target;
 
-		private Throwable cause;
+		private final Throwable cause;
 
 		ExceptionDetails(List<ObjectError> errors, Object target, Throwable cause) {
 			this.errors = errors;
