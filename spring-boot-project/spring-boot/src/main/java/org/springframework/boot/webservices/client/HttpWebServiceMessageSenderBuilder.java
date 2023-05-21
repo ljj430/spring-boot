@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import java.time.Duration;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.springframework.boot.ssl.SslBundle;
 import org.springframework.boot.web.client.ClientHttpRequestFactories;
 import org.springframework.boot.web.client.ClientHttpRequestFactorySettings;
 import org.springframework.http.client.ClientHttpRequestFactory;
@@ -41,8 +40,6 @@ public class HttpWebServiceMessageSenderBuilder {
 
 	private Duration readTimeout;
 
-	private SslBundle sslBundle;
-
 	private Function<ClientHttpRequestFactorySettings, ClientHttpRequestFactory> requestFactory;
 
 	/**
@@ -62,16 +59,6 @@ public class HttpWebServiceMessageSenderBuilder {
 	 */
 	public HttpWebServiceMessageSenderBuilder setReadTimeout(Duration readTimeout) {
 		this.readTimeout = readTimeout;
-		return this;
-	}
-
-	/**
-	 * Set an {@link SslBundle} that will be used to configure a secure connection.
-	 * @param sslBundle the SSL bundle
-	 * @return a new builder instance
-	 */
-	public HttpWebServiceMessageSenderBuilder sslBundle(SslBundle sslBundle) {
-		this.sslBundle = sslBundle;
 		return this;
 	}
 
@@ -113,7 +100,7 @@ public class HttpWebServiceMessageSenderBuilder {
 
 	private ClientHttpRequestFactory getRequestFactory() {
 		ClientHttpRequestFactorySettings settings = new ClientHttpRequestFactorySettings(this.connectTimeout,
-				this.readTimeout, null, this.sslBundle);
+				this.readTimeout, null);
 		return (this.requestFactory != null) ? this.requestFactory.apply(settings)
 				: ClientHttpRequestFactories.get(settings);
 	}

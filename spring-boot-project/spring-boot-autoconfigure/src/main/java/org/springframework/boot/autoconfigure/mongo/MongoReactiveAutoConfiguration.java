@@ -32,7 +32,6 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.ssl.SslBundles;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
@@ -50,12 +49,6 @@ import org.springframework.core.annotation.Order;
 @ConditionalOnClass({ MongoClient.class, Flux.class })
 @EnableConfigurationProperties(MongoProperties.class)
 public class MongoReactiveAutoConfiguration {
-
-	@Bean
-	@ConditionalOnMissingBean(MongoConnectionDetails.class)
-	PropertiesMongoConnectionDetails mongoConnectionDetails(MongoProperties properties) {
-		return new PropertiesMongoConnectionDetails(properties);
-	}
 
 	@Bean
 	@ConditionalOnMissingBean
@@ -76,10 +69,8 @@ public class MongoReactiveAutoConfiguration {
 		}
 
 		@Bean
-		StandardMongoClientSettingsBuilderCustomizer standardMongoSettingsCustomizer(MongoProperties properties,
-				MongoConnectionDetails connectionDetails, ObjectProvider<SslBundles> sslBundles) {
-			return new StandardMongoClientSettingsBuilderCustomizer(connectionDetails.getConnectionString(),
-					properties.getUuidRepresentation(), properties.getSsl(), sslBundles.getIfAvailable());
+		MongoPropertiesClientSettingsBuilderCustomizer mongoPropertiesCustomizer(MongoProperties properties) {
+			return new MongoPropertiesClientSettingsBuilderCustomizer(properties);
 		}
 
 	}

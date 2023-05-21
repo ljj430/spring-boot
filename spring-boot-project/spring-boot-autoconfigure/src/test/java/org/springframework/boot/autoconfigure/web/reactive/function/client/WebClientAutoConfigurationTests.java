@@ -19,7 +19,6 @@ package org.springframework.boot.autoconfigure.web.reactive.function.client;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.ssl.SslAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.boot.web.codec.CodecCustomizer;
 import org.springframework.boot.web.reactive.function.client.WebClientCustomizer;
@@ -40,9 +39,8 @@ import static org.mockito.Mockito.mock;
  */
 class WebClientAutoConfigurationTests {
 
-	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(ClientHttpConnectorAutoConfiguration.class,
-				WebClientAutoConfiguration.class, SslAutoConfiguration.class));
+	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner().withConfiguration(
+			AutoConfigurations.of(ClientHttpConnectorAutoConfiguration.class, WebClientAutoConfiguration.class));
 
 	@Test
 	void shouldCreateBuilder() {
@@ -91,14 +89,6 @@ class WebClientAutoConfigurationTests {
 				WebClient.Builder builder = context.getBean(WebClient.Builder.class);
 				assertThat(builder).isInstanceOf(MyWebClientBuilder.class);
 			});
-	}
-
-	@Test
-	void shouldCreateWebClientSsl() {
-		this.contextRunner.run((context) -> {
-			WebClientSsl webClientSsl = context.getBean(WebClientSsl.class);
-			assertThat(webClientSsl).isInstanceOf(AutoConfiguredWebClientSsl.class);
-		});
 	}
 
 	@Configuration(proxyBeanMethods = false)

@@ -36,7 +36,7 @@ dependencies {
 	implementation("com.tngtech.archunit:archunit:1.0.0")
 	implementation("commons-codec:commons-codec:1.13")
 	implementation("io.spring.javaformat:spring-javaformat-gradle-plugin:${javaFormatVersion}")
-	implementation("org.apache.maven:maven-embedder:3.6.3")
+	implementation("org.apache.maven:maven-embedder:3.6.2")
 	implementation("org.asciidoctor:asciidoctor-gradle-jvm:3.3.2")
 	implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}")
 	implementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:${kotlinVersion}")

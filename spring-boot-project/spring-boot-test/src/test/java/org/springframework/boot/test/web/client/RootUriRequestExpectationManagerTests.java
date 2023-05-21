@@ -21,6 +21,8 @@ import java.net.URI;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -37,7 +39,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.assertArg;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
@@ -58,6 +59,9 @@ class RootUriRequestExpectationManagerTests {
 	private RequestExpectationManager delegate;
 
 	private RootUriRequestExpectationManager manager;
+
+	@Captor
+	private ArgumentCaptor<ClientHttpRequest> requestCaptor;
 
 	@BeforeEach
 	void setup() {
@@ -97,14 +101,10 @@ class RootUriRequestExpectationManagerTests {
 		ClientHttpRequest request = mock(ClientHttpRequest.class);
 		given(request.getURI()).willReturn(new URI(this.uri + "/hello"));
 		this.manager.validateRequest(request);
-		URI expectedURI = new URI("/hello");
-		then(this.delegate).should()
-			.validateRequest(assertArg((actual) -> assertThat(actual).isInstanceOfSatisfying(HttpRequestWrapper.class,
-					(requestWrapper) -> {
-						assertThat(requestWrapper.getRequest()).isSameAs(request);
-						assertThat(requestWrapper.getURI()).isEqualTo(expectedURI);
-					})));
-
+		then(this.delegate).should().validateRequest(this.requestCaptor.capture());
+		HttpRequestWrapper actual = (HttpRequestWrapper) this.requestCaptor.getValue();
+		assertThat(actual.getRequest()).isSameAs(request);
+		assertThat(actual.getURI()).isEqualTo(new URI("/hello"));
 	}
 
 	@Test

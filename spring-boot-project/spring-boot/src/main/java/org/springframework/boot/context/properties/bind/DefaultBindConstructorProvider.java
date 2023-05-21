@@ -102,6 +102,7 @@ class DefaultBindConstructorProvider implements BindConstructorProvider {
 			boolean hasAutowiredConstructor = isAutowiredPresent(type);
 			Constructor<?>[] candidates = getCandidateConstructors(type);
 			MergedAnnotations[] candidateAnnotations = getAnnotations(candidates);
+			boolean kotlinType = isKotlinType(type);
 			boolean deducedBindConstructor = false;
 			boolean immutableType = type.isRecord();
 			Constructor<?> bind = getConstructorBindingAnnotated(type, candidates, candidateAnnotations);
@@ -109,7 +110,7 @@ class DefaultBindConstructorProvider implements BindConstructorProvider {
 				bind = deduceBindConstructor(type, candidates);
 				deducedBindConstructor = bind != null;
 			}
-			if (bind == null && !hasAutowiredConstructor && isKotlinType(type)) {
+			if (bind == null && !hasAutowiredConstructor && kotlinType) {
 				bind = deduceKotlinBindConstructor(type);
 				deducedBindConstructor = bind != null;
 			}

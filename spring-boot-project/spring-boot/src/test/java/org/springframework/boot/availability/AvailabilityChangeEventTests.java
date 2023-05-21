@@ -17,8 +17,10 @@
 package org.springframework.boot.availability;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationEvent;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.event.EventListener;
@@ -26,7 +28,6 @@ import org.springframework.core.ResolvableType;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
-import static org.mockito.ArgumentMatchers.assertArg;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
 
@@ -75,12 +76,11 @@ class AvailabilityChangeEventTests {
 		ApplicationContext context = mock(ApplicationContext.class);
 		AvailabilityState state = LivenessState.CORRECT;
 		AvailabilityChangeEvent.publish(context, state);
-		then(context).should()
-			.publishEvent(assertArg((event) -> assertThat(event).isInstanceOfSatisfying(AvailabilityChangeEvent.class,
-					(castedEvent) -> {
-						assertThat(castedEvent.getSource()).isEqualTo(context);
-						assertThat(castedEvent.getState()).isEqualTo(state);
-					})));
+		ArgumentCaptor<ApplicationEvent> captor = ArgumentCaptor.forClass(ApplicationEvent.class);
+		then(context).should().publishEvent(captor.capture());
+		AvailabilityChangeEvent<?> event = (AvailabilityChangeEvent<?>) captor.getValue();
+		assertThat(event.getSource()).isEqualTo(context);
+		assertThat(event.getState()).isEqualTo(state);
 	}
 
 	@Test

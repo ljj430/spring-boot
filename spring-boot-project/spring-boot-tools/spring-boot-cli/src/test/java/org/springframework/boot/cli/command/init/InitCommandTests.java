@@ -25,19 +25,18 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import joptsimple.OptionSet;
-import org.apache.hc.core5.http.HttpHost;
+import org.apache.http.Header;
+import org.apache.http.client.methods.HttpUriRequest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.boot.cli.command.status.ExitStatus;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.assertArg;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.then;
 
 /**
@@ -53,6 +52,9 @@ class InitCommandTests extends AbstractHttpClientMockTests {
 	private final TestableInitCommandOptionHandler handler;
 
 	private final InitCommand command;
+
+	@Captor
+	private ArgumentCaptor<HttpUriRequest> requestCaptor;
 
 	InitCommandTests() {
 		InitializrService initializrService = new InitializrService(this.http);
@@ -202,9 +204,6 @@ class InitCommandTests extends AbstractHttpClientMockTests {
 			mockSuccessfulProjectGeneration(request);
 			assertThat(this.command.run("--extract", tempDir.getAbsolutePath())).isEqualTo(ExitStatus.OK);
 			assertThat(file).as("file should have been saved instead").exists();
-		}
-		catch (Exception ex) {
-			fail(ex);
 		}
 		finally {
 			assertThat(file.delete()).as("failed to delete test file").isTrue();
@@ -394,9 +393,9 @@ class InitCommandTests extends AbstractHttpClientMockTests {
 	@Test
 	void userAgent() throws Exception {
 		this.command.run("--list", "--target=https://fake-service");
-		then(this.http).should()
-			.executeOpen(any(HttpHost.class), assertArg((request) -> assertThat(
-					request.getHeaders("User-Agent")[0].getValue().startsWith("SpringBootCli/"))), isNull());
+		then(this.http).should().execute(this.requestCaptor.capture());
+		Header agent = this.requestCaptor.getValue().getHeaders("User-Agent")[0];
+		assertThat(agent.getValue()).startsWith("SpringBootCli/");
 	}
 
 	private byte[] createFakeZipArchive(String fileName, String content) throws IOException {
