@@ -73,7 +73,6 @@ import org.springframework.web.server.WebFilter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.springframework.security.config.Customizer.withDefaults;
 
 /**
  * Tests for {@link ReactiveOAuth2ResourceServerAutoConfiguration}.
@@ -648,14 +647,16 @@ class ReactiveOAuth2ResourceServerAutoConfigurationTests {
 	}
 
 	static Jwt.Builder jwt() {
+		// @formatter:off
 		return Jwt.withTokenValue("token")
-			.header("alg", "none")
-			.expiresAt(Instant.MAX)
-			.issuedAt(Instant.MIN)
-			.issuer("https://issuer.example.org")
-			.jti("jti")
-			.notBefore(Instant.MIN)
-			.subject("mock-test-subject");
+				.header("alg", "none")
+				.expiresAt(Instant.MAX)
+				.issuedAt(Instant.MIN)
+				.issuer("https://issuer.example.org")
+				.jti("jti")
+				.notBefore(Instant.MIN)
+				.subject("mock-test-subject");
+		// @formatter:on
 	}
 
 	@EnableWebFluxSecurity
@@ -697,7 +698,7 @@ class ReactiveOAuth2ResourceServerAutoConfigurationTests {
 				exchanges.pathMatchers("/message/**").hasRole("ADMIN");
 				exchanges.anyExchange().authenticated();
 			});
-			http.httpBasic(withDefaults());
+			http.httpBasic();
 			return http.build();
 		}
 

@@ -31,12 +31,14 @@ public class MyCustomObservation {
 	}
 
 	public void doSomething() {
+		// @formatter:off
 		Observation.createNotStarted("doSomething", this.observationRegistry)
-			.lowCardinalityKeyValue("locale", "en-US")
-			.highCardinalityKeyValue("userId", "42")
-			.observe(() -> {
-				// Execute business logic here
-			});
+				.lowCardinalityKeyValue("locale", "en-US")
+				.highCardinalityKeyValue("userId", "42")
+				.observe(() -> {
+					// Execute business logic here
+				});
+		// @formatter:on
 	}
 
 }
