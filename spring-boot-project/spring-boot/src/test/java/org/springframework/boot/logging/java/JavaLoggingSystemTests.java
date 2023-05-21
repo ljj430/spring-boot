@@ -85,7 +85,7 @@ class JavaLoggingSystemTests extends AbstractLoggingSystemTests {
 		this.loggingSystem.initialize(null, null, null);
 		this.logger.info("Hello world");
 		assertThat(output).contains("Hello world").doesNotContain("Hidden");
-		assertThat(new File(tmpDir() + "/spring.log")).doesNotExist();
+		assertThat(new File(tmpDir() + "/spring.log").exists()).isFalse();
 	}
 
 	@Test
@@ -100,7 +100,7 @@ class JavaLoggingSystemTests extends AbstractLoggingSystemTests {
 		this.loggingSystem.initialize(null, null, getLogFile(null, tmpDir()));
 		this.logger.info("Hello world");
 		assertThat(output).contains("Hello world").doesNotContain("Hidden");
-		assertThat(temp.listFiles(SPRING_LOG_FILTER)).isNotEmpty();
+		assertThat(temp.listFiles(SPRING_LOG_FILTER)).hasSizeGreaterThan(0);
 	}
 
 	@Test
@@ -150,7 +150,7 @@ class JavaLoggingSystemTests extends AbstractLoggingSystemTests {
 		this.logger.fine("Hello");
 		this.loggingSystem.setLogLevel("org.springframework.boot", LogLevel.DEBUG);
 		this.logger.fine("Hello");
-		assertThat(StringUtils.countOccurrencesOf(output.toString(), "Hello")).isOne();
+		assertThat(StringUtils.countOccurrencesOf(output.toString(), "Hello")).isEqualTo(1);
 	}
 
 	@Test
@@ -162,7 +162,7 @@ class JavaLoggingSystemTests extends AbstractLoggingSystemTests {
 		this.logger.fine("Hello");
 		this.loggingSystem.setLogLevel("org.springframework.boot", null);
 		this.logger.fine("Hello");
-		assertThat(StringUtils.countOccurrencesOf(output.toString(), "Hello")).isOne();
+		assertThat(StringUtils.countOccurrencesOf(output.toString(), "Hello")).isEqualTo(1);
 	}
 
 	@Test

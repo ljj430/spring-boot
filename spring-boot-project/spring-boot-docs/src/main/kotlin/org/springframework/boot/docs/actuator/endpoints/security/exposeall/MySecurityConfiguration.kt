@@ -27,7 +27,7 @@ class MySecurityConfiguration {
 
 	@Bean
 	fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
-		http.securityMatcher(EndpointRequest.toAnyEndpoint()).authorizeHttpRequests {
+		http.requestMatcher(EndpointRequest.toAnyEndpoint()).authorizeRequests {
 				requests -> requests.anyRequest().permitAll() }
 		return http.build()
 	}

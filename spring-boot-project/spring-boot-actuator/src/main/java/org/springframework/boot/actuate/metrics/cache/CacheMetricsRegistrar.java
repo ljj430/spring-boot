@@ -100,8 +100,8 @@ public class CacheMetricsRegistrar {
 
 		private static Cache unwrapIfNecessary(Cache cache) {
 			try {
-				if (cache instanceof TransactionAwareCacheDecorator decorator) {
-					return decorator.getTargetCache();
+				if (cache instanceof TransactionAwareCacheDecorator) {
+					return ((TransactionAwareCacheDecorator) cache).getTargetCache();
 				}
 			}
 			catch (NoClassDefFoundError ex) {

@@ -19,12 +19,13 @@ package org.springframework.boot.autoconfigure.h2;
 import java.sql.Connection;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.h2.server.web.JakartaWebServlet;
+import org.h2.server.web.WebServlet;
 
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -38,7 +39,6 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
-import org.springframework.core.log.LogMessage;
 
 /**
  * {@link EnableAutoConfiguration Auto-configuration} for H2's web console.
@@ -50,7 +50,7 @@ import org.springframework.core.log.LogMessage;
  */
 @AutoConfiguration(after = DataSourceAutoConfiguration.class)
 @ConditionalOnWebApplication(type = Type.SERVLET)
-@ConditionalOnClass(JakartaWebServlet.class)
+@ConditionalOnClass(WebServlet.class)
 @ConditionalOnProperty(prefix = "spring.h2.console", name = "enabled", havingValue = "true")
 @EnableConfigurationProperties(H2ConsoleProperties.class)
 public class H2ConsoleAutoConfiguration {
@@ -58,12 +58,11 @@ public class H2ConsoleAutoConfiguration {
 	private static final Log logger = LogFactory.getLog(H2ConsoleAutoConfiguration.class);
 
 	@Bean
-	public ServletRegistrationBean<JakartaWebServlet> h2Console(H2ConsoleProperties properties,
+	public ServletRegistrationBean<WebServlet> h2Console(H2ConsoleProperties properties,
 			ObjectProvider<DataSource> dataSource) {
 		String path = properties.getPath();
 		String urlMapping = path + (path.endsWith("/") ? "*" : "/*");
-		ServletRegistrationBean<JakartaWebServlet> registration = new ServletRegistrationBean<>(new JakartaWebServlet(),
-				urlMapping);
+		ServletRegistrationBean<WebServlet> registration = new ServletRegistrationBean<>(new WebServlet(), urlMapping);
 		configureH2ConsoleSettings(registration, properties.getSettings());
 		if (logger.isInfoEnabled()) {
 			withThreadContextClassLoader(getClass().getClassLoader(), () -> logDataSources(dataSource, path));
@@ -83,24 +82,24 @@ public class H2ConsoleAutoConfiguration {
 	}
 
 	private void logDataSources(ObjectProvider<DataSource> dataSource, String path) {
-		List<String> urls = dataSource.orderedStream().map(this::getConnectionUrl).filter(Objects::nonNull).toList();
+		List<String> urls = dataSource.orderedStream().map((available) -> {
+			try (Connection connection = available.getConnection()) {
+				return "'" + connection.getMetaData().getURL() + "'";
+			}
+			catch (Exception ex) {
+				return null;
+			}
+		}).filter(Objects::nonNull).collect(Collectors.toList());
 		if (!urls.isEmpty()) {
-			logger.info(LogMessage.format("H2 console available at '%s'. %s available at %s", path,
-					(urls.size() > 1) ? "Databases" : "Database", String.join(", ", urls)));
+			StringBuilder sb = new StringBuilder("H2 console available at '").append(path).append("'. ");
+			String tmp = (urls.size() > 1) ? "Databases" : "Database";
+			sb.append(tmp).append(" available at ");
+			sb.append(String.join(", ", urls));
+			logger.info(sb.toString());
 		}
 	}
 
-	private String getConnectionUrl(DataSource dataSource) {
-		try (Connection connection = dataSource.getConnection()) {
-			return "'" + connection.getMetaData().getURL() + "'";
-		}
-		catch (Exception ex) {
-			return null;
-		}
-	}
-
-	private void configureH2ConsoleSettings(ServletRegistrationBean<JakartaWebServlet> registration,
-			Settings settings) {
+	private void configureH2ConsoleSettings(ServletRegistrationBean<WebServlet> registration, Settings settings) {
 		if (settings.isTrace()) {
 			registration.addInitParameter("trace", "");
 		}

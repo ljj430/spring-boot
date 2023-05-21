@@ -37,7 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class PackagePrivateBeanBindingTests {
 
-	private final List<ConfigurationPropertySource> sources = new ArrayList<>();
+	private List<ConfigurationPropertySource> sources = new ArrayList<>();
 
 	private Binder binder;
 

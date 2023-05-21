@@ -34,7 +34,7 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
  */
 class OperationMethodTests {
 
-	private final Method exampleMethod = ReflectionUtils.findMethod(getClass(), "example", String.class);
+	private Method exampleMethod = ReflectionUtils.findMethod(getClass(), "example", String.class);
 
 	@Test
 	void createWhenMethodIsNullShouldThrowException() {
@@ -64,7 +64,7 @@ class OperationMethodTests {
 	void getParametersShouldReturnParameters() {
 		OperationMethod operationMethod = new OperationMethod(this.exampleMethod, OperationType.READ);
 		OperationParameters parameters = operationMethod.getParameters();
-		assertThat(parameters.getParameterCount()).isOne();
+		assertThat(parameters.getParameterCount()).isEqualTo(1);
 		assertThat(parameters.iterator().next().getName()).isEqualTo("name");
 	}
 

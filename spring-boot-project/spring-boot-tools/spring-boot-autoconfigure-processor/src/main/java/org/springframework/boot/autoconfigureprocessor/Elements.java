@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,18 +38,19 @@ final class Elements {
 				return getQualifiedName(enclosingElement) + "$"
 						+ ((DeclaredType) element.asType()).asElement().getSimpleName().toString();
 			}
-			if (element instanceof TypeElement typeElement) {
-				return typeElement.getQualifiedName().toString();
+			if (element instanceof TypeElement) {
+				return ((TypeElement) element).getQualifiedName().toString();
 			}
 		}
 		return null;
 	}
 
 	private static TypeElement getEnclosingTypeElement(TypeMirror type) {
-		if (type instanceof DeclaredType declaredType) {
+		if (type instanceof DeclaredType) {
+			DeclaredType declaredType = (DeclaredType) type;
 			Element enclosingElement = declaredType.asElement().getEnclosingElement();
-			if (enclosingElement instanceof TypeElement typeElement) {
-				return typeElement;
+			if (enclosingElement instanceof TypeElement) {
+				return (TypeElement) enclosingElement;
 			}
 		}
 		return null;

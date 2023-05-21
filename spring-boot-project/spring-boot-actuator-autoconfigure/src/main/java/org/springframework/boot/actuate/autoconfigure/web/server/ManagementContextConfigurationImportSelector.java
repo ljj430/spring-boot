@@ -29,6 +29,7 @@ import org.springframework.context.annotation.DeferredImportSelector;
 import org.springframework.core.OrderComparator;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.io.support.SpringFactoriesLoader;
 import org.springframework.core.type.AnnotationMetadata;
 import org.springframework.core.type.classreading.MetadataReader;
 import org.springframework.core.type.classreading.SimpleMetadataReaderFactory;
@@ -43,7 +44,6 @@ import org.springframework.util.StringUtils;
  * @author Phillip Webb
  * @author Andy Wilkinson
  * @author Moritz Halbritter
- * @author Scott Frederick
  * @see ManagementContextConfiguration
  * @see ImportCandidates
  */
@@ -91,7 +91,10 @@ class ManagementContextConfigurationImportSelector implements DeferredImportSele
 	}
 
 	protected List<String> loadFactoryNames() {
-		return ImportCandidates.load(ManagementContextConfiguration.class, this.classLoader).getCandidates();
+		List<String> factoryNames = new ArrayList<>(
+				SpringFactoriesLoader.loadFactoryNames(ManagementContextConfiguration.class, this.classLoader));
+		ImportCandidates.load(ManagementContextConfiguration.class, this.classLoader).forEach(factoryNames::add);
+		return factoryNames;
 	}
 
 	@Override

@@ -17,6 +17,7 @@
 package org.springframework.boot.devtools.autoconfigure;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.security.SecurityProperties;
 import org.springframework.boot.autoconfigure.web.ServerProperties;
 import org.springframework.context.annotation.Bean;
@@ -46,10 +47,16 @@ class RemoteDevtoolsSecurityConfiguration {
 
 	@Bean
 	@Order(SecurityProperties.BASIC_AUTH_ORDER - 1)
+	@ConditionalOnMissingBean(org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter.class)
+	@SuppressWarnings("deprecation")
 	SecurityFilterChain devtoolsSecurityFilterChain(HttpSecurity http) throws Exception {
-		http.securityMatcher(new AntPathRequestMatcher(this.url));
-		http.authorizeHttpRequests((requests) -> requests.anyRequest().anonymous());
-		http.csrf((csrf) -> csrf.disable());
+		http.requestMatcher(new AntPathRequestMatcher(this.url))
+			.authorizeRequests()
+			.anyRequest()
+			.anonymous()
+			.and()
+			.csrf()
+			.disable();
 		return http.build();
 	}
 

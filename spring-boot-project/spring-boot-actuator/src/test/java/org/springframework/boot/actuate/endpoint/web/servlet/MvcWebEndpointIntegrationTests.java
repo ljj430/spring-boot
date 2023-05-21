@@ -19,11 +19,12 @@ package org.springframework.boot.actuate.endpoint.web.servlet;
 import java.io.IOException;
 import java.util.Arrays;
 
-import jakarta.servlet.Filter;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.junit.jupiter.api.Test;
 
 import org.springframework.boot.actuate.endpoint.web.EndpointLinksResolver;
@@ -45,6 +46,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
@@ -53,8 +55,12 @@ import org.springframework.security.web.servletapi.SecurityContextHolderAwareReq
 import org.springframework.util.StringUtils;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.servlet.handler.RequestMatchResult;
+import org.springframework.web.util.ServletRequestPathUtils;
+import org.springframework.web.util.pattern.PathPatternParser;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 /**
  * Integration tests for web endpoints exposed using Spring MVC.
@@ -115,14 +121,44 @@ class MvcWebEndpointIntegrationTests
 	}
 
 	@Test
-	void requestWithSuffixShouldNotMatch() {
-		load(TestEndpointConfiguration.class,
-				(client) -> client.options()
-					.uri("/test.do")
-					.accept(MediaType.APPLICATION_JSON)
-					.exchange()
-					.expectStatus()
-					.isNotFound());
+	void matchWhenPathPatternParserShouldThrowException() {
+		assertThatIllegalArgumentException().isThrownBy(() -> getMatchResult("/spring/", true));
+	}
+
+	@Test
+	void matchWhenRequestHasTrailingSlashShouldNotBeNull() {
+		assertThat(getMatchResult("/spring/", false)).isNotNull();
+	}
+
+	@Test
+	void matchWhenRequestHasSuffixShouldBeNull() {
+		assertThat(getMatchResult("/spring.do", false)).isNull();
+	}
+
+	private RequestMatchResult getMatchResult(String servletPath, boolean isPatternParser) {
+		MockHttpServletRequest request = new MockHttpServletRequest();
+		request.setServletPath(servletPath);
+		try (AnnotationConfigServletWebServerApplicationContext context = new AnnotationConfigServletWebServerApplicationContext()) {
+			if (isPatternParser) {
+				context.register(WebMvcConfiguration.class);
+			}
+			else {
+				context.register(PathMatcherWebMvcConfiguration.class);
+			}
+			context.register(TestEndpointConfiguration.class);
+			context.refresh();
+			WebMvcEndpointHandlerMapping bean = context.getBean(WebMvcEndpointHandlerMapping.class);
+			try {
+				// Setup request attributes
+				ServletRequestPathUtils.parseAndCache(request);
+				// Trigger initLookupPath
+				bean.getHandler(request);
+			}
+			catch (Exception ex) {
+				throw new RuntimeException(ex);
+			}
+			return bean.match(request, "/spring");
+		}
 	}
 
 	@Override
@@ -150,7 +186,8 @@ class MvcWebEndpointIntegrationTests
 			String endpointPath = environment.getProperty("endpointPath");
 			return new WebMvcEndpointHandlerMapping(new EndpointMapping(endpointPath),
 					endpointDiscoverer.getEndpoints(), endpointMediaTypes, corsConfiguration,
-					new EndpointLinksResolver(endpointDiscoverer.getEndpoints()), StringUtils.hasText(endpointPath));
+					new EndpointLinksResolver(endpointDiscoverer.getEndpoints()), StringUtils.hasText(endpointPath),
+					new PathPatternParser());
 		}
 
 	}

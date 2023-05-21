@@ -46,10 +46,6 @@ import org.springframework.context.annotation.Bean;
 public class HazelcastHealthContributorAutoConfiguration
 		extends CompositeHealthContributorConfiguration<HazelcastHealthIndicator, HazelcastInstance> {
 
-	public HazelcastHealthContributorAutoConfiguration() {
-		super(HazelcastHealthIndicator::new);
-	}
-
 	@Bean
 	@ConditionalOnMissingBean(name = { "hazelcastHealthIndicator", "hazelcastHealthContributor" })
 	public HealthContributor hazelcastHealthContributor(Map<String, HazelcastInstance> hazelcastInstances) {

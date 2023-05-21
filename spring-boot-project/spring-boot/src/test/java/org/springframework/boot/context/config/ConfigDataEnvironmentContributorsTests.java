@@ -39,7 +39,6 @@ import org.springframework.boot.context.properties.bind.BindException;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.boot.logging.DeferredLogFactory;
 import org.springframework.core.io.DefaultResourceLoader;
-import org.springframework.core.io.support.SpringFactoriesLoader;
 import org.springframework.mock.env.MockEnvironment;
 import org.springframework.mock.env.MockPropertySource;
 
@@ -64,9 +63,9 @@ class ConfigDataEnvironmentContributorsTests {
 
 	private static final ConfigDataLocation LOCATION_2 = ConfigDataLocation.of("location2");
 
-	private final DeferredLogFactory logFactory = Supplier::get;
+	private DeferredLogFactory logFactory = Supplier::get;
 
-	private final DefaultBootstrapContext bootstrapContext = new DefaultBootstrapContext();
+	private DefaultBootstrapContext bootstrapContext = new DefaultBootstrapContext();
 
 	private MockEnvironment environment;
 
@@ -87,10 +86,9 @@ class ConfigDataEnvironmentContributorsTests {
 		this.environment = new MockEnvironment();
 		this.binder = Binder.get(this.environment);
 		ConfigDataLocationResolvers resolvers = new ConfigDataLocationResolvers(this.logFactory, this.bootstrapContext,
-				this.binder, new DefaultResourceLoader(getClass().getClassLoader()),
-				SpringFactoriesLoader.forDefaultResourceLocation(getClass().getClassLoader()));
+				this.binder, new DefaultResourceLoader(getClass().getClassLoader()));
 		ConfigDataLoaders loaders = new ConfigDataLoaders(this.logFactory, this.bootstrapContext,
-				SpringFactoriesLoader.forDefaultResourceLocation());
+				getClass().getClassLoader());
 		this.importer = new ConfigDataImporter(this.logFactory, ConfigDataNotFoundAction.FAIL, resolvers, loaders);
 		this.activationContext = new ConfigDataActivationContext(CloudPlatform.KUBERNETES, null);
 	}

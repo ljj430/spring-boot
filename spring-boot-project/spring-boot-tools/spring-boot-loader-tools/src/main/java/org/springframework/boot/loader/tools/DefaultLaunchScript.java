@@ -44,7 +44,8 @@ public class DefaultLaunchScript implements LaunchScript {
 
 	private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\{\\{(\\w+)(:.*?)?\\}\\}(?!\\})");
 
-	private static final Set<String> FILE_PATH_KEYS = Collections.singleton("inlinedConfScript");
+	private static final Set<String> FILE_PATH_KEYS = Collections
+		.unmodifiableSet(Collections.singleton("inlinedConfScript"));
 
 	private final String content;
 
@@ -67,10 +68,13 @@ public class DefaultLaunchScript implements LaunchScript {
 	}
 
 	private String loadContent(InputStream inputStream) throws IOException {
-		try (inputStream) {
+		try {
 			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 			copy(inputStream, outputStream);
-			return outputStream.toString(StandardCharsets.UTF_8);
+			return new String(outputStream.toByteArray(), StandardCharsets.UTF_8);
+		}
+		finally {
+			inputStream.close();
 		}
 	}
 
@@ -84,7 +88,7 @@ public class DefaultLaunchScript implements LaunchScript {
 	}
 
 	private String expandPlaceholders(String content, Map<?, ?> properties) throws IOException {
-		StringBuilder expanded = new StringBuilder();
+		StringBuffer expanded = new StringBuffer();
 		Matcher matcher = PLACEHOLDER_PATTERN.matcher(content);
 		while (matcher.find()) {
 			String name = matcher.group(1);
@@ -109,8 +113,8 @@ public class DefaultLaunchScript implements LaunchScript {
 	}
 
 	private String parseFilePropertyValue(Object propertyValue) throws IOException {
-		if (propertyValue instanceof File file) {
-			return loadContent(file);
+		if (propertyValue instanceof File) {
+			return loadContent((File) propertyValue);
 		}
 		return loadContent(new File(propertyValue.toString()));
 	}

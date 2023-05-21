@@ -22,6 +22,7 @@ import java.util.Map;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
+import org.springframework.boot.context.properties.IncompatibleConfigurationException;
 import org.springframework.http.MediaType;
 import org.springframework.util.Assert;
 import org.springframework.validation.DefaultMessageCodesResolver;
@@ -34,7 +35,6 @@ import org.springframework.validation.DefaultMessageCodesResolver;
  * @author Stephane Nicoll
  * @author Eddú Meléndez
  * @author Brian Clozel
- * @author Vedran Pavic
  * @since 2.0.0
  */
 @ConfigurationProperties(prefix = "spring.mvc")
@@ -91,11 +91,6 @@ public class WebMvcProperties {
 	 */
 	private String staticPathPattern = "/**";
 
-	/**
-	 * Path pattern used for WebJar assets.
-	 */
-	private String webjarsPathPattern = "/webjars/**";
-
 	private final Async async = new Async();
 
 	private final Servlet servlet = new Servlet();
@@ -106,8 +101,6 @@ public class WebMvcProperties {
 
 	private final Pathmatch pathmatch = new Pathmatch();
 
-	private final Problemdetails problemdetails = new Problemdetails();
-
 	public DefaultMessageCodesResolver.Format getMessageCodesResolverFormat() {
 		return this.messageCodesResolverFormat;
 	}
@@ -116,17 +109,25 @@ public class WebMvcProperties {
 		this.messageCodesResolverFormat = messageCodesResolverFormat;
 	}
 
+	@Deprecated
+	@DeprecatedConfigurationProperty(replacement = "spring.mvc.format.date")
+	public String getDateFormat() {
+		return this.format.getDate();
+	}
+
+	@Deprecated
+	public void setDateFormat(String dateFormat) {
+		this.format.setDate(dateFormat);
+	}
+
 	public Format getFormat() {
 		return this.format;
 	}
 
-	@Deprecated(since = "3.0.0", forRemoval = true)
-	@DeprecatedConfigurationProperty(reason = "Deprecated for removal in Spring MVC")
 	public boolean isIgnoreDefaultModelOnRedirect() {
 		return this.ignoreDefaultModelOnRedirect;
 	}
 
-	@Deprecated(since = "3.0.0", forRemoval = true)
 	public void setIgnoreDefaultModelOnRedirect(boolean ignoreDefaultModelOnRedirect) {
 		this.ignoreDefaultModelOnRedirect = ignoreDefaultModelOnRedirect;
 	}
@@ -187,14 +188,6 @@ public class WebMvcProperties {
 		this.staticPathPattern = staticPathPattern;
 	}
 
-	public String getWebjarsPathPattern() {
-		return this.webjarsPathPattern;
-	}
-
-	public void setWebjarsPathPattern(String webjarsPathPattern) {
-		this.webjarsPathPattern = webjarsPathPattern;
-	}
-
 	public Async getAsync() {
 		return this.async;
 	}
@@ -215,8 +208,17 @@ public class WebMvcProperties {
 		return this.pathmatch;
 	}
 
-	public Problemdetails getProblemdetails() {
-		return this.problemdetails;
+	public void checkConfiguration() {
+		if (this.getPathmatch().getMatchingStrategy() == MatchingStrategy.PATH_PATTERN_PARSER) {
+			if (this.getPathmatch().isUseSuffixPattern()) {
+				throw new IncompatibleConfigurationException("spring.mvc.pathmatch.matching-strategy",
+						"spring.mvc.pathmatch.use-suffix-pattern");
+			}
+			if (this.getPathmatch().isUseRegisteredSuffixPattern()) {
+				throw new IncompatibleConfigurationException("spring.mvc.pathmatch.matching-strategy",
+						"spring.mvc.pathmatch.use-registered-suffix-pattern");
+			}
+		}
 	}
 
 	public static class Async {
@@ -333,6 +335,13 @@ public class WebMvcProperties {
 	public static class Contentnegotiation {
 
 		/**
+		 * Whether the path extension in the URL path should be used to determine the
+		 * requested media type. If enabled a request "/users.pdf" will be interpreted as
+		 * a request for "application/pdf" regardless of the 'Accept' header.
+		 */
+		private boolean favorPathExtension = false;
+
+		/**
 		 * Whether a request parameter ("format" by default) should be used to determine
 		 * the requested media type.
 		 */
@@ -348,6 +357,18 @@ public class WebMvcProperties {
 		 * Query parameter name to use when "favor-parameter" is enabled.
 		 */
 		private String parameterName;
+
+		@DeprecatedConfigurationProperty(
+				reason = "Use of path extensions for request mapping and for content negotiation is discouraged.")
+		@Deprecated
+		public boolean isFavorPathExtension() {
+			return this.favorPathExtension;
+		}
+
+		@Deprecated
+		public void setFavorPathExtension(boolean favorPathExtension) {
+			this.favorPathExtension = favorPathExtension;
+		}
 
 		public boolean isFavorParameter() {
 			return this.favorParameter;
@@ -382,12 +403,52 @@ public class WebMvcProperties {
 		 */
 		private MatchingStrategy matchingStrategy = MatchingStrategy.PATH_PATTERN_PARSER;
 
+		/**
+		 * Whether to use suffix pattern match (".*") when matching patterns to requests.
+		 * If enabled a method mapped to "/users" also matches to "/users.*". Enabling
+		 * this option is not compatible with the PathPatternParser matching strategy.
+		 */
+		private boolean useSuffixPattern = false;
+
+		/**
+		 * Whether suffix pattern matching should work only against extensions registered
+		 * with "spring.mvc.contentnegotiation.media-types.*". This is generally
+		 * recommended to reduce ambiguity and to avoid issues such as when a "." appears
+		 * in the path for other reasons. Enabling this option is not compatible with the
+		 * PathPatternParser matching strategy.
+		 */
+		private boolean useRegisteredSuffixPattern = false;
+
 		public MatchingStrategy getMatchingStrategy() {
 			return this.matchingStrategy;
 		}
 
 		public void setMatchingStrategy(MatchingStrategy matchingStrategy) {
 			this.matchingStrategy = matchingStrategy;
+		}
+
+		@DeprecatedConfigurationProperty(
+				reason = "Use of path extensions for request mapping and for content negotiation is discouraged.")
+		@Deprecated
+		public boolean isUseSuffixPattern() {
+			return this.useSuffixPattern;
+		}
+
+		@Deprecated
+		public void setUseSuffixPattern(boolean useSuffixPattern) {
+			this.useSuffixPattern = useSuffixPattern;
+		}
+
+		@DeprecatedConfigurationProperty(
+				reason = "Use of path extensions for request mapping and for content negotiation is discouraged.")
+		@Deprecated
+		public boolean isUseRegisteredSuffixPattern() {
+			return this.useRegisteredSuffixPattern;
+		}
+
+		@Deprecated
+		public void setUseRegisteredSuffixPattern(boolean useRegisteredSuffixPattern) {
+			this.useRegisteredSuffixPattern = useRegisteredSuffixPattern;
 		}
 
 	}
@@ -451,23 +512,6 @@ public class WebMvcProperties {
 		 * Use the {@code PathPatternParser} implementation.
 		 */
 		PATH_PATTERN_PARSER
-
-	}
-
-	public static class Problemdetails {
-
-		/**
-		 * Whether RFC 7807 Problem Details support should be enabled.
-		 */
-		private boolean enabled = false;
-
-		public boolean isEnabled() {
-			return this.enabled;
-		}
-
-		public void setEnabled(boolean enabled) {
-			this.enabled = enabled;
-		}
 
 	}
 
