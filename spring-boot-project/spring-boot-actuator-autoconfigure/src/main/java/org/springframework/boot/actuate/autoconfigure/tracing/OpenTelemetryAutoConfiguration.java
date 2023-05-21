@@ -20,6 +20,10 @@ import java.util.Collections;
 import java.util.List;
 
 import io.micrometer.tracing.SpanCustomizer;
+import io.micrometer.tracing.exporter.SpanExportingPredicate;
+import io.micrometer.tracing.exporter.SpanFilter;
+import io.micrometer.tracing.exporter.SpanReporter;
+import io.micrometer.tracing.otel.bridge.CompositeSpanExporter;
 import io.micrometer.tracing.otel.bridge.EventListener;
 import io.micrometer.tracing.otel.bridge.EventPublishingContextWrapper;
 import io.micrometer.tracing.otel.bridge.OtelBaggageManager;
@@ -66,6 +70,7 @@ import org.springframework.core.env.Environment;
  * {@link EnableAutoConfiguration Auto-configuration} for OpenTelemetry.
  *
  * @author Moritz Halbritter
+ * @author Yanming Zhou
  * @since 3.0.0
  */
 @AutoConfiguration(before = MicrometerTracingAutoConfiguration.class)
@@ -97,12 +102,13 @@ public class OpenTelemetryAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	SdkTracerProvider otelSdkTracerProvider(Environment environment, ObjectProvider<SpanProcessor> spanProcessors,
-			Sampler sampler) {
+			Sampler sampler, ObjectProvider<SdkTracerProviderBuilderCustomizer> customizers) {
 		String applicationName = environment.getProperty("spring.application.name", DEFAULT_APPLICATION_NAME);
 		SdkTracerProviderBuilder builder = SdkTracerProvider.builder()
 			.setSampler(sampler)
 			.setResource(Resource.create(Attributes.of(ResourceAttributes.SERVICE_NAME, applicationName)));
 		spanProcessors.orderedStream().forEach(builder::addSpanProcessor);
+		customizers.orderedStream().forEach((customizer) -> customizer.customize(builder));
 		return builder.build();
 	}
 
@@ -120,12 +126,14 @@ public class OpenTelemetryAutoConfiguration {
 	}
 
 	@Bean
-	SpanProcessor otelSpanProcessor(ObjectProvider<SpanExporter> spanExporters) {
-		return SpanProcessor.composite(spanExporters.orderedStream().map(this::buildBatchSpanProcessor).toList());
-	}
-
-	private SpanProcessor buildBatchSpanProcessor(SpanExporter exporter) {
-		return BatchSpanProcessor.builder(exporter).build();
+	SpanProcessor otelSpanProcessor(ObjectProvider<SpanExporter> spanExporters,
+			ObjectProvider<SpanExportingPredicate> spanExportingPredicates, ObjectProvider<SpanReporter> spanReporters,
+			ObjectProvider<SpanFilter> spanFilters) {
+		return BatchSpanProcessor
+			.builder(new CompositeSpanExporter(spanExporters.orderedStream().toList(),
+					spanExportingPredicates.orderedStream().toList(), spanReporters.orderedStream().toList(),
+					spanFilters.orderedStream().toList()))
+			.build();
 	}
 
 	@Bean

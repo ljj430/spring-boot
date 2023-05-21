@@ -77,6 +77,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
@@ -211,7 +212,7 @@ public abstract class AbstractReactiveWebServerFactoryTests {
 	}
 
 	protected void assertThatSslWithInvalidAliasCallFails(ThrowingCallable call) {
-		assertThatThrownBy(call).hasStackTraceContaining("Keystore does not contain specified alias 'test-alias-404'");
+		assertThatThrownBy(call).hasStackTraceContaining("Keystore does not contain alias 'test-alias-404'");
 	}
 
 	protected ReactorClientHttpConnector buildTrustAllSslConnector() {
@@ -400,8 +401,8 @@ public abstract class AbstractReactiveWebServerFactoryTests {
 
 	@Test
 	void whenSslIsEnabledAndNoKeyStoreIsConfiguredThenServerFailsToStart() {
-		assertThatThrownBy(() -> testBasicSslWithKeyStore(null, null))
-			.hasMessageContaining("Could not load key store 'null'");
+		assertThatIllegalStateException().isThrownBy(() -> testBasicSslWithKeyStore(null, null))
+			.withMessageContaining("SSL is enabled but no trust material is configured");
 	}
 
 	@Test
