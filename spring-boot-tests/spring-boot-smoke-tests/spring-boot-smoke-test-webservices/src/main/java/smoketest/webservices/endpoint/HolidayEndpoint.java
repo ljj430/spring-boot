@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,11 @@ package smoketest.webservices.endpoint;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactoryConfigurationException;
+
 import org.jdom2.Element;
+import org.jdom2.JDOMException;
 import org.jdom2.Namespace;
 import org.jdom2.filter.Filters;
 import org.jdom2.xpath.XPathExpression;
@@ -35,15 +39,16 @@ public class HolidayEndpoint {
 
 	private static final String NAMESPACE_URI = "https://company.example.com/hr/schemas";
 
-	private final XPathExpression<Element> startDateExpression;
+	private XPathExpression<Element> startDateExpression;
 
-	private final XPathExpression<Element> endDateExpression;
+	private XPathExpression<Element> endDateExpression;
 
-	private final XPathExpression<String> nameExpression;
+	private XPathExpression<String> nameExpression;
 
-	private final HumanResourceService humanResourceService;
+	private HumanResourceService humanResourceService;
 
-	public HolidayEndpoint(HumanResourceService humanResourceService) {
+	public HolidayEndpoint(HumanResourceService humanResourceService)
+			throws JDOMException, XPathFactoryConfigurationException, XPathExpressionException {
 		this.humanResourceService = humanResourceService;
 		Namespace namespace = Namespace.getNamespace("hr", NAMESPACE_URI);
 		XPathFactory xPathFactory = XPathFactory.instance();

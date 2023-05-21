@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,15 @@
 
 package org.springframework.boot.autoconfigure.web.reactive.function.client;
 
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.http.codec.CodecsAutoConfiguration;
-import org.springframework.boot.ssl.SslBundles;
 import org.springframework.boot.web.codec.CodecCustomizer;
 import org.springframework.boot.web.reactive.function.client.WebClientCustomizer;
 import org.springframework.context.annotation.Bean;
@@ -43,8 +44,9 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Brian Clozel
  * @since 2.0.0
  */
-@AutoConfiguration(after = { CodecsAutoConfiguration.class, ClientHttpConnectorAutoConfiguration.class })
+@Configuration(proxyBeanMethods = false)
 @ConditionalOnClass(WebClient.class)
+@AutoConfigureAfter({ CodecsAutoConfiguration.class, ClientHttpConnectorAutoConfiguration.class })
 public class WebClientAutoConfiguration {
 
 	@Bean
@@ -56,14 +58,6 @@ public class WebClientAutoConfiguration {
 		return builder;
 	}
 
-	@Bean
-	@ConditionalOnMissingBean(WebClientSsl.class)
-	@ConditionalOnBean(SslBundles.class)
-	AutoConfiguredWebClientSsl webClientSsl(ClientHttpConnectorFactory<?> clientHttpConnectorFactory,
-			SslBundles sslBundles) {
-		return new AutoConfiguredWebClientSsl(clientHttpConnectorFactory, sslBundles);
-	}
-
 	@Configuration(proxyBeanMethods = false)
 	@ConditionalOnBean(CodecCustomizer.class)
 	protected static class WebClientCodecsConfiguration {
@@ -72,7 +66,7 @@ public class WebClientAutoConfiguration {
 		@ConditionalOnMissingBean
 		@Order(0)
 		public WebClientCodecCustomizer exchangeStrategiesCustomizer(ObjectProvider<CodecCustomizer> codecCustomizers) {
-			return new WebClientCodecCustomizer(codecCustomizers.orderedStream().toList());
+			return new WebClientCodecCustomizer(codecCustomizers.orderedStream().collect(Collectors.toList()));
 		}
 
 	}

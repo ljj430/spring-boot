@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.annotation.Condition;
 import org.springframework.context.annotation.ConditionContext;
@@ -127,7 +128,7 @@ public final class ConditionEvaluationReport {
 		this.outcomes.forEach((candidateSource, sourceOutcomes) -> {
 			if (candidateSource.startsWith(prefix)) {
 				ConditionOutcome outcome = ConditionOutcome
-					.noMatch(ConditionMessage.forCondition("Ancestor " + source).because("did not match"));
+						.noMatch(ConditionMessage.forCondition("Ancestor " + source).because("did not match"));
 				sourceOutcomes.add(ANCESTOR_CONDITION, outcome);
 			}
 		});
@@ -166,7 +167,7 @@ public final class ConditionEvaluationReport {
 	 * @return the {@link ConditionEvaluationReport} or {@code null}
 	 */
 	public static ConditionEvaluationReport find(BeanFactory beanFactory) {
-		if (beanFactory != null && beanFactory instanceof ConfigurableListableBeanFactory) {
+		if (beanFactory != null && beanFactory instanceof ConfigurableBeanFactory) {
 			return ConditionEvaluationReport.get((ConfigurableListableBeanFactory) beanFactory);
 		}
 		return null;

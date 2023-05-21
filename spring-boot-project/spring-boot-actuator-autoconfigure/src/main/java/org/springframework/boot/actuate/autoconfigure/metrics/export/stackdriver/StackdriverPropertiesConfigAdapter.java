@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
  */
 
 package org.springframework.boot.actuate.autoconfigure.metrics.export.stackdriver;
-
-import java.util.Map;
 
 import io.micrometer.stackdriver.StackdriverConfig;
 
@@ -37,7 +35,7 @@ public class StackdriverPropertiesConfigAdapter extends StepRegistryPropertiesCo
 
 	@Override
 	public String prefix() {
-		return "management.stackdriver.metrics.export";
+		return "management.metrics.export.stackdriver";
 	}
 
 	@Override
@@ -48,16 +46,6 @@ public class StackdriverPropertiesConfigAdapter extends StepRegistryPropertiesCo
 	@Override
 	public String resourceType() {
 		return get(StackdriverProperties::getResourceType, StackdriverConfig.super::resourceType);
-	}
-
-	@Override
-	public Map<String, String> resourceLabels() {
-		return get(StackdriverProperties::getResourceLabels, StackdriverConfig.super::resourceLabels);
-	}
-
-	@Override
-	public boolean useSemanticMetricTypes() {
-		return get(StackdriverProperties::isUseSemanticMetricTypes, StackdriverConfig.super::useSemanticMetricTypes);
 	}
 
 }

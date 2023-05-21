@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,13 +24,14 @@ import org.springframework.boot.actuate.autoconfigure.health.CompositeHealthCont
 import org.springframework.boot.actuate.autoconfigure.health.ConditionalOnEnabledHealthIndicator;
 import org.springframework.boot.actuate.hazelcast.HazelcastHealthIndicator;
 import org.springframework.boot.actuate.health.HealthContributor;
-import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.hazelcast.HazelcastAutoConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 /**
  * {@link EnableAutoConfiguration Auto-configuration} for
@@ -39,16 +40,13 @@ import org.springframework.context.annotation.Bean;
  * @author Dmytro Nosan
  * @since 2.2.0
  */
-@AutoConfiguration(after = HazelcastAutoConfiguration.class)
+@Configuration(proxyBeanMethods = false)
 @ConditionalOnClass(HazelcastInstance.class)
 @ConditionalOnBean(HazelcastInstance.class)
 @ConditionalOnEnabledHealthIndicator("hazelcast")
+@AutoConfigureAfter(HazelcastAutoConfiguration.class)
 public class HazelcastHealthContributorAutoConfiguration
 		extends CompositeHealthContributorConfiguration<HazelcastHealthIndicator, HazelcastInstance> {
-
-	public HazelcastHealthContributorAutoConfiguration() {
-		super(HazelcastHealthIndicator::new);
-	}
 
 	@Bean
 	@ConditionalOnMissingBean(name = { "hazelcastHealthIndicator", "hazelcastHealthContributor" })

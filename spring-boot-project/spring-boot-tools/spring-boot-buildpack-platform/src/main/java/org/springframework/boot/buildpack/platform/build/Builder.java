@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package org.springframework.boot.buildpack.platform.build;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -28,11 +27,11 @@ import org.springframework.boot.buildpack.platform.docker.TotalProgressPullListe
 import org.springframework.boot.buildpack.platform.docker.TotalProgressPushListener;
 import org.springframework.boot.buildpack.platform.docker.UpdateListener;
 import org.springframework.boot.buildpack.platform.docker.configuration.DockerConfiguration;
-import org.springframework.boot.buildpack.platform.docker.configuration.ResolvedDockerHost;
 import org.springframework.boot.buildpack.platform.docker.transport.DockerEngineException;
 import org.springframework.boot.buildpack.platform.docker.type.Image;
 import org.springframework.boot.buildpack.platform.docker.type.ImageReference;
 import org.springframework.boot.buildpack.platform.io.IOBiConsumer;
+import org.springframework.boot.buildpack.platform.io.TarArchive;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -42,7 +41,6 @@ import org.springframework.util.StringUtils;
  * @author Phillip Webb
  * @author Scott Frederick
  * @author Andrey Shlykov
- * @author Rafael Ceccone
  * @since 2.3.0
  */
 public class Builder {
@@ -84,8 +82,7 @@ public class Builder {
 	 * @since 2.4.0
 	 */
 	public Builder(BuildLog log, DockerConfiguration dockerConfiguration) {
-		this(log, new DockerApi((dockerConfiguration != null) ? dockerConfiguration.getHost() : null),
-				dockerConfiguration);
+		this(log, new DockerApi(dockerConfiguration), dockerConfiguration);
 	}
 
 	Builder(BuildLog log, DockerApi docker, DockerConfiguration dockerConfiguration) {
@@ -107,16 +104,14 @@ public class Builder {
 		Image runImage = imageFetcher.fetchImage(ImageType.RUNNER, request.getRunImage());
 		assertStackIdsMatch(runImage, builderImage);
 		BuildOwner buildOwner = BuildOwner.fromEnv(builderImage.getConfig().getEnv());
-		BuildpackLayersMetadata buildpackLayersMetadata = BuildpackLayersMetadata.fromImage(builderImage);
-		Buildpacks buildpacks = getBuildpacks(request, imageFetcher, builderMetadata, buildpackLayersMetadata);
+		Buildpacks buildpacks = getBuildpacks(request, imageFetcher, builderMetadata);
 		EphemeralBuilder ephemeralBuilder = new EphemeralBuilder(buildOwner, builderImage, request.getName(),
 				builderMetadata, request.getCreator(), request.getEnv(), buildpacks);
 		this.docker.image().load(ephemeralBuilder.getArchive(), UpdateListener.none());
 		try {
 			executeLifecycle(request, ephemeralBuilder);
-			tagImage(request.getName(), request.getTags());
 			if (request.isPublish()) {
-				pushImages(request.getName(), request.getTags());
+				pushImage(request.getName());
 			}
 		}
 		finally {
@@ -144,34 +139,14 @@ public class Builder {
 				+ "' does not match builder stack '" + builderImageStackId + "'");
 	}
 
-	private Buildpacks getBuildpacks(BuildRequest request, ImageFetcher imageFetcher, BuilderMetadata builderMetadata,
-			BuildpackLayersMetadata buildpackLayersMetadata) {
-		BuildpackResolverContext resolverContext = new BuilderResolverContext(imageFetcher, builderMetadata,
-				buildpackLayersMetadata);
+	private Buildpacks getBuildpacks(BuildRequest request, ImageFetcher imageFetcher, BuilderMetadata builderMetadata) {
+		BuildpackResolverContext resolverContext = new BuilderResolverContext(imageFetcher, builderMetadata);
 		return BuildpackResolvers.resolveAll(resolverContext, request.getBuildpacks());
 	}
 
 	private void executeLifecycle(BuildRequest request, EphemeralBuilder builder) throws IOException {
-		ResolvedDockerHost dockerHost = null;
-		if (this.dockerConfiguration != null && this.dockerConfiguration.isBindHostToBuilder()) {
-			dockerHost = ResolvedDockerHost.from(this.dockerConfiguration.getHost());
-		}
-		try (Lifecycle lifecycle = new Lifecycle(this.log, this.docker, dockerHost, request, builder)) {
+		try (Lifecycle lifecycle = new Lifecycle(this.log, this.docker, request, builder)) {
 			lifecycle.execute();
-		}
-	}
-
-	private void tagImage(ImageReference sourceReference, List<ImageReference> tags) throws IOException {
-		for (ImageReference tag : tags) {
-			this.docker.image().tag(sourceReference, tag);
-			this.log.taggedImage(tag);
-		}
-	}
-
-	private void pushImages(ImageReference name, List<ImageReference> tags) throws IOException {
-		pushImage(name);
-		for (ImageReference tag : tags) {
-			pushImage(tag);
 		}
 	}
 
@@ -248,13 +223,9 @@ public class Builder {
 
 		private final BuilderMetadata builderMetadata;
 
-		private final BuildpackLayersMetadata buildpackLayersMetadata;
-
-		BuilderResolverContext(ImageFetcher imageFetcher, BuilderMetadata builderMetadata,
-				BuildpackLayersMetadata buildpackLayersMetadata) {
+		BuilderResolverContext(ImageFetcher imageFetcher, BuilderMetadata builderMetadata) {
 			this.imageFetcher = imageFetcher;
 			this.builderMetadata = builderMetadata;
-			this.buildpackLayersMetadata = buildpackLayersMetadata;
 		}
 
 		@Override
@@ -263,18 +234,14 @@ public class Builder {
 		}
 
 		@Override
-		public BuildpackLayersMetadata getBuildpackLayersMetadata() {
-			return this.buildpackLayersMetadata;
-		}
-
-		@Override
 		public Image fetchImage(ImageReference reference, ImageType imageType) throws IOException {
 			return this.imageFetcher.fetchImage(imageType, reference);
 		}
 
 		@Override
-		public void exportImageLayers(ImageReference reference, IOBiConsumer<String, Path> exports) throws IOException {
-			Builder.this.docker.image().exportLayerFiles(reference, exports);
+		public void exportImageLayers(ImageReference reference, IOBiConsumer<String, TarArchive> exports)
+				throws IOException {
+			Builder.this.docker.image().exportLayers(reference, exports);
 		}
 
 	}

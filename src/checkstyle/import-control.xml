@@ -12,7 +12,7 @@
 			<disallow pkg="org.springframework.boot.web" />
 			<disallow pkg="org.springframework.web.servlet" />
 			<disallow pkg="org.springframework.web.reactive" />
-			<disallow pkg="jakarta.servlet" />
+			<disallow pkg="javax.servlet" />
 			<subpackage name="client">
 				<allow pkg="org.springframework.boot.web.client" />
 			</subpackage>
@@ -20,7 +20,7 @@
 				<allow pkg="org.springframework.boot.web.embedded" />
 			</subpackage>
 			<subpackage name="servlet">
-				<allow pkg="jakarta.servlet" />
+				<allow pkg="javax.servlet" />
 				<allow pkg="org.springframework.boot.web.embedded" />
 				<allow pkg="org.springframework.boot.web.servlet" />
 				<allow pkg="org.springframework.web.servlet" />
@@ -75,17 +75,8 @@
 
 	<!-- Logging -->
 	<subpackage name="logging">
-		<allow pkg="org.springframework.boot.context.properties.bind" />
 		<disallow pkg="org.springframework.context" />
 		<disallow pkg="org.springframework.boot.context" />
-	</subpackage>
-
-	<subpackage name="test">
-		<subpackage name="autoconfigure">
-			<subpackage name="actuate">
-				<allow pkg="io.micrometer" />
-			</subpackage>
-		</subpackage>
 	</subpackage>
 
 	<!-- Web related concerns -->
@@ -94,16 +85,13 @@
 		<!-- Lock things down -->
 		<disallow pkg="org.springframework.boot.web" />
 		<disallow pkg="org.springframework.web.servlet" />
-		<disallow pkg="jakarta.servlet" />
+		<disallow pkg="javax.servlet" />
 
 		<!-- Common -->
 		<subpackage name="client">
 		</subpackage>
 		<subpackage name="server">
 			<disallow pkg="org.springframework.context" />
-			<subpackage name="context">
-				<allow pkg="org.springframework.context" />
-			</subpackage>
 		</subpackage>
 		<subpackage name="context">
 			<allow pkg="org.springframework.boot.web.server" />
@@ -111,7 +99,7 @@
 
 		<!-- Servlet -->
 		<subpackage name="servlet">
-			<allow pkg="jakarta.servlet" />
+			<allow pkg="javax.servlet" />
 			<subpackage name="context">
 				<allow pkg="org.springframework.boot.web.context" />
 				<allow pkg="org.springframework.boot.web.server" />
@@ -119,7 +107,7 @@
 				<allow pkg="org.springframework.boot.web.servlet" />
 			</subpackage>
 			<subpackage name="filter">
-				<allow pkg="jakarta.servlet" />
+				<allow pkg="javax.servlet" />
 				<allow pkg="org.springframework.boot.web.servlet" />
 			</subpackage>
 			<subpackage name="server">
@@ -128,7 +116,7 @@
 				<allow pkg="org.springframework.boot.web.servlet" />
 			</subpackage>
 			<subpackage name="support">
-				<allow pkg="jakarta.servlet" />
+				<allow pkg="javax.servlet" />
 				<allow pkg="org.springframework.boot.web.servlet" />
 				<allow pkg="org.springframework.boot.web.server" />
 			</subpackage>
@@ -164,7 +152,7 @@
 
 		<!-- Embedded Servers -->
 		<subpackage name="embedded">
-			<allow pkg="jakarta.servlet" />
+			<allow pkg="javax.servlet" />
 			<allow pkg="org.springframework.boot.web.server" />
 			<allow pkg="org.springframework.boot.web.servlet" />
 			<allow pkg="org.springframework.boot.web.servlet.server" />

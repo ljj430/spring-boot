@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,12 @@
 
 package org.springframework.boot.autoconfigure.websocket.servlet;
 
-import java.util.stream.Stream;
+import javax.websocket.server.ServerContainer;
 
-import jakarta.websocket.server.ServerContainer;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import org.springframework.boot.testsupport.classpath.ForkedClassPath;
-import org.springframework.boot.testsupport.web.servlet.DirtiesUrlFactories;
-import org.springframework.boot.testsupport.web.servlet.Servlet5ClassPathOverrides;
 import org.springframework.boot.web.embedded.jetty.JettyServletWebServerFactory;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizerBeanPostProcessor;
@@ -41,28 +37,41 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Andy Wilkinson
  */
-@DirtiesUrlFactories
 class WebSocketServletAutoConfigurationTests {
 
-	@ParameterizedTest(name = "{0}")
-	@MethodSource("testConfiguration")
-	@ForkedClassPath
-	void serverContainerIsAvailableFromTheServletContext(String server, Class<?>... configuration) {
-		try (AnnotationConfigServletWebServerApplicationContext context = new AnnotationConfigServletWebServerApplicationContext(
-				configuration)) {
-			Object serverContainer = context.getServletContext()
-				.getAttribute("jakarta.websocket.server.ServerContainer");
-			assertThat(serverContainer).isInstanceOf(ServerContainer.class);
+	private AnnotationConfigServletWebServerApplicationContext context;
+
+	@BeforeEach
+	void createContext() {
+		this.context = new AnnotationConfigServletWebServerApplicationContext();
+	}
+
+	@AfterEach
+	void close() {
+		if (this.context != null) {
+			this.context.close();
 		}
 	}
 
-	static Stream<Arguments> testConfiguration() {
-		return Stream.of(
-				Arguments.of("Jetty",
-						new Class<?>[] { JettyConfiguration.class,
-								WebSocketServletAutoConfiguration.JettyWebSocketConfiguration.class }),
-				Arguments.of("Tomcat", new Class<?>[] { TomcatConfiguration.class,
-						WebSocketServletAutoConfiguration.TomcatWebSocketConfiguration.class }));
+	@Test
+	void tomcatServerContainerIsAvailableFromTheServletContext() {
+		serverContainerIsAvailableFromTheServletContext(TomcatConfiguration.class,
+				WebSocketServletAutoConfiguration.TomcatWebSocketConfiguration.class);
+	}
+
+	@Test
+	void jettyServerContainerIsAvailableFromTheServletContext() {
+		serverContainerIsAvailableFromTheServletContext(JettyConfiguration.class,
+				WebSocketServletAutoConfiguration.JettyWebSocketConfiguration.class);
+	}
+
+	private void serverContainerIsAvailableFromTheServletContext(Class<?>... configuration) {
+		this.context.register(configuration);
+		this.context.refresh();
+		Object serverContainer = this.context.getServletContext()
+				.getAttribute("javax.websocket.server.ServerContainer");
+		assertThat(serverContainer).isInstanceOf(ServerContainer.class);
+
 	}
 
 	@Configuration(proxyBeanMethods = false)
@@ -87,7 +96,6 @@ class WebSocketServletAutoConfigurationTests {
 
 	}
 
-	@Servlet5ClassPathOverrides
 	@Configuration(proxyBeanMethods = false)
 	static class JettyConfiguration extends CommonConfiguration {
 

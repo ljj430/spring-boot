@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
-import java.util.HexFormat;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -35,7 +34,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
- * Encapsulates a payload data sent over a HTTP tunnel.
+ * Encapsulates a payload data sent via a HTTP tunnel.
  *
  * @author Phillip Webb
  * @since 1.3.0
@@ -46,7 +45,7 @@ public class HttpTunnelPayload {
 
 	private static final int BUFFER_SIZE = 1024 * 100;
 
-	private static final HexFormat HEX_FORMAT = HexFormat.of().withUpperCase();
+	protected static final char[] HEX_CHARS = "0123456789ABCDEF".toCharArray();
 
 	private static final Log logger = LogFactory.getLog(HttpTunnelPayload.class);
 
@@ -174,7 +173,13 @@ public class HttpTunnelPayload {
 	 */
 	public String toHexString() {
 		byte[] bytes = this.data.array();
-		return HEX_FORMAT.formatHex(bytes);
+		char[] hex = new char[this.data.remaining() * 2];
+		for (int i = this.data.position(); i < this.data.remaining(); i++) {
+			int b = bytes[i] & 0xFF;
+			hex[i * 2] = HEX_CHARS[b >>> 4];
+			hex[i * 2 + 1] = HEX_CHARS[b & 0x0F];
+		}
+		return new String(hex);
 	}
 
 }

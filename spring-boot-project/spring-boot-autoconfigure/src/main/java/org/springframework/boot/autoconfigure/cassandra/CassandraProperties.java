@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package org.springframework.boot.autoconfigure.cassandra;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import com.datastax.oss.driver.api.core.DefaultConsistencyLevel;
@@ -31,10 +33,9 @@ import org.springframework.core.io.Resource;
  * @author Phillip Webb
  * @author Mark Paluch
  * @author Stephane Nicoll
- * @author Scott Frederick
  * @since 1.3.0
  */
-@ConfigurationProperties(prefix = "spring.cassandra")
+@ConfigurationProperties(prefix = "spring.data.cassandra")
 public class CassandraProperties {
 
 	/**
@@ -56,7 +57,7 @@ public class CassandraProperties {
 	 * Cluster node addresses in the form 'host:port', or a simple 'host' to use the
 	 * configured port.
 	 */
-	private List<String> contactPoints;
+	private final List<String> contactPoints = new ArrayList<>(Collections.singleton("127.0.0.1:9042"));
 
 	/**
 	 * Port to use if a contact point does not specify one.
@@ -82,7 +83,7 @@ public class CassandraProperties {
 	/**
 	 * Compression supported by the Cassandra binary protocol.
 	 */
-	private Compression compression;
+	private Compression compression = Compression.NONE;
 
 	/**
 	 * Schema action to take at startup.
@@ -90,9 +91,9 @@ public class CassandraProperties {
 	private String schemaAction = "none";
 
 	/**
-	 * SSL configuration.
+	 * Enable SSL support.
 	 */
-	private Ssl ssl = new Ssl();
+	private boolean ssl = false;
 
 	/**
 	 * Connection configuration.
@@ -142,10 +143,6 @@ public class CassandraProperties {
 		return this.contactPoints;
 	}
 
-	public void setContactPoints(List<String> contactPoints) {
-		this.contactPoints = contactPoints;
-	}
-
 	public int getPort() {
 		return this.port;
 	}
@@ -186,11 +183,11 @@ public class CassandraProperties {
 		this.compression = compression;
 	}
 
-	public Ssl getSsl() {
+	public boolean isSsl() {
 		return this.ssl;
 	}
 
-	public void setSsl(Ssl ssl) {
+	public void setSsl(boolean ssl) {
 		this.ssl = ssl;
 	}
 
@@ -216,36 +213,6 @@ public class CassandraProperties {
 
 	public Controlconnection getControlconnection() {
 		return this.controlconnection;
-	}
-
-	public static class Ssl {
-
-		/**
-		 * Whether to enable SSL support.
-		 */
-		private Boolean enabled;
-
-		/**
-		 * SSL bundle name.
-		 */
-		private String bundle;
-
-		public boolean isEnabled() {
-			return (this.enabled != null) ? this.enabled : this.bundle != null;
-		}
-
-		public void setEnabled(boolean enabled) {
-			this.enabled = enabled;
-		}
-
-		public String getBundle() {
-			return this.bundle;
-		}
-
-		public void setBundle(String bundle) {
-			this.bundle = bundle;
-		}
-
 	}
 
 	public static class Connection {
@@ -299,7 +266,7 @@ public class CassandraProperties {
 		/**
 		 * How many rows will be retrieved simultaneously in a single network round-trip.
 		 */
-		private Integer pageSize;
+		private int pageSize;
 
 		private final Throttler throttler = new Throttler();
 
@@ -327,7 +294,7 @@ public class CassandraProperties {
 			this.serialConsistency = serialConsistency;
 		}
 
-		public Integer getPageSize() {
+		public int getPageSize() {
 			return this.pageSize;
 		}
 
@@ -380,7 +347,7 @@ public class CassandraProperties {
 		/**
 		 * Timeout to use for control queries.
 		 */
-		private Duration timeout;
+		private Duration timeout = Duration.ofSeconds(5);
 
 		public Duration getTimeout() {
 			return this.timeout;
@@ -403,17 +370,17 @@ public class CassandraProperties {
 		 * Maximum number of requests that can be enqueued when the throttling threshold
 		 * is exceeded.
 		 */
-		private Integer maxQueueSize;
+		private int maxQueueSize;
 
 		/**
 		 * Maximum number of requests that are allowed to execute in parallel.
 		 */
-		private Integer maxConcurrentRequests;
+		private int maxConcurrentRequests;
 
 		/**
 		 * Maximum allowed request rate.
 		 */
-		private Integer maxRequestsPerSecond;
+		private int maxRequestsPerSecond;
 
 		/**
 		 * How often the throttler attempts to dequeue requests. Set this high enough that
@@ -430,7 +397,7 @@ public class CassandraProperties {
 			this.type = type;
 		}
 
-		public Integer getMaxQueueSize() {
+		public int getMaxQueueSize() {
 			return this.maxQueueSize;
 		}
 
@@ -438,7 +405,7 @@ public class CassandraProperties {
 			this.maxQueueSize = maxQueueSize;
 		}
 
-		public Integer getMaxConcurrentRequests() {
+		public int getMaxConcurrentRequests() {
 			return this.maxConcurrentRequests;
 		}
 
@@ -446,7 +413,7 @@ public class CassandraProperties {
 			this.maxConcurrentRequests = maxConcurrentRequests;
 		}
 
-		public Integer getMaxRequestsPerSecond() {
+		public int getMaxRequestsPerSecond() {
 			return this.maxRequestsPerSecond;
 		}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,14 +24,12 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Supplier;
 
 import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.Undertow.Builder;
 import io.undertow.UndertowOptions;
 
-import org.springframework.boot.ssl.SslBundle;
 import org.springframework.boot.web.server.AbstractConfigurableWebServerFactory;
 import org.springframework.boot.web.server.Compression;
 import org.springframework.boot.web.server.Http2;
@@ -143,7 +141,8 @@ class UndertowWebServerFactoryDelegate {
 		return this.useForwardHeaders;
 	}
 
-	Builder createBuilder(AbstractConfigurableWebServerFactory factory, Supplier<SslBundle> sslBundleSupplier) {
+	Builder createBuilder(AbstractConfigurableWebServerFactory factory) {
+		Ssl ssl = factory.getSsl();
 		InetAddress address = factory.getAddress();
 		int port = factory.getPort();
 		Builder builder = Undertow.builder();
@@ -163,10 +162,8 @@ class UndertowWebServerFactoryDelegate {
 		if (http2 != null) {
 			builder.setServerOption(UndertowOptions.ENABLE_HTTP2, http2.isEnabled());
 		}
-		Ssl ssl = factory.getSsl();
-		if (Ssl.isEnabled(ssl)) {
-			new SslBuilderCustomizer(factory.getPort(), address, ssl.getClientAuth(), sslBundleSupplier.get())
-				.customize(builder);
+		if (ssl != null && ssl.isEnabled()) {
+			new SslBuilderCustomizer(factory.getPort(), address, ssl, factory.getSslStoreProvider()).customize(builder);
 		}
 		else {
 			builder.addHttpListener(port, (address != null) ? address.getHostAddress() : "0.0.0.0");

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,8 +30,6 @@ import java.util.function.Consumer;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.PropertyEditorRegistry;
 import org.springframework.beans.SimpleTypeConverter;
-import org.springframework.beans.propertyeditors.CustomBooleanEditor;
-import org.springframework.beans.propertyeditors.CustomNumberEditor;
 import org.springframework.beans.propertyeditors.FileEditor;
 import org.springframework.boot.convert.ApplicationConversionService;
 import org.springframework.core.ResolvableType;
@@ -177,9 +175,7 @@ final class BindConverter {
 		private static final Set<Class<?>> EXCLUDED_EDITORS;
 		static {
 			Set<Class<?>> excluded = new HashSet<>();
-			excluded.add(CustomNumberEditor.class);
-			excluded.add(CustomBooleanEditor.class);
-			excluded.add(FileEditor.class);
+			excluded.add(FileEditor.class); // gh-12163
 			EXCLUDED_EDITORS = Collections.unmodifiableSet(excluded);
 		}
 

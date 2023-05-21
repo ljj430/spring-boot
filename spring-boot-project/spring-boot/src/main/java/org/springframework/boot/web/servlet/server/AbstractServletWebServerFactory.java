@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,9 +31,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.SessionCookieConfig;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.SessionCookieConfig;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -69,7 +70,7 @@ public abstract class AbstractServletWebServerFactory extends AbstractConfigurab
 
 	private boolean registerDefaultServlet = false;
 
-	private MimeMappings mimeMappings = MimeMappings.lazyCopy(MimeMappings.DEFAULT);
+	private MimeMappings mimeMappings = new MimeMappings(MimeMappings.DEFAULT);
 
 	private List<ServletContextInitializer> initializers = new ArrayList<>();
 
@@ -78,8 +79,6 @@ public abstract class AbstractServletWebServerFactory extends AbstractConfigurab
 	private Map<Locale, Charset> localeCharsetMappings = new HashMap<>();
 
 	private Map<String, String> initParameters = Collections.emptyMap();
-
-	private List<CookieSameSiteSupplier> cookieSameSiteSuppliers = new ArrayList<>();
 
 	private final DocumentRoot documentRoot = new DocumentRoot(this.logger);
 
@@ -173,7 +172,6 @@ public abstract class AbstractServletWebServerFactory extends AbstractConfigurab
 
 	@Override
 	public void setMimeMappings(MimeMappings mimeMappings) {
-		Assert.notNull(mimeMappings, "MimeMappings must not be null");
 		this.mimeMappings = new MimeMappings(mimeMappings);
 	}
 
@@ -244,22 +242,6 @@ public abstract class AbstractServletWebServerFactory extends AbstractConfigurab
 		return this.initParameters;
 	}
 
-	@Override
-	public void setCookieSameSiteSuppliers(List<? extends CookieSameSiteSupplier> cookieSameSiteSuppliers) {
-		Assert.notNull(cookieSameSiteSuppliers, "CookieSameSiteSuppliers must not be null");
-		this.cookieSameSiteSuppliers = new ArrayList<>(cookieSameSiteSuppliers);
-	}
-
-	@Override
-	public void addCookieSameSiteSuppliers(CookieSameSiteSupplier... cookieSameSiteSuppliers) {
-		Assert.notNull(cookieSameSiteSuppliers, "CookieSameSiteSuppliers must not be null");
-		this.cookieSameSiteSuppliers.addAll(Arrays.asList(cookieSameSiteSuppliers));
-	}
-
-	public List<CookieSameSiteSupplier> getCookieSameSiteSuppliers() {
-		return this.cookieSameSiteSuppliers;
-	}
-
 	/**
 	 * Utility method that can be used by subclasses wishing to combine the specified
 	 * {@link ServletContextInitializer} parameters with those defined in this instance.
@@ -277,7 +259,7 @@ public abstract class AbstractServletWebServerFactory extends AbstractConfigurab
 	}
 
 	/**
-	 * Returns whether the JSP servlet should be registered with the web server.
+	 * Returns whether or not the JSP servlet should be registered with the web server.
 	 * @return {@code true} if the servlet should be registered, otherwise {@code false}
 	 */
 	protected boolean shouldRegisterJspServlet() {
@@ -335,7 +317,6 @@ public abstract class AbstractServletWebServerFactory extends AbstractConfigurab
 			configureSessionCookie(servletContext.getSessionCookieConfig());
 		}
 
-		@SuppressWarnings("removal")
 		private void configureSessionCookie(SessionCookieConfig config) {
 			Session.Cookie cookie = this.session.getCookie();
 			PropertyMapper map = PropertyMapper.get().alwaysApplyingWhenNonNull();
@@ -348,13 +329,13 @@ public abstract class AbstractServletWebServerFactory extends AbstractConfigurab
 			map.from(cookie::getMaxAge).asInt(Duration::getSeconds).to(config::setMaxAge);
 		}
 
-		private Set<jakarta.servlet.SessionTrackingMode> unwrap(Set<Session.SessionTrackingMode> modes) {
+		private Set<javax.servlet.SessionTrackingMode> unwrap(Set<Session.SessionTrackingMode> modes) {
 			if (modes == null) {
 				return null;
 			}
-			Set<jakarta.servlet.SessionTrackingMode> result = new LinkedHashSet<>();
+			Set<javax.servlet.SessionTrackingMode> result = new LinkedHashSet<>();
 			for (Session.SessionTrackingMode mode : modes) {
-				result.add(jakarta.servlet.SessionTrackingMode.valueOf(mode.name()));
+				result.add(javax.servlet.SessionTrackingMode.valueOf(mode.name()));
 			}
 			return result;
 		}

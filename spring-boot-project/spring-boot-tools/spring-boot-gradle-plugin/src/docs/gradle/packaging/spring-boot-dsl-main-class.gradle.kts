@@ -1,5 +1,5 @@
 plugins {
-	java
+	war
 	id("org.springframework.boot") version "{gradle-project-version}"
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,20 +26,17 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import reactor.core.publisher.Flux;
 
-import org.springframework.aot.hint.RuntimeHints;
-import org.springframework.aot.hint.RuntimeHintsRegistrar;
-import org.springframework.aot.hint.annotation.Reflective;
-import org.springframework.aot.hint.annotation.ReflectiveRuntimeHintsRegistrar;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.actuate.endpoint.InvalidEndpointRequestException;
 import org.springframework.boot.actuate.endpoint.InvocationContext;
-import org.springframework.boot.actuate.endpoint.OperationArgumentResolver;
 import org.springframework.boot.actuate.endpoint.ProducibleOperationArgumentResolver;
 import org.springframework.boot.actuate.endpoint.SecurityContext;
 import org.springframework.boot.actuate.endpoint.invoke.OperationInvoker;
@@ -49,10 +46,6 @@ import org.springframework.boot.actuate.endpoint.web.ExposableWebEndpoint;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
 import org.springframework.boot.actuate.endpoint.web.WebOperation;
 import org.springframework.boot.actuate.endpoint.web.WebOperationRequestPredicate;
-import org.springframework.boot.actuate.endpoint.web.WebServerNamespace;
-import org.springframework.boot.actuate.endpoint.web.servlet.AbstractWebMvcEndpointHandlerMapping.AbstractWebMvcEndpointHandlerMappingRuntimeHints;
-import org.springframework.boot.web.context.WebServerApplicationContext;
-import org.springframework.context.annotation.ImportRuntimeHints;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -67,14 +60,15 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.context.WebApplicationContext;
-import org.springframework.web.context.support.WebApplicationContextUtils;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.HandlerMapping;
+import org.springframework.web.servlet.handler.MatchableHandlerMapping;
+import org.springframework.web.servlet.handler.RequestMatchResult;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfoHandlerMapping;
+import org.springframework.web.util.UrlPathHelper;
 
 /**
  * A custom {@link HandlerMapping} that makes {@link ExposableWebEndpoint web endpoints}
@@ -86,9 +80,8 @@ import org.springframework.web.servlet.mvc.method.RequestMappingInfoHandlerMappi
  * @author Brian Clozel
  * @since 2.0.0
  */
-@ImportRuntimeHints(AbstractWebMvcEndpointHandlerMappingRuntimeHints.class)
 public abstract class AbstractWebMvcEndpointHandlerMapping extends RequestMappingInfoHandlerMapping
-		implements InitializingBean {
+		implements InitializingBean, MatchableHandlerMapping {
 
 	private final EndpointMapping endpointMapping;
 
@@ -103,7 +96,7 @@ public abstract class AbstractWebMvcEndpointHandlerMapping extends RequestMappin
 	private final Method handleMethod = ReflectionUtils.findMethod(OperationHandler.class, "handle",
 			HttpServletRequest.class, Map.class);
 
-	private RequestMappingInfo.BuilderConfiguration builderConfig = new RequestMappingInfo.BuilderConfiguration();
+	private static final RequestMappingInfo.BuilderConfiguration builderConfig = getBuilderConfig();
 
 	/**
 	 * Creates a new {@code WebEndpointHandlerMapping} that provides mappings for the
@@ -140,13 +133,6 @@ public abstract class AbstractWebMvcEndpointHandlerMapping extends RequestMappin
 	}
 
 	@Override
-	public void afterPropertiesSet() {
-		this.builderConfig = new RequestMappingInfo.BuilderConfiguration();
-		this.builderConfig.setPatternParser(getPatternParser());
-		super.afterPropertiesSet();
-	}
-
-	@Override
 	protected void initHandlerMethods() {
 		for (ExposableWebEndpoint endpoint : this.endpoints) {
 			for (WebOperation operation : endpoint.getOperations()) {
@@ -164,6 +150,27 @@ public abstract class AbstractWebMvcEndpointHandlerMapping extends RequestMappin
 		return new WebMvcEndpointHandlerMethod(handlerMethod.getBean(), handlerMethod.getMethod());
 	}
 
+	@Override
+	public RequestMatchResult match(HttpServletRequest request, String pattern) {
+		RequestMappingInfo info = RequestMappingInfo.paths(pattern).options(builderConfig).build();
+		RequestMappingInfo matchingInfo = info.getMatchingCondition(request);
+		if (matchingInfo == null) {
+			return null;
+		}
+		Set<String> patterns = matchingInfo.getPatternsCondition().getPatterns();
+		String lookupPath = getUrlPathHelper().getLookupPathForRequest(request);
+		return new RequestMatchResult(patterns.iterator().next(), lookupPath, getPathMatcher());
+	}
+
+	@SuppressWarnings("deprecation")
+	private static RequestMappingInfo.BuilderConfiguration getBuilderConfig() {
+		RequestMappingInfo.BuilderConfiguration config = new RequestMappingInfo.BuilderConfiguration();
+		config.setPathMatcher(null);
+		config.setSuffixPatternMatch(false);
+		config.setTrailingSlashMatch(true);
+		return config;
+	}
+
 	private void registerMappingForOperation(ExposableWebEndpoint endpoint, WebOperation operation) {
 		WebOperationRequestPredicate predicate = operation.getRequestPredicate();
 		String path = predicate.getPath();
@@ -171,11 +178,6 @@ public abstract class AbstractWebMvcEndpointHandlerMapping extends RequestMappin
 		if (matchAllRemainingPathSegmentsVariable != null) {
 			path = path.replace("{*" + matchAllRemainingPathSegmentsVariable + "}", "**");
 		}
-		registerMapping(endpoint, predicate, operation, path);
-	}
-
-	protected void registerMapping(ExposableWebEndpoint endpoint, WebOperationRequestPredicate predicate,
-			WebOperation operation, String path) {
 		ServletWebOperation servletWebOperation = wrapServletWebOperation(endpoint, operation,
 				new ServletWebOperationAdapter(operation));
 		registerMapping(createRequestMappingInfo(predicate, path), new OperationHandler(servletWebOperation),
@@ -197,21 +199,15 @@ public abstract class AbstractWebMvcEndpointHandlerMapping extends RequestMappin
 
 	private RequestMappingInfo createRequestMappingInfo(WebOperationRequestPredicate predicate, String path) {
 		return RequestMappingInfo.paths(this.endpointMapping.createSubPath(path))
-			.options(this.builderConfig)
-			.methods(RequestMethod.valueOf(predicate.getHttpMethod().name()))
-			.consumes(predicate.getConsumes().toArray(new String[0]))
-			.produces(predicate.getProduces().toArray(new String[0]))
-			.build();
+				.methods(RequestMethod.valueOf(predicate.getHttpMethod().name()))
+				.consumes(predicate.getConsumes().toArray(new String[0]))
+				.produces(predicate.getProduces().toArray(new String[0])).build();
 	}
 
 	private void registerLinksMapping() {
-		String path = this.endpointMapping.getPath();
-		String linksPath = (StringUtils.hasLength(path)) ? this.endpointMapping.createSubPath("/") : "/";
-		RequestMappingInfo mapping = RequestMappingInfo.paths(linksPath)
-			.methods(RequestMethod.GET)
-			.produces(this.endpointMediaTypes.getProduced().toArray(new String[0]))
-			.options(this.builderConfig)
-			.build();
+		RequestMappingInfo mapping = RequestMappingInfo.paths(this.endpointMapping.createSubPath(""))
+				.methods(RequestMethod.GET).produces(this.endpointMediaTypes.getProduced().toArray(new String[0]))
+				.options(builderConfig).build();
 		LinksHandler linksHandler = getLinksHandler();
 		registerMapping(mapping, linksHandler, ReflectionUtils.findMethod(linksHandler.getClass(), "links",
 				HttpServletRequest.class, HttpServletResponse.class));
@@ -307,18 +303,9 @@ public abstract class AbstractWebMvcEndpointHandlerMapping extends RequestMappin
 			Map<String, Object> arguments = getArguments(request, body);
 			try {
 				ServletSecurityContext securityContext = new ServletSecurityContext(request);
-				ProducibleOperationArgumentResolver producibleOperationArgumentResolver = new ProducibleOperationArgumentResolver(
-						() -> headers.get("Accept"));
-				OperationArgumentResolver serverNamespaceArgumentResolver = OperationArgumentResolver
-					.of(WebServerNamespace.class, () -> {
-						WebApplicationContext applicationContext = WebApplicationContextUtils
-							.getRequiredWebApplicationContext(request.getServletContext());
-						return WebServerNamespace
-							.from(WebServerApplicationContext.getServerNamespace(applicationContext));
-					});
 				InvocationContext invocationContext = new InvocationContext(securityContext, arguments,
-						serverNamespaceArgumentResolver, producibleOperationArgumentResolver);
-				return handleResult(this.operation.invoke(invocationContext), HttpMethod.valueOf(request.getMethod()));
+						new ProducibleOperationArgumentResolver(() -> headers.get("Accept")));
+				return handleResult(this.operation.invoke(invocationContext), HttpMethod.resolve(request.getMethod()));
 			}
 			catch (InvalidEndpointRequestException ex) {
 				throw new InvalidEndpointBadRequestException(ex);
@@ -333,21 +320,20 @@ public abstract class AbstractWebMvcEndpointHandlerMapping extends RequestMappin
 		private Map<String, Object> getArguments(HttpServletRequest request, Map<String, String> body) {
 			Map<String, Object> arguments = new LinkedHashMap<>(getTemplateVariables(request));
 			String matchAllRemainingPathSegmentsVariable = this.operation.getRequestPredicate()
-				.getMatchAllRemainingPathSegmentsVariable();
+					.getMatchAllRemainingPathSegmentsVariable();
 			if (matchAllRemainingPathSegmentsVariable != null) {
 				arguments.put(matchAllRemainingPathSegmentsVariable, getRemainingPathSegments(request));
 			}
 			if (body != null && HttpMethod.POST.name().equals(request.getMethod())) {
 				arguments.putAll(body);
 			}
-			request.getParameterMap()
-				.forEach((name, values) -> arguments.put(name,
-						(values.length != 1) ? Arrays.asList(values) : values[0]));
+			request.getParameterMap().forEach(
+					(name, values) -> arguments.put(name, (values.length != 1) ? Arrays.asList(values) : values[0]));
 			return arguments;
 		}
 
 		private Object getRemainingPathSegments(HttpServletRequest request) {
-			String[] pathTokens = tokenize(request, HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE, true);
+			String[] pathTokens = tokenize(request, UrlPathHelper.PATH_ATTRIBUTE, true);
 			String[] patternTokens = tokenize(request, HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE, false);
 			int numberOfRemainingPathSegments = pathTokens.length - patternTokens.length + 1;
 			Assert.state(numberOfRemainingPathSegments >= 0, "Unable to extract remaining path segments");
@@ -380,14 +366,14 @@ public abstract class AbstractWebMvcEndpointHandlerMapping extends RequestMappin
 				return new ResponseEntity<>(
 						(httpMethod != HttpMethod.GET) ? HttpStatus.NO_CONTENT : HttpStatus.NOT_FOUND);
 			}
-			if (!(result instanceof WebEndpointResponse<?> response)) {
+			if (!(result instanceof WebEndpointResponse)) {
 				return convertIfNecessary(result);
 			}
+			WebEndpointResponse<?> response = (WebEndpointResponse<?>) result;
 			MediaType contentType = (response.getContentType() != null) ? new MediaType(response.getContentType())
 					: null;
-			return ResponseEntity.status(response.getStatus())
-				.contentType(contentType)
-				.body(convertIfNecessary(response.getBody()));
+			return ResponseEntity.status(response.getStatus()).contentType(contentType)
+					.body(convertIfNecessary(response.getBody()));
 		}
 
 		private Object convertIfNecessary(Object body) {
@@ -423,7 +409,6 @@ public abstract class AbstractWebMvcEndpointHandlerMapping extends RequestMappin
 		}
 
 		@ResponseBody
-		@Reflective
 		Object handle(HttpServletRequest request, @RequestBody(required = false) Map<String, String> body) {
 			return this.operation.handle(request, body);
 		}
@@ -484,17 +469,6 @@ public abstract class AbstractWebMvcEndpointHandlerMapping extends RequestMappin
 		@Override
 		public boolean isUserInRole(String role) {
 			return this.request.isUserInRole(role);
-		}
-
-	}
-
-	static class AbstractWebMvcEndpointHandlerMappingRuntimeHints implements RuntimeHintsRegistrar {
-
-		private final ReflectiveRuntimeHintsRegistrar reflectiveRegistrar = new ReflectiveRuntimeHintsRegistrar();
-
-		@Override
-		public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
-			this.reflectiveRegistrar.registerRuntimeHints(hints, OperationHandler.class);
 		}
 
 	}

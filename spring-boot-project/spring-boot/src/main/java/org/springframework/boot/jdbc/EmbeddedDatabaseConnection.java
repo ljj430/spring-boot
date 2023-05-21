@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 import java.util.Locale;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import javax.sql.DataSource;
@@ -38,7 +39,6 @@ import org.springframework.util.ClassUtils;
  * @author Dave Syer
  * @author Stephane Nicoll
  * @author Nidhi Desai
- * @author Moritz Halbritter
  * @since 1.0.0
  * @see #get(ClassLoader)
  */
@@ -47,35 +47,58 @@ public enum EmbeddedDatabaseConnection {
 	/**
 	 * No Connection.
 	 */
-	NONE(null),
+	NONE(null, null, null, (url) -> false),
 
 	/**
 	 * H2 Database Connection.
 	 */
-	H2("jdbc:h2:mem:%s;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE"),
+	H2(EmbeddedDatabaseType.H2, DatabaseDriver.H2.getDriverClassName(),
+			"jdbc:h2:mem:%s;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE", (url) -> url.contains(":h2:mem")),
 
 	/**
 	 * Derby Database Connection.
 	 */
-	DERBY("jdbc:derby:memory:%s;create=true"),
+	DERBY(EmbeddedDatabaseType.DERBY, DatabaseDriver.DERBY.getDriverClassName(), "jdbc:derby:memory:%s;create=true",
+			(url) -> true),
+
+	/**
+	 * HSQL Database Connection.
+	 * @deprecated since 2.4.0 for removal in 2.6.0 in favor of
+	 * {@link EmbeddedDatabaseConnection#HSQLDB}.
+	 */
+	@Deprecated
+	HSQL(EmbeddedDatabaseType.HSQL, DatabaseDriver.HSQLDB.getDriverClassName(), "org.hsqldb.jdbcDriver",
+			"jdbc:hsqldb:mem:%s", (url) -> url.contains(":hsqldb:mem:")),
 
 	/**
 	 * HSQL Database Connection.
 	 * @since 2.4.0
 	 */
-	HSQLDB("org.hsqldb.jdbcDriver", "jdbc:hsqldb:mem:%s");
+	HSQLDB(EmbeddedDatabaseType.HSQL, DatabaseDriver.HSQLDB.getDriverClassName(), "org.hsqldb.jdbcDriver",
+			"jdbc:hsqldb:mem:%s", (url) -> url.contains(":hsqldb:mem:"));
+
+	private final EmbeddedDatabaseType type;
+
+	private final String driverClass;
 
 	private final String alternativeDriverClass;
 
 	private final String url;
 
-	EmbeddedDatabaseConnection(String url) {
-		this(null, url);
+	private final Predicate<String> embeddedUrl;
+
+	EmbeddedDatabaseConnection(EmbeddedDatabaseType type, String driverClass, String url,
+			Predicate<String> embeddedUrl) {
+		this(type, driverClass, null, url, embeddedUrl);
 	}
 
-	EmbeddedDatabaseConnection(String fallbackDriverClass, String url) {
+	EmbeddedDatabaseConnection(EmbeddedDatabaseType type, String driverClass, String fallbackDriverClass, String url,
+			Predicate<String> embeddedUrl) {
+		this.type = type;
+		this.driverClass = driverClass;
 		this.alternativeDriverClass = fallbackDriverClass;
 		this.url = url;
+		this.embeddedUrl = embeddedUrl;
 	}
 
 	/**
@@ -83,13 +106,7 @@ public enum EmbeddedDatabaseConnection {
 	 * @return the driver class name
 	 */
 	public String getDriverClassName() {
-		// See https://github.com/spring-projects/spring-boot/issues/32865
-		return switch (this) {
-			case NONE -> null;
-			case H2 -> DatabaseDriver.H2.getDriverClassName();
-			case DERBY -> DatabaseDriver.DERBY.getDriverClassName();
-			case HSQLDB -> DatabaseDriver.HSQLDB.getDriverClassName();
-		};
+		return this.driverClass;
 	}
 
 	/**
@@ -97,13 +114,7 @@ public enum EmbeddedDatabaseConnection {
 	 * @return the database type
 	 */
 	public EmbeddedDatabaseType getType() {
-		// See https://github.com/spring-projects/spring-boot/issues/32865
-		return switch (this) {
-			case NONE -> null;
-			case H2 -> EmbeddedDatabaseType.H2;
-			case DERBY -> EmbeddedDatabaseType.DERBY;
-			case HSQLDB -> EmbeddedDatabaseType.HSQL;
-		};
+		return this.type;
 	}
 
 	/**
@@ -117,18 +128,25 @@ public enum EmbeddedDatabaseConnection {
 	}
 
 	boolean isEmbeddedUrl(String url) {
-		// See https://github.com/spring-projects/spring-boot/issues/32865
-		return switch (this) {
-			case NONE -> false;
-			case H2 -> url.contains(":h2:mem");
-			case DERBY -> true;
-			case HSQLDB -> url.contains(":hsqldb:mem:");
-		};
+		return this.embeddedUrl.test(url);
 	}
 
 	boolean isDriverCompatible(String driverClass) {
 		return (driverClass != null
-				&& (driverClass.equals(getDriverClassName()) || driverClass.equals(this.alternativeDriverClass)));
+				&& (driverClass.equals(this.driverClass) || driverClass.equals(this.alternativeDriverClass)));
+	}
+
+	/**
+	 * Convenience method to determine if a given driver class name represents an embedded
+	 * database type.
+	 * @param driverClass the driver class
+	 * @return true if the driver class is one of the embedded types
+	 * @deprecated since 2.4.0 for removal in 2.6.0 in favor of
+	 * {@link #isEmbedded(String, String)}
+	 */
+	@Deprecated
+	public static boolean isEmbedded(String driverClass) {
+		return isEmbedded(driverClass, null);
 	}
 
 	/**
@@ -151,10 +169,8 @@ public enum EmbeddedDatabaseConnection {
 	}
 
 	private static EmbeddedDatabaseConnection getEmbeddedDatabaseConnection(String driverClass) {
-		return Stream.of(H2, HSQLDB, DERBY)
-			.filter((connection) -> connection.isDriverCompatible(driverClass))
-			.findFirst()
-			.orElse(NONE);
+		return Stream.of(H2, HSQLDB, DERBY).filter((connection) -> connection.isDriverCompatible(driverClass))
+				.findFirst().orElse(NONE);
 	}
 
 	/**
@@ -203,7 +219,7 @@ public enum EmbeddedDatabaseConnection {
 			productName = productName.toUpperCase(Locale.ENGLISH);
 			EmbeddedDatabaseConnection[] candidates = EmbeddedDatabaseConnection.values();
 			for (EmbeddedDatabaseConnection candidate : candidates) {
-				if (candidate != NONE && productName.contains(candidate.getType().name())) {
+				if (candidate != NONE && productName.contains(candidate.name())) {
 					String url = metaData.getURL();
 					return (url == null || candidate.isEmbeddedUrl(url));
 				}

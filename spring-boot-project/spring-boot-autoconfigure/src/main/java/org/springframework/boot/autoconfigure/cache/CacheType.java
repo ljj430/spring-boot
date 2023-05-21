@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,14 +37,14 @@ public enum CacheType {
 	JCACHE,
 
 	/**
+	 * EhCache backed caching.
+	 */
+	EHCACHE,
+
+	/**
 	 * Hazelcast backed caching.
 	 */
 	HAZELCAST,
-
-	/**
-	 * Couchbase backed caching.
-	 */
-	COUCHBASE,
 
 	/**
 	 * Infinispan backed caching.
@@ -52,14 +52,14 @@ public enum CacheType {
 	INFINISPAN,
 
 	/**
+	 * Couchbase backed caching.
+	 */
+	COUCHBASE,
+
+	/**
 	 * Redis backed caching.
 	 */
 	REDIS,
-
-	/**
-	 * Cache2k backed caching.
-	 */
-	CACHE2K,
 
 	/**
 	 * Caffeine backed caching.

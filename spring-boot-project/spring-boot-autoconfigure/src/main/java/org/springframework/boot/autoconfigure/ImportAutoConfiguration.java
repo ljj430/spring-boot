@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,14 +23,13 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import org.springframework.boot.context.annotation.ImportCandidates;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.annotation.AliasFor;
 
 /**
  * Import and apply the specified auto-configuration classes. Applies the same ordering
  * rules as {@code @EnableAutoConfiguration} but restricts the auto-configuration classes
- * to the specified set, rather than consulting {@link ImportCandidates}.
+ * to the specified set, rather than consulting {@code spring.factories}.
  * <p>
  * Can also be used to {@link #exclude()} specific auto-configuration classes such that
  * they will never be applied.
@@ -60,8 +59,8 @@ public @interface ImportAutoConfiguration {
 
 	/**
 	 * The auto-configuration classes that should be imported. When empty, the classes are
-	 * specified using a file in {@code META-INF/spring} where the file name is the
-	 * fully-qualified name of the annotated class, suffixed with '.imports'.
+	 * specified using an entry in {@code META-INF/spring.factories} where the key is the
+	 * fully-qualified name of the annotated class.
 	 * @return the classes to import
 	 */
 	@AliasFor("value")

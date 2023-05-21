@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +17,12 @@
 package org.springframework.boot.context.properties;
 
 import java.io.IOException;
-import java.util.function.Consumer;
 
 import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
-import org.springframework.beans.factory.support.RootBeanDefinition;
-import org.springframework.boot.context.properties.ConfigurationPropertiesBean.BindMethod;
+import org.springframework.beans.factory.support.GenericBeanDefinition;
 import org.springframework.boot.context.properties.scan.combined.c.CombinedConfiguration;
 import org.springframework.boot.context.properties.scan.combined.d.OtherCombinedConfiguration;
 import org.springframework.boot.context.properties.scan.valid.ConfigurationPropertiesScanConfiguration;
@@ -56,9 +54,9 @@ class ConfigurationPropertiesScanRegistrarTests {
 				"foo-org.springframework.boot.context.properties.scan.valid.ConfigurationPropertiesScanConfiguration$FooProperties");
 		BeanDefinition barDefinition = this.beanFactory.getBeanDefinition(
 				"bar-org.springframework.boot.context.properties.scan.valid.ConfigurationPropertiesScanConfiguration$BarProperties");
-		assertThat(bingDefinition).satisfies(configurationPropertiesBeanDefinition(BindMethod.JAVA_BEAN));
-		assertThat(fooDefinition).satisfies(configurationPropertiesBeanDefinition(BindMethod.JAVA_BEAN));
-		assertThat(barDefinition).satisfies(configurationPropertiesBeanDefinition(BindMethod.VALUE_OBJECT));
+		assertThat(bingDefinition).isExactlyInstanceOf(GenericBeanDefinition.class);
+		assertThat(fooDefinition).isExactlyInstanceOf(GenericBeanDefinition.class);
+		assertThat(barDefinition).isExactlyInstanceOf(ConfigurationPropertiesValueObjectBeanDefinition.class);
 	}
 
 	@Test
@@ -69,7 +67,7 @@ class ConfigurationPropertiesScanRegistrarTests {
 				getAnnotationMetadata(ConfigurationPropertiesScanConfiguration.TestConfiguration.class), beanFactory);
 		BeanDefinition fooDefinition = beanFactory.getBeanDefinition(
 				"foo-org.springframework.boot.context.properties.scan.valid.ConfigurationPropertiesScanConfiguration$FooProperties");
-		assertThat(fooDefinition).isExactlyInstanceOf(RootBeanDefinition.class);
+		assertThat(fooDefinition).isExactlyInstanceOf(GenericBeanDefinition.class);
 	}
 
 	@Test
@@ -81,18 +79,18 @@ class ConfigurationPropertiesScanRegistrarTests {
 				beanFactory);
 		assertThat(beanFactory.containsBeanDefinition(
 				"foo-org.springframework.boot.context.properties.scan.valid.ConfigurationPropertiesScanConfiguration$FooProperties"))
-			.isFalse();
+						.isFalse();
 		BeanDefinition aDefinition = beanFactory.getBeanDefinition(
 				"a-org.springframework.boot.context.properties.scan.valid.a.AScanConfiguration$AProperties");
 		BeanDefinition bFirstDefinition = beanFactory.getBeanDefinition(
 				"b.first-org.springframework.boot.context.properties.scan.valid.b.BScanConfiguration$BFirstProperties");
 		BeanDefinition bSecondDefinition = beanFactory.getBeanDefinition(
 				"b.second-org.springframework.boot.context.properties.scan.valid.b.BScanConfiguration$BSecondProperties");
-		assertThat(aDefinition).satisfies(configurationPropertiesBeanDefinition(BindMethod.JAVA_BEAN));
+		assertThat(aDefinition).isExactlyInstanceOf(GenericBeanDefinition.class);
 		// Constructor injection
-		assertThat(bFirstDefinition).satisfies(configurationPropertiesBeanDefinition(BindMethod.VALUE_OBJECT));
+		assertThat(bFirstDefinition).isExactlyInstanceOf(ConfigurationPropertiesValueObjectBeanDefinition.class);
 		// Post-processing injection
-		assertThat(bSecondDefinition).satisfies(configurationPropertiesBeanDefinition(BindMethod.JAVA_BEAN));
+		assertThat(bSecondDefinition).isExactlyInstanceOf(GenericBeanDefinition.class);
 	}
 
 	@Test
@@ -100,7 +98,7 @@ class ConfigurationPropertiesScanRegistrarTests {
 		DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
 		beanFactory.setAllowBeanDefinitionOverriding(false);
 		this.registrar.registerBeanDefinitions(getAnnotationMetadata(CombinedScanConfiguration.class), beanFactory);
-		assertThat(beanFactory.getBeanDefinitionCount()).isZero();
+		assertThat(beanFactory.getBeanDefinitionCount()).isEqualTo(0);
 	}
 
 	@Test
@@ -109,15 +107,7 @@ class ConfigurationPropertiesScanRegistrarTests {
 		beanFactory.setAllowBeanDefinitionOverriding(false);
 		this.registrar.registerBeanDefinitions(getAnnotationMetadata(OtherCombinedScanConfiguration.class),
 				beanFactory);
-		assertThat(beanFactory.getBeanDefinitionCount()).isZero();
-	}
-
-	private Consumer<BeanDefinition> configurationPropertiesBeanDefinition(BindMethod bindMethod) {
-		return (definition) -> {
-			assertThat(definition).isExactlyInstanceOf(RootBeanDefinition.class);
-			assertThat(definition.hasAttribute(BindMethod.class.getName())).isTrue();
-			assertThat(definition.getAttribute(BindMethod.class.getName())).isEqualTo(bindMethod);
-		};
+		assertThat(beanFactory.getBeanDefinitionCount()).isEqualTo(0);
 	}
 
 	private AnnotationMetadata getAnnotationMetadata(Class<?> source) throws IOException {

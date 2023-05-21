@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package org.springframework.boot.web.servlet.context;
 
-import org.springframework.boot.web.context.WebServerGracefulShutdownLifecycle;
 import org.springframework.boot.web.server.WebServer;
 import org.springframework.context.SmartLifecycle;
 
@@ -44,12 +43,11 @@ class WebServerStartStopLifecycle implements SmartLifecycle {
 		this.webServer.start();
 		this.running = true;
 		this.applicationContext
-			.publishEvent(new ServletWebServerInitializedEvent(this.webServer, this.applicationContext));
+				.publishEvent(new ServletWebServerInitializedEvent(this.webServer, this.applicationContext));
 	}
 
 	@Override
 	public void stop() {
-		this.running = false;
 		this.webServer.stop();
 	}
 
@@ -60,7 +58,7 @@ class WebServerStartStopLifecycle implements SmartLifecycle {
 
 	@Override
 	public int getPhase() {
-		return WebServerGracefulShutdownLifecycle.SMART_LIFECYCLE_PHASE - 1024;
+		return Integer.MAX_VALUE - 1;
 	}
 
 }

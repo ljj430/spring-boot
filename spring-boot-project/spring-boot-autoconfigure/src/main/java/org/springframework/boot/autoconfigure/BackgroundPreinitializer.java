@@ -20,8 +20,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import jakarta.validation.Configuration;
-import jakarta.validation.Validation;
+import javax.validation.Configuration;
+import javax.validation.Validation;
 
 import org.springframework.boot.context.event.ApplicationEnvironmentPreparedEvent;
 import org.springframework.boot.context.event.ApplicationFailedEvent;
@@ -30,7 +30,7 @@ import org.springframework.boot.context.event.SpringApplicationEvent;
 import org.springframework.boot.context.logging.LoggingApplicationListener;
 import org.springframework.context.ApplicationListener;
 import org.springframework.core.NativeDetector;
-import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.format.support.DefaultFormattingConversionService;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.http.converter.support.AllEncompassingFormHttpMessageConverter;
@@ -49,7 +49,8 @@ import org.springframework.http.converter.support.AllEncompassingFormHttpMessage
  * @author Sebastien Deleuze
  * @since 1.3.0
  */
-public class BackgroundPreinitializer implements ApplicationListener<SpringApplicationEvent>, Ordered {
+@Order(LoggingApplicationListener.DEFAULT_ORDER + 1)
+public class BackgroundPreinitializer implements ApplicationListener<SpringApplicationEvent> {
 
 	/**
 	 * System property that instructs Spring Boot how to run pre initialization. When the
@@ -64,17 +65,16 @@ public class BackgroundPreinitializer implements ApplicationListener<SpringAppli
 
 	private static final CountDownLatch preinitializationComplete = new CountDownLatch(1);
 
-	private static final boolean ENABLED = !Boolean.getBoolean(IGNORE_BACKGROUNDPREINITIALIZER_PROPERTY_NAME)
-			&& Runtime.getRuntime().availableProcessors() > 1;
+	private static final boolean ENABLED;
 
-	@Override
-	public int getOrder() {
-		return LoggingApplicationListener.DEFAULT_ORDER + 1;
+	static {
+		ENABLED = !Boolean.getBoolean(IGNORE_BACKGROUNDPREINITIALIZER_PROPERTY_NAME) && !NativeDetector.inNativeImage()
+				&& Runtime.getRuntime().availableProcessors() > 1;
 	}
 
 	@Override
 	public void onApplicationEvent(SpringApplicationEvent event) {
-		if (!ENABLED || NativeDetector.inNativeImage()) {
+		if (!ENABLED) {
 			return;
 		}
 		if (event instanceof ApplicationEnvironmentPreparedEvent
@@ -100,23 +100,18 @@ public class BackgroundPreinitializer implements ApplicationListener<SpringAppli
 				public void run() {
 					runSafely(new ConversionServiceInitializer());
 					runSafely(new ValidationInitializer());
-					if (!runSafely(new MessageConverterInitializer())) {
-						// If the MessageConverterInitializer fails to run, we still might
-						// be able to
-						// initialize Jackson
-						runSafely(new JacksonInitializer());
-					}
+					runSafely(new MessageConverterInitializer());
+					runSafely(new JacksonInitializer());
 					runSafely(new CharsetInitializer());
 					preinitializationComplete.countDown();
 				}
 
-				boolean runSafely(Runnable runnable) {
+				public void runSafely(Runnable runnable) {
 					try {
 						runnable.run();
-						return true;
 					}
 					catch (Throwable ex) {
-						return false;
+						// Ignore
 					}
 				}
 
@@ -144,7 +139,7 @@ public class BackgroundPreinitializer implements ApplicationListener<SpringAppli
 	}
 
 	/**
-	 * Early initializer for jakarta.validation.
+	 * Early initializer for javax.validation.
 	 */
 	private static class ValidationInitializer implements Runnable {
 

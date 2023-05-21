@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,13 +25,13 @@ public class NonAnnotatedEntity {
 
 	private Long id;
 
-	private String item;
+	private String value;
 
 	protected NonAnnotatedEntity() {
 	}
 
-	public NonAnnotatedEntity(String item) {
-		this.item = item;
+	public NonAnnotatedEntity(String value) {
+		this.value = value;
 	}
 
 	public Long getId() {
@@ -42,12 +42,12 @@ public class NonAnnotatedEntity {
 		this.id = id;
 	}
 
-	public String getItem() {
-		return this.item;
+	public String getValue() {
+		return this.value;
 	}
 
-	public void setItem(String value) {
-		this.item = value;
+	public void setValue(String value) {
+		this.value = value;
 	}
 
 }

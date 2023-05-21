@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy;
 import org.hibernate.cfg.AvailableSettings;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy;
+import org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ObjectUtils;
@@ -53,12 +53,27 @@ public class HibernateProperties {
 	 */
 	private String ddlAuto;
 
+	/**
+	 * Whether to use Hibernate's newer IdentifierGenerator for AUTO, TABLE and SEQUENCE.
+	 * This is actually a shortcut for the "hibernate.id.new_generator_mappings" property.
+	 * When not specified will default to "true".
+	 */
+	private Boolean useNewIdGeneratorMappings;
+
 	public String getDdlAuto() {
 		return this.ddlAuto;
 	}
 
 	public void setDdlAuto(String ddlAuto) {
 		this.ddlAuto = ddlAuto;
+	}
+
+	public Boolean isUseNewIdGeneratorMappings() {
+		return this.useNewIdGeneratorMappings;
+	}
+
+	public void setUseNewIdGeneratorMappings(Boolean useNewIdGeneratorMappings) {
+		this.useNewIdGeneratorMappings = useNewIdGeneratorMappings;
 	}
 
 	public Naming getNaming() {
@@ -82,6 +97,7 @@ public class HibernateProperties {
 
 	private Map<String, Object> getAdditionalProperties(Map<String, String> existing, HibernateSettings settings) {
 		Map<String, Object> result = new HashMap<>(existing);
+		applyNewIdGeneratorMappings(result);
 		applyScanner(result);
 		getNaming().applyNamingStrategies(result);
 		String ddlAuto = determineDdlAuto(existing, settings::getDdlAuto);
@@ -98,6 +114,15 @@ public class HibernateProperties {
 		return result;
 	}
 
+	private void applyNewIdGeneratorMappings(Map<String, Object> result) {
+		if (this.useNewIdGeneratorMappings != null) {
+			result.put(AvailableSettings.USE_NEW_ID_GENERATOR_MAPPINGS, this.useNewIdGeneratorMappings.toString());
+		}
+		else if (!result.containsKey(AvailableSettings.USE_NEW_ID_GENERATOR_MAPPINGS)) {
+			result.put(AvailableSettings.USE_NEW_ID_GENERATOR_MAPPINGS, "true");
+		}
+	}
+
 	private void applyScanner(Map<String, Object> result) {
 		if (!result.containsKey(AvailableSettings.SCANNER) && ClassUtils.isPresent(DISABLED_SCANNER_CLASS, null)) {
 			result.put(AvailableSettings.SCANNER, DISABLED_SCANNER_CLASS);
@@ -112,7 +137,7 @@ public class HibernateProperties {
 		if (this.ddlAuto != null) {
 			return this.ddlAuto;
 		}
-		if (existing.get(AvailableSettings.JAKARTA_HBM2DDL_DATABASE_ACTION) != null) {
+		if (existing.get(AvailableSettings.HBM2DDL_DATABASE_ACTION) != null) {
 			return null;
 		}
 		return defaultDdlAuto.get();
@@ -148,18 +173,18 @@ public class HibernateProperties {
 
 		private void applyNamingStrategies(Map<String, Object> properties) {
 			applyNamingStrategy(properties, AvailableSettings.IMPLICIT_NAMING_STRATEGY, this.implicitStrategy,
-					() -> SpringImplicitNamingStrategy.class.getName());
+					SpringImplicitNamingStrategy.class.getName());
 			applyNamingStrategy(properties, AvailableSettings.PHYSICAL_NAMING_STRATEGY, this.physicalStrategy,
-					() -> CamelCaseToUnderscoresNamingStrategy.class.getName());
+					SpringPhysicalNamingStrategy.class.getName());
 		}
 
 		private void applyNamingStrategy(Map<String, Object> properties, String key, Object strategy,
-				Supplier<String> defaultStrategy) {
+				Object defaultStrategy) {
 			if (strategy != null) {
 				properties.put(key, strategy);
 			}
-			else {
-				properties.computeIfAbsent(key, (k) -> defaultStrategy.get());
+			else if (defaultStrategy != null && !properties.containsKey(key)) {
+				properties.put(key, defaultStrategy);
 			}
 		}
 

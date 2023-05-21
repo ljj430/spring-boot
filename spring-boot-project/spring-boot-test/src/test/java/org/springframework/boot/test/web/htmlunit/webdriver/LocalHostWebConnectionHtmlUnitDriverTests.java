@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package org.springframework.boot.test.web.htmlunit.webdriver;
 import java.net.URL;
 
 import com.gargoylesoftware.htmlunit.BrowserVersion;
-import com.gargoylesoftware.htmlunit.TopLevelWindow;
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.WebClientOptions;
 import com.gargoylesoftware.htmlunit.WebConsole;
@@ -56,38 +55,35 @@ class LocalHostWebConnectionHtmlUnitDriverTests {
 		this.webClient = webClient;
 		given(this.webClient.getOptions()).willReturn(new WebClientOptions());
 		given(this.webClient.getWebConsole()).willReturn(new WebConsole());
-		WebWindow currentWindow = mock(WebWindow.class);
-		given(currentWindow.isClosed()).willReturn(false);
-		given(this.webClient.getCurrentWindow()).willReturn(currentWindow);
 	}
 
 	@Test
 	void createWhenEnvironmentIsNullWillThrowException() {
 		assertThatIllegalArgumentException().isThrownBy(() -> new LocalHostWebConnectionHtmlUnitDriver(null))
-			.withMessageContaining("Environment must not be null");
+				.withMessageContaining("Environment must not be null");
 	}
 
 	@Test
 	void createWithJavascriptFlagWhenEnvironmentIsNullWillThrowException() {
 		assertThatIllegalArgumentException().isThrownBy(() -> new LocalHostWebConnectionHtmlUnitDriver(null, true))
-			.withMessageContaining("Environment must not be null");
+				.withMessageContaining("Environment must not be null");
 	}
 
 	@Test
 	void createWithBrowserVersionWhenEnvironmentIsNullWillThrowException() {
 		assertThatIllegalArgumentException()
-			.isThrownBy(() -> new LocalHostWebConnectionHtmlUnitDriver(null, BrowserVersion.CHROME))
-			.withMessageContaining("Environment must not be null");
+				.isThrownBy(() -> new LocalHostWebConnectionHtmlUnitDriver(null, BrowserVersion.CHROME))
+				.withMessageContaining("Environment must not be null");
 	}
 
 	@Test
 	void createWithCapabilitiesWhenEnvironmentIsNullWillThrowException() {
 		Capabilities capabilities = mock(Capabilities.class);
 		given(capabilities.getBrowserName()).willReturn("htmlunit");
-		given(capabilities.getBrowserVersion()).willReturn("chrome");
+		given(capabilities.getVersion()).willReturn("chrome");
 		assertThatIllegalArgumentException()
-			.isThrownBy(() -> new LocalHostWebConnectionHtmlUnitDriver(null, capabilities))
-			.withMessageContaining("Environment must not be null");
+				.isThrownBy(() -> new LocalHostWebConnectionHtmlUnitDriver(null, capabilities))
+				.withMessageContaining("Environment must not be null");
 	}
 
 	@Test
@@ -95,8 +91,8 @@ class LocalHostWebConnectionHtmlUnitDriverTests {
 		MockEnvironment environment = new MockEnvironment();
 		LocalHostWebConnectionHtmlUnitDriver driver = new TestLocalHostWebConnectionHtmlUnitDriver(environment);
 		driver.get("/test");
-		then(this.webClient).should()
-			.getPage(any(TopLevelWindow.class), requestToUrl(new URL("http://localhost:8080/test")));
+		then(this.webClient).should().getPage(any(WebWindow.class),
+				requestToUrl(new URL("http://localhost:8080/test")));
 	}
 
 	@Test
@@ -105,8 +101,8 @@ class LocalHostWebConnectionHtmlUnitDriverTests {
 		environment.setProperty("local.server.port", "8181");
 		LocalHostWebConnectionHtmlUnitDriver driver = new TestLocalHostWebConnectionHtmlUnitDriver(environment);
 		driver.get("/test");
-		then(this.webClient).should()
-			.getPage(any(TopLevelWindow.class), requestToUrl(new URL("http://localhost:8181/test")));
+		then(this.webClient).should().getPage(any(WebWindow.class),
+				requestToUrl(new URL("http://localhost:8181/test")));
 	}
 
 	private WebRequest requestToUrl(URL url) {

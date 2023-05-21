@@ -58,7 +58,7 @@ The `SpringBootPlugin` class provides a `BOM_COORDINATES` constant that can be u
 
 First, configure the project to depend on the Spring Boot plugin but do not apply it:
 
-ifeval::["{artifact-release-type}" == "release"]
+ifeval::["{spring-boot-artifactory-repo}" == "release"]
 [source,groovy,indent=0,subs="verbatim,attributes",role="primary"]
 .Groovy
 ----
@@ -71,7 +71,7 @@ include::../gradle/managing-dependencies/depend-on-plugin-release.gradle[]
 include::../gradle/managing-dependencies/depend-on-plugin-release.gradle.kts[]
 ----
 endif::[]
-ifeval::["{artifact-release-type}" == "milestone"]
+ifeval::["{spring-boot-artifactory-repo}" == "milestone"]
 [source,groovy,indent=0,subs="verbatim,attributes",role="primary"]
 .Groovy
 ----
@@ -83,7 +83,7 @@ include::../gradle/managing-dependencies/depend-on-plugin-milestone.gradle[]
 include::../gradle/managing-dependencies/depend-on-plugin-release.gradle.kts[]
 ----
 endif::[]
-ifeval::["{artifact-release-type}" == "snapshot"]
+ifeval::["{spring-boot-artifactory-repo}" == "snapshot"]
 [source,groovy,indent=0,subs="verbatim,attributes",role="primary"]
 .Groovy
 ----

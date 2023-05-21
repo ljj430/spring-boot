@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,11 @@
 
 package org.springframework.boot.autoconfigure.mongo;
 
-import java.util.List;
-
 import com.mongodb.ConnectionString;
 import org.bson.UuidRepresentation;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
 
 /**
  * Configuration properties for Mongo.
@@ -35,7 +34,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @author Nasko Vasilev
  * @author Mark Paluch
  * @author Artsiom Yudovin
- * @author Safeer Ansari
  * @since 1.0.0
  */
 @ConfigurationProperties(prefix = "spring.data.mongodb")
@@ -62,14 +60,8 @@ public class MongoProperties {
 	private Integer port = null;
 
 	/**
-	 * Additional server hosts. Cannot be set with URI or if 'host' is not specified.
-	 * Additional hosts will use the default mongo port of 27017. If you want to use a
-	 * different port you can use the "host:port" syntax.
-	 */
-	private List<String> additionalHosts;
-
-	/**
-	 * Mongo database URI. Overrides host, port, username, password, and database.
+	 * Mongo database URI. Cannot be set with host, port, credentials and replica set
+	 * name.
 	 */
 	private String uri;
 
@@ -109,8 +101,6 @@ public class MongoProperties {
 	 * Representation to use when converting a UUID to a BSON binary value.
 	 */
 	private UuidRepresentation uuidRepresentation = UuidRepresentation.JAVA_LEGACY;
-
-	private final Ssl ssl = new Ssl();
 
 	/**
 	 * Whether to enable auto-index creation.
@@ -205,6 +195,23 @@ public class MongoProperties {
 		return this.gridfs;
 	}
 
+	/**
+	 * Return the GridFS database name.
+	 * @return the GridFS database name
+	 * @deprecated since 2.4.0 for removal in 2.6.0 in favor of
+	 * {@link Gridfs#getDatabase()}
+	 */
+	@DeprecatedConfigurationProperty(replacement = "spring.data.mongodb.gridfs.database")
+	@Deprecated
+	public String getGridFsDatabase() {
+		return this.gridfs.getDatabase();
+	}
+
+	@Deprecated
+	public void setGridFsDatabase(String gridFsDatabase) {
+		this.gridfs.setDatabase(gridFsDatabase);
+	}
+
 	public String getMongoClientDatabase() {
 		if (this.database != null) {
 			return this.database;
@@ -218,18 +225,6 @@ public class MongoProperties {
 
 	public void setAutoIndexCreation(Boolean autoIndexCreation) {
 		this.autoIndexCreation = autoIndexCreation;
-	}
-
-	public List<String> getAdditionalHosts() {
-		return this.additionalHosts;
-	}
-
-	public void setAdditionalHosts(List<String> additionalHosts) {
-		this.additionalHosts = additionalHosts;
-	}
-
-	public Ssl getSsl() {
-		return this.ssl;
 	}
 
 	public static class Gridfs {
@@ -258,37 +253,6 @@ public class MongoProperties {
 
 		public void setBucket(String bucket) {
 			this.bucket = bucket;
-		}
-
-	}
-
-	public static class Ssl {
-
-		/**
-		 * Whether to enable SSL support. Enabled automatically if "bundle" is provided
-		 * unless specified otherwise.
-		 */
-		private Boolean enabled;
-
-		/**
-		 * SSL bundle name.
-		 */
-		private String bundle;
-
-		public boolean isEnabled() {
-			return (this.enabled != null) ? this.enabled : this.bundle != null;
-		}
-
-		public void setEnabled(boolean enabled) {
-			this.enabled = enabled;
-		}
-
-		public String getBundle() {
-			return this.bundle;
-		}
-
-		public void setBundle(String bundle) {
-			this.bundle = bundle;
 		}
 
 	}

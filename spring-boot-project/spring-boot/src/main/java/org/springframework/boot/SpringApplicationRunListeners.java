@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,8 @@
 
 package org.springframework.boot;
 
-import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -32,8 +33,6 @@ import org.springframework.util.ReflectionUtils;
  * A collection of {@link SpringApplicationRunListener}.
  *
  * @author Phillip Webb
- * @author Andy Wilkinson
- * @author Chris Bono
  */
 class SpringApplicationRunListeners {
 
@@ -43,10 +42,10 @@ class SpringApplicationRunListeners {
 
 	private final ApplicationStartup applicationStartup;
 
-	SpringApplicationRunListeners(Log log, List<SpringApplicationRunListener> listeners,
+	SpringApplicationRunListeners(Log log, Collection<? extends SpringApplicationRunListener> listeners,
 			ApplicationStartup applicationStartup) {
 		this.log = log;
-		this.listeners = List.copyOf(listeners);
+		this.listeners = new ArrayList<>(listeners);
 		this.applicationStartup = applicationStartup;
 	}
 
@@ -72,12 +71,12 @@ class SpringApplicationRunListeners {
 		doWithListeners("spring.boot.application.context-loaded", (listener) -> listener.contextLoaded(context));
 	}
 
-	void started(ConfigurableApplicationContext context, Duration timeTaken) {
-		doWithListeners("spring.boot.application.started", (listener) -> listener.started(context, timeTaken));
+	void started(ConfigurableApplicationContext context) {
+		doWithListeners("spring.boot.application.started", (listener) -> listener.started(context));
 	}
 
-	void ready(ConfigurableApplicationContext context, Duration timeTaken) {
-		doWithListeners("spring.boot.application.ready", (listener) -> listener.ready(context, timeTaken));
+	void running(ConfigurableApplicationContext context) {
+		doWithListeners("spring.boot.application.running", (listener) -> listener.running(context));
 	}
 
 	void failed(ConfigurableApplicationContext context, Throwable exception) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2021 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,7 +47,6 @@ import org.springframework.util.FileCopyUtils;
  *
  * @author Andy Wilkinson
  * @author Madhura Bhave
- * @author Scott Frederick
  */
 public abstract class AbstractExecutableArchiveLauncherTests {
 
@@ -81,9 +80,9 @@ public abstract class AbstractExecutableArchiveLauncherTests {
 		if (indexed) {
 			jarOutputStream.putNextEntry(new JarEntry(entryPrefix + "/classpath.idx"));
 			Writer writer = new OutputStreamWriter(jarOutputStream, StandardCharsets.UTF_8);
-			writer.write("- \"" + entryPrefix + "/lib/foo.jar\"\n");
-			writer.write("- \"" + entryPrefix + "/lib/bar.jar\"\n");
-			writer.write("- \"" + entryPrefix + "/lib/baz.jar\"\n");
+			writer.write("- \"BOOT-INF/lib/foo.jar\"\n");
+			writer.write("- \"BOOT-INF/lib/bar.jar\"\n");
+			writer.write("- \"BOOT-INF/lib/baz.jar\"\n");
 			writer.flush();
 			jarOutputStream.closeEntry();
 		}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.quartz.CalendarIntervalTrigger;
 import org.quartz.CronTrigger;
@@ -47,10 +48,7 @@ import org.quartz.Trigger.TriggerState;
 import org.quartz.TriggerKey;
 import org.quartz.impl.matchers.GroupMatcher;
 
-import org.springframework.boot.actuate.endpoint.OperationResponseBody;
-import org.springframework.boot.actuate.endpoint.SanitizableData;
 import org.springframework.boot.actuate.endpoint.Sanitizer;
-import org.springframework.boot.actuate.endpoint.SanitizingFunction;
 import org.springframework.boot.actuate.endpoint.annotation.Endpoint;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
 import org.springframework.util.Assert;
@@ -66,17 +64,32 @@ import org.springframework.util.Assert;
 public class QuartzEndpoint {
 
 	private static final Comparator<Trigger> TRIGGER_COMPARATOR = Comparator
-		.comparing(Trigger::getNextFireTime, Comparator.nullsLast(Comparator.naturalOrder()))
-		.thenComparing(Comparator.comparingInt(Trigger::getPriority).reversed());
+			.comparing(Trigger::getNextFireTime, Comparator.nullsLast(Comparator.naturalOrder()))
+			.thenComparing(Comparator.comparingInt(Trigger::getPriority).reversed());
 
 	private final Scheduler scheduler;
 
 	private final Sanitizer sanitizer;
 
-	public QuartzEndpoint(Scheduler scheduler, Iterable<SanitizingFunction> sanitizingFunctions) {
+	/**
+	 * Create an instance for the specified {@link Scheduler} and {@link Sanitizer}.
+	 * @param scheduler the scheduler to use to retrieve jobs and triggers details
+	 * @param sanitizer the sanitizer to use to sanitize data maps
+	 */
+	public QuartzEndpoint(Scheduler scheduler, Sanitizer sanitizer) {
 		Assert.notNull(scheduler, "Scheduler must not be null");
+		Assert.notNull(sanitizer, "Sanitizer must not be null");
 		this.scheduler = scheduler;
-		this.sanitizer = new Sanitizer(sanitizingFunctions);
+		this.sanitizer = sanitizer;
+	}
+
+	/**
+	 * Create an instance for the specified {@link Scheduler} using a default
+	 * {@link Sanitizer}.
+	 * @param scheduler the scheduler to use to retrieve jobs and triggers details
+	 */
+	public QuartzEndpoint(Scheduler scheduler) {
+		this(scheduler, new Sanitizer());
 	}
 
 	/**
@@ -85,9 +98,9 @@ public class QuartzEndpoint {
 	 * @throws SchedulerException if retrieving the information from the scheduler failed
 	 */
 	@ReadOperation
-	public QuartzDescriptor quartzReport() throws SchedulerException {
-		return new QuartzDescriptor(new GroupNamesDescriptor(this.scheduler.getJobGroupNames()),
-				new GroupNamesDescriptor(this.scheduler.getTriggerGroupNames()));
+	public QuartzReport quartzReport() throws SchedulerException {
+		return new QuartzReport(new GroupNames(this.scheduler.getJobGroupNames()),
+				new GroupNames(this.scheduler.getTriggerGroupNames()));
 	}
 
 	/**
@@ -95,16 +108,14 @@ public class QuartzEndpoint {
 	 * @return the available job names
 	 * @throws SchedulerException if retrieving the information from the scheduler failed
 	 */
-	public QuartzGroupsDescriptor quartzJobGroups() throws SchedulerException {
+	public QuartzGroups quartzJobGroups() throws SchedulerException {
 		Map<String, Object> result = new LinkedHashMap<>();
 		for (String groupName : this.scheduler.getJobGroupNames()) {
-			List<String> jobs = this.scheduler.getJobKeys(GroupMatcher.jobGroupEquals(groupName))
-				.stream()
-				.map((key) -> key.getName())
-				.toList();
+			List<String> jobs = this.scheduler.getJobKeys(GroupMatcher.jobGroupEquals(groupName)).stream()
+					.map((key) -> key.getName()).collect(Collectors.toList());
 			result.put(groupName, Collections.singletonMap("jobs", jobs));
 		}
-		return new QuartzGroupsDescriptor(result);
+		return new QuartzGroups(result);
 	}
 
 	/**
@@ -112,20 +123,17 @@ public class QuartzEndpoint {
 	 * @return the available trigger names
 	 * @throws SchedulerException if retrieving the information from the scheduler failed
 	 */
-	public QuartzGroupsDescriptor quartzTriggerGroups() throws SchedulerException {
+	public QuartzGroups quartzTriggerGroups() throws SchedulerException {
 		Map<String, Object> result = new LinkedHashMap<>();
 		Set<String> pausedTriggerGroups = this.scheduler.getPausedTriggerGroups();
 		for (String groupName : this.scheduler.getTriggerGroupNames()) {
 			Map<String, Object> groupDetails = new LinkedHashMap<>();
 			groupDetails.put("paused", pausedTriggerGroups.contains(groupName));
-			groupDetails.put("triggers",
-					this.scheduler.getTriggerKeys(GroupMatcher.triggerGroupEquals(groupName))
-						.stream()
-						.map((key) -> key.getName())
-						.toList());
+			groupDetails.put("triggers", this.scheduler.getTriggerKeys(GroupMatcher.triggerGroupEquals(groupName))
+					.stream().map((key) -> key.getName()).collect(Collectors.toList()));
 			result.put(groupName, groupDetails);
 		}
-		return new QuartzGroupsDescriptor(result);
+		return new QuartzGroups(result);
 	}
 
 	/**
@@ -135,16 +143,16 @@ public class QuartzEndpoint {
 	 * @return a summary of the jobs in the given {@code group}
 	 * @throws SchedulerException if retrieving the information from the scheduler failed
 	 */
-	public QuartzJobGroupSummaryDescriptor quartzJobGroupSummary(String group) throws SchedulerException {
+	public QuartzJobGroupSummary quartzJobGroupSummary(String group) throws SchedulerException {
 		List<JobDetail> jobs = findJobsByGroup(group);
 		if (jobs.isEmpty() && !this.scheduler.getJobGroupNames().contains(group)) {
 			return null;
 		}
-		Map<String, QuartzJobSummaryDescriptor> result = new LinkedHashMap<>();
+		Map<String, QuartzJobSummary> result = new LinkedHashMap<>();
 		for (JobDetail job : jobs) {
-			result.put(job.getKey().getName(), QuartzJobSummaryDescriptor.of(job));
+			result.put(job.getKey().getName(), QuartzJobSummary.of(job));
 		}
-		return new QuartzJobGroupSummaryDescriptor(group, result);
+		return new QuartzJobGroupSummary(group, result);
 	}
 
 	private List<JobDetail> findJobsByGroup(String group) throws SchedulerException {
@@ -163,20 +171,20 @@ public class QuartzEndpoint {
 	 * @return a summary of the triggers in the given {@code group}
 	 * @throws SchedulerException if retrieving the information from the scheduler failed
 	 */
-	public QuartzTriggerGroupSummaryDescriptor quartzTriggerGroupSummary(String group) throws SchedulerException {
+	public QuartzTriggerGroupSummary quartzTriggerGroupSummary(String group) throws SchedulerException {
 		List<Trigger> triggers = findTriggersByGroup(group);
 		if (triggers.isEmpty() && !this.scheduler.getTriggerGroupNames().contains(group)) {
 			return null;
 		}
 		Map<TriggerType, Map<String, Object>> result = new LinkedHashMap<>();
 		triggers.forEach((trigger) -> {
-			TriggerDescriptor triggerDescriptor = TriggerDescriptor.of(trigger);
-			Map<String, Object> triggerTypes = result.computeIfAbsent(triggerDescriptor.getType(),
+			TriggerDescription triggerDescription = TriggerDescription.of(trigger);
+			Map<String, Object> triggerTypes = result.computeIfAbsent(triggerDescription.getType(),
 					(key) -> new LinkedHashMap<>());
-			triggerTypes.put(trigger.getKey().getName(), triggerDescriptor.buildSummary(true));
+			triggerTypes.put(trigger.getKey().getName(), triggerDescription.buildSummary(true));
 		});
 		boolean paused = this.scheduler.getPausedTriggerGroups().contains(group);
-		return new QuartzTriggerGroupSummaryDescriptor(group, paused, result);
+		return new QuartzTriggerGroupSummary(group, paused, result);
 	}
 
 	private List<Trigger> findTriggersByGroup(String group) throws SchedulerException {
@@ -189,23 +197,21 @@ public class QuartzEndpoint {
 	}
 
 	/**
-	 * Return the {@link QuartzJobDetailsDescriptor details of the job} identified with
-	 * the given group name and job name.
+	 * Return the {@link QuartzJobDetails details of the job} identified with the given
+	 * group name and job name.
 	 * @param groupName the name of the group
 	 * @param jobName the name of the job
-	 * @param showUnsanitized whether to sanitize values in data map
 	 * @return the details of the job or {@code null} if such job does not exist
 	 * @throws SchedulerException if retrieving the information from the scheduler failed
 	 */
-	public QuartzJobDetailsDescriptor quartzJob(String groupName, String jobName, boolean showUnsanitized)
-			throws SchedulerException {
+	public QuartzJobDetails quartzJob(String groupName, String jobName) throws SchedulerException {
 		JobKey jobKey = JobKey.jobKey(jobName, groupName);
 		JobDetail jobDetail = this.scheduler.getJobDetail(jobKey);
 		if (jobDetail != null) {
 			List<? extends Trigger> triggers = this.scheduler.getTriggersOfJob(jobKey);
-			return new QuartzJobDetailsDescriptor(jobDetail.getKey().getGroup(), jobDetail.getKey().getName(),
+			return new QuartzJobDetails(jobDetail.getKey().getGroup(), jobDetail.getKey().getName(),
 					jobDetail.getDescription(), jobDetail.getJobClass().getName(), jobDetail.isDurable(),
-					jobDetail.requestsRecovery(), sanitizeJobDataMap(jobDetail.getJobDataMap(), showUnsanitized),
+					jobDetail.requestsRecovery(), sanitizeJobDataMap(jobDetail.getJobDataMap()),
 					extractTriggersSummary(triggers));
 		}
 		return null;
@@ -219,7 +225,7 @@ public class QuartzEndpoint {
 			Map<String, Object> triggerSummary = new LinkedHashMap<>();
 			triggerSummary.put("group", trigger.getKey().getGroup());
 			triggerSummary.put("name", trigger.getKey().getName());
-			triggerSummary.putAll(TriggerDescriptor.of(trigger).buildSummary(false));
+			triggerSummary.putAll(TriggerDescription.of(trigger).buildSummary(false));
 			result.add(triggerSummary);
 		});
 		return result;
@@ -230,21 +236,14 @@ public class QuartzEndpoint {
 	 * name.
 	 * @param groupName the name of the group
 	 * @param triggerName the name of the trigger
-	 * @param showUnsanitized whether to sanitize values in data map
 	 * @return the details of the trigger or {@code null} if such trigger does not exist
 	 * @throws SchedulerException if retrieving the information from the scheduler failed
 	 */
-	Map<String, Object> quartzTrigger(String groupName, String triggerName, boolean showUnsanitized)
-			throws SchedulerException {
+	public Map<String, Object> quartzTrigger(String groupName, String triggerName) throws SchedulerException {
 		TriggerKey triggerKey = TriggerKey.triggerKey(triggerName, groupName);
 		Trigger trigger = this.scheduler.getTrigger(triggerKey);
-		if (trigger == null) {
-			return null;
-		}
-		TriggerState triggerState = this.scheduler.getTriggerState(triggerKey);
-		TriggerDescriptor triggerDescriptor = TriggerDescriptor.of(trigger);
-		Map<String, Object> jobDataMap = sanitizeJobDataMap(trigger.getJobDataMap(), showUnsanitized);
-		return OperationResponseBody.of(triggerDescriptor.buildDetails(triggerState, jobDataMap));
+		return (trigger != null) ? TriggerDescription.of(trigger).buildDetails(
+				this.scheduler.getTriggerState(triggerKey), sanitizeJobDataMap(trigger.getJobDataMap())) : null;
 	}
 
 	private static Duration getIntervalDuration(long amount, IntervalUnit unit) {
@@ -256,65 +255,71 @@ public class QuartzEndpoint {
 				: null;
 	}
 
-	private Map<String, Object> sanitizeJobDataMap(JobDataMap dataMap, boolean showUnsanitized) {
+	private Map<String, Object> sanitizeJobDataMap(JobDataMap dataMap) {
 		if (dataMap != null) {
 			Map<String, Object> map = new LinkedHashMap<>(dataMap.getWrappedMap());
-			map.replaceAll((key, value) -> getSanitizedValue(showUnsanitized, key, value));
+			map.replaceAll(this.sanitizer::sanitize);
 			return map;
 		}
 		return null;
 	}
 
-	private Object getSanitizedValue(boolean showUnsanitized, String key, Object value) {
-		SanitizableData data = new SanitizableData(null, key, value);
-		return this.sanitizer.sanitize(data, showUnsanitized);
-	}
-
 	private static TemporalUnit temporalUnit(IntervalUnit unit) {
-		return switch (unit) {
-			case DAY -> ChronoUnit.DAYS;
-			case HOUR -> ChronoUnit.HOURS;
-			case MINUTE -> ChronoUnit.MINUTES;
-			case MONTH -> ChronoUnit.MONTHS;
-			case SECOND -> ChronoUnit.SECONDS;
-			case MILLISECOND -> ChronoUnit.MILLIS;
-			case WEEK -> ChronoUnit.WEEKS;
-			case YEAR -> ChronoUnit.YEARS;
-		};
+		switch (unit) {
+		case DAY:
+			return ChronoUnit.DAYS;
+		case HOUR:
+			return ChronoUnit.HOURS;
+		case MINUTE:
+			return ChronoUnit.MINUTES;
+		case MONTH:
+			return ChronoUnit.MONTHS;
+		case SECOND:
+			return ChronoUnit.SECONDS;
+		case MILLISECOND:
+			return ChronoUnit.MILLIS;
+		case WEEK:
+			return ChronoUnit.WEEKS;
+		case YEAR:
+			return ChronoUnit.YEARS;
+		default:
+			throw new IllegalArgumentException("Unknown IntervalUnit");
+		}
 	}
 
 	/**
-	 * Description of available job and trigger group names.
+	 * A report of available job and trigger group names, primarily intended for
+	 * serialization to JSON.
 	 */
-	public static final class QuartzDescriptor implements OperationResponseBody {
+	public static final class QuartzReport {
 
-		private final GroupNamesDescriptor jobs;
+		private final GroupNames jobs;
 
-		private final GroupNamesDescriptor triggers;
+		private final GroupNames triggers;
 
-		QuartzDescriptor(GroupNamesDescriptor jobs, GroupNamesDescriptor triggers) {
+		QuartzReport(GroupNames jobs, GroupNames triggers) {
 			this.jobs = jobs;
 			this.triggers = triggers;
 		}
 
-		public GroupNamesDescriptor getJobs() {
+		public GroupNames getJobs() {
 			return this.jobs;
 		}
 
-		public GroupNamesDescriptor getTriggers() {
+		public GroupNames getTriggers() {
 			return this.triggers;
 		}
 
 	}
 
 	/**
-	 * Description of group names.
+	 * A set of group names, primarily intended for serialization to JSON.
 	 */
-	public static class GroupNamesDescriptor {
+	public static class GroupNames {
 
 		private final Set<String> groups;
 
-		public GroupNamesDescriptor(List<String> groups) {
+		public GroupNames(List<String> groups) {
 			this.groups = new LinkedHashSet<>(groups);
 		}
 
@@ -325,13 +330,14 @@ public class QuartzEndpoint {
 	}
 
 	/**
-	 * Description of each group identified by name.
+	 * A summary for each group identified by name, primarily intended for serialization
+	 * to JSON.
 	 */
-	public static class QuartzGroupsDescriptor implements OperationResponseBody {
+	public static class QuartzGroups {
 
 		private final Map<String, Object> groups;
 
-		public QuartzGroupsDescriptor(Map<String, Object> groups) {
+		public QuartzGroups(Map<String, Object> groups) {
 			this.groups = groups;
 		}
 
@@ -342,15 +348,15 @@ public class QuartzEndpoint {
 	}
 
 	/**
-	 * Description of the {@link JobDetail jobs} in a given group.
+	 * A summary report of the {@link JobDetail jobs} in a given group.
 	 */
-	public static final class QuartzJobGroupSummaryDescriptor implements OperationResponseBody {
+	public static final class QuartzJobGroupSummary {
 
 		private final String group;
 
-		private final Map<String, QuartzJobSummaryDescriptor> jobs;
+		private final Map<String, QuartzJobSummary> jobs;
 
-		private QuartzJobGroupSummaryDescriptor(String group, Map<String, QuartzJobSummaryDescriptor> jobs) {
+		private QuartzJobGroupSummary(String group, Map<String, QuartzJobSummary> jobs) {
 			this.group = group;
 			this.jobs = jobs;
 		}
@@ -359,25 +365,25 @@ public class QuartzEndpoint {
 			return this.group;
 		}
 
-		public Map<String, QuartzJobSummaryDescriptor> getJobs() {
+		public Map<String, QuartzJobSummary> getJobs() {
 			return this.jobs;
 		}
 
 	}
 
 	/**
-	 * Description of a {@link Job Quartz Job}.
+	 * Details of a {@link Job Quartz Job}, primarily intended for serialization to JSON.
 	 */
-	public static final class QuartzJobSummaryDescriptor {
+	public static final class QuartzJobSummary {
 
 		private final String className;
 
-		private QuartzJobSummaryDescriptor(JobDetail job) {
+		private QuartzJobSummary(JobDetail job) {
 			this.className = job.getJobClass().getName();
 		}
 
-		private static QuartzJobSummaryDescriptor of(JobDetail job) {
-			return new QuartzJobSummaryDescriptor(job);
+		private static QuartzJobSummary of(JobDetail job) {
+			return new QuartzJobSummary(job);
 		}
 
 		public String getClassName() {
@@ -387,9 +393,9 @@ public class QuartzEndpoint {
 	}
 
 	/**
-	 * Description of a {@link Job Quartz Job}.
+	 * Details of a {@link Job Quartz Job}, primarily intended for serialization to JSON.
 	 */
-	public static final class QuartzJobDetailsDescriptor implements OperationResponseBody {
+	public static final class QuartzJobDetails {
 
 		private final String group;
 
@@ -407,7 +413,7 @@ public class QuartzEndpoint {
 
 		private final List<Map<String, Object>> triggers;
 
-		QuartzJobDetailsDescriptor(String group, String name, String description, String className, boolean durable,
+		QuartzJobDetails(String group, String name, String description, String className, boolean durable,
 				boolean requestRecovery, Map<String, Object> data, List<Map<String, Object>> triggers) {
 			this.group = group;
 			this.name = name;
@@ -454,9 +460,9 @@ public class QuartzEndpoint {
 	}
 
 	/**
-	 * Description of the {@link Trigger triggers} in a given group.
+	 * A summary report of the {@link Trigger triggers} in a given group.
 	 */
-	public static final class QuartzTriggerGroupSummaryDescriptor implements OperationResponseBody {
+	public static final class QuartzTriggerGroupSummary {
 
 		private final String group;
 
@@ -464,7 +470,7 @@ public class QuartzEndpoint {
 
 		private final Triggers triggers;
 
-		private QuartzTriggerGroupSummaryDescriptor(String group, boolean paused,
+		private QuartzTriggerGroupSummary(String group, boolean paused,
 				Map<TriggerType, Map<String, Object>> descriptionsByType) {
 			this.group = group;
 			this.paused = paused;
@@ -557,33 +563,30 @@ public class QuartzEndpoint {
 	/**
 	 * Base class for descriptions of a {@link Trigger}.
 	 */
-	public abstract static class TriggerDescriptor {
+	public abstract static class TriggerDescription {
 
-		private static final Map<Class<? extends Trigger>, Function<Trigger, TriggerDescriptor>> DESCRIBERS = new LinkedHashMap<>();
+		private static final Map<Class<? extends Trigger>, Function<Trigger, TriggerDescription>> DESCRIBERS = new LinkedHashMap<>();
 
 		static {
-			DESCRIBERS.put(CronTrigger.class, (trigger) -> new CronTriggerDescriptor((CronTrigger) trigger));
-			DESCRIBERS.put(SimpleTrigger.class, (trigger) -> new SimpleTriggerDescriptor((SimpleTrigger) trigger));
+			DESCRIBERS.put(CronTrigger.class, (trigger) -> new CronTriggerDescription((CronTrigger) trigger));
+			DESCRIBERS.put(SimpleTrigger.class, (trigger) -> new SimpleTriggerDescription((SimpleTrigger) trigger));
 			DESCRIBERS.put(DailyTimeIntervalTrigger.class,
-					(trigger) -> new DailyTimeIntervalTriggerDescriptor((DailyTimeIntervalTrigger) trigger));
+					(trigger) -> new DailyTimeIntervalTriggerDescription((DailyTimeIntervalTrigger) trigger));
 			DESCRIBERS.put(CalendarIntervalTrigger.class,
-					(trigger) -> new CalendarIntervalTriggerDescriptor((CalendarIntervalTrigger) trigger));
+					(trigger) -> new CalendarIntervalTriggerDescription((CalendarIntervalTrigger) trigger));
 		}
 
 		private final Trigger trigger;
 
 		private final TriggerType type;
 
-		private static TriggerDescriptor of(Trigger trigger) {
-			return DESCRIBERS.entrySet()
-				.stream()
-				.filter((entry) -> entry.getKey().isInstance(trigger))
-				.map((entry) -> entry.getValue().apply(trigger))
-				.findFirst()
-				.orElse(new CustomTriggerDescriptor(trigger));
+		private static TriggerDescription of(Trigger trigger) {
+			return DESCRIBERS.entrySet().stream().filter((entry) -> entry.getKey().isInstance(trigger))
+					.map((entry) -> entry.getValue().apply(trigger)).findFirst()
+					.orElse(new CustomTriggerDescription(trigger));
 		}
 
-		protected TriggerDescriptor(Trigger trigger, TriggerType type) {
+		protected TriggerDescription(Trigger trigger, TriggerType type) {
 			this.trigger = trigger;
 			this.type = type;
 		}
@@ -663,13 +666,13 @@ public class QuartzEndpoint {
 	}
 
 	/**
-	 * Description of a {@link CronTrigger}.
+	 * A description of a {@link CronTrigger}.
 	 */
-	public static final class CronTriggerDescriptor extends TriggerDescriptor {
+	public static final class CronTriggerDescription extends TriggerDescription {
 
 		private final CronTrigger trigger;
 
-		public CronTriggerDescriptor(CronTrigger trigger) {
+		public CronTriggerDescription(CronTrigger trigger) {
 			super(trigger, TriggerType.CRON);
 			this.trigger = trigger;
 		}
@@ -688,13 +691,13 @@ public class QuartzEndpoint {
 	}
 
 	/**
-	 * Description of a {@link SimpleTrigger}.
+	 * A description of a {@link SimpleTrigger}.
 	 */
-	public static final class SimpleTriggerDescriptor extends TriggerDescriptor {
+	public static final class SimpleTriggerDescription extends TriggerDescription {
 
 		private final SimpleTrigger trigger;
 
-		public SimpleTriggerDescriptor(SimpleTrigger trigger) {
+		public SimpleTriggerDescription(SimpleTrigger trigger) {
 			super(trigger, TriggerType.SIMPLE);
 			this.trigger = trigger;
 		}
@@ -714,13 +717,13 @@ public class QuartzEndpoint {
 	}
 
 	/**
-	 * Description of a {@link DailyTimeIntervalTrigger}.
+	 * A description of a {@link DailyTimeIntervalTrigger}.
 	 */
-	public static final class DailyTimeIntervalTriggerDescriptor extends TriggerDescriptor {
+	public static final class DailyTimeIntervalTriggerDescription extends TriggerDescription {
 
 		private final DailyTimeIntervalTrigger trigger;
 
-		public DailyTimeIntervalTriggerDescriptor(DailyTimeIntervalTrigger trigger) {
+		public DailyTimeIntervalTriggerDescription(DailyTimeIntervalTrigger trigger) {
 			super(trigger, TriggerType.DAILY_INTERVAL);
 			this.trigger = trigger;
 		}
@@ -729,7 +732,7 @@ public class QuartzEndpoint {
 		protected void appendSummary(Map<String, Object> content) {
 			content.put("interval",
 					getIntervalDuration(this.trigger.getRepeatInterval(), this.trigger.getRepeatIntervalUnit())
-						.toMillis());
+							.toMillis());
 			putIfNoNull(content, "daysOfWeek", this.trigger.getDaysOfWeek());
 			putIfNoNull(content, "startTimeOfDay", getLocalTime(this.trigger.getStartTimeOfDay()));
 			putIfNoNull(content, "endTimeOfDay", getLocalTime(this.trigger.getEndTimeOfDay()));
@@ -745,13 +748,13 @@ public class QuartzEndpoint {
 	}
 
 	/**
-	 * Description of a {@link CalendarIntervalTrigger}.
+	 * A description of a {@link CalendarIntervalTrigger}.
 	 */
-	public static final class CalendarIntervalTriggerDescriptor extends TriggerDescriptor {
+	public static final class CalendarIntervalTriggerDescription extends TriggerDescription {
 
 		private final CalendarIntervalTrigger trigger;
 
-		public CalendarIntervalTriggerDescriptor(CalendarIntervalTrigger trigger) {
+		public CalendarIntervalTriggerDescription(CalendarIntervalTrigger trigger) {
 			super(trigger, TriggerType.CALENDAR_INTERVAL);
 			this.trigger = trigger;
 		}
@@ -760,7 +763,7 @@ public class QuartzEndpoint {
 		protected void appendSummary(Map<String, Object> content) {
 			content.put("interval",
 					getIntervalDuration(this.trigger.getRepeatInterval(), this.trigger.getRepeatIntervalUnit())
-						.toMillis());
+							.toMillis());
 			putIfNoNull(content, "timeZone", this.trigger.getTimeZone());
 		}
 
@@ -776,11 +779,11 @@ public class QuartzEndpoint {
 	}
 
 	/**
-	 * Description of a custom {@link Trigger}.
+	 * A description of a custom {@link Trigger}.
 	 */
-	public static final class CustomTriggerDescriptor extends TriggerDescriptor {
+	public static final class CustomTriggerDescription extends TriggerDescription {
 
-		public CustomTriggerDescriptor(Trigger trigger) {
+		public CustomTriggerDescription(Trigger trigger) {
 			super(trigger, TriggerType.CUSTOM_TRIGGER);
 		}
 

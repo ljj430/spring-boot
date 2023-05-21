@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,9 +31,10 @@ import org.springframework.util.StringUtils;
  *
  * @author Phillip Webb
  * @author Scott Frederick
- * @author Jeroen Meijer
  */
 class Phase {
+
+	private static final String DOMAIN_SOCKET_PATH = "/var/run/docker.sock";
 
 	private final String name;
 
@@ -46,10 +47,6 @@ class Phase {
 	private final List<Binding> bindings = new ArrayList<>();
 
 	private final Map<String, String> env = new LinkedHashMap<>();
-
-	private final List<String> securityOptions = new ArrayList<>();
-
-	private String networkMode;
 
 	/**
 	 * Create a new {@link Phase} instance.
@@ -105,22 +102,6 @@ class Phase {
 	}
 
 	/**
-	 * Update this phase with the network the build container will connect to.
-	 * @param networkMode the network
-	 */
-	void withNetworkMode(String networkMode) {
-		this.networkMode = networkMode;
-	}
-
-	/**
-	 * Update this phase with a security option.
-	 * @param option the security option
-	 */
-	void withSecurityOption(String option) {
-		this.securityOptions.add(option);
-	}
-
-	/**
 	 * Return the name of the phase.
 	 * @return the phase name
 	 */
@@ -140,15 +121,12 @@ class Phase {
 	void apply(ContainerConfig.Update update) {
 		if (this.daemonAccess) {
 			update.withUser("root");
+			update.withBinding(Binding.from(DOMAIN_SOCKET_PATH, DOMAIN_SOCKET_PATH));
 		}
 		update.withCommand("/cnb/lifecycle/" + this.name, StringUtils.toStringArray(this.args));
 		update.withLabel("author", "spring-boot");
 		this.bindings.forEach(update::withBinding);
 		this.env.forEach(update::withEnv);
-		if (this.networkMode != null) {
-			update.withNetworkMode(this.networkMode);
-		}
-		this.securityOptions.forEach(update::withSecurityOption);
 	}
 
 }

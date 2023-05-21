@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,9 @@ package org.springframework.boot.autoconfigure.jooq;
 
 import org.jooq.DSLContext;
 
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.boot.autoconfigure.r2dbc.R2dbcAutoConfiguration;
 import org.springframework.boot.diagnostics.AbstractFailureAnalyzer;
@@ -26,13 +28,9 @@ import org.springframework.boot.diagnostics.FailureAnalysis;
 import org.springframework.core.Ordered;
 
 class NoDslContextBeanFailureAnalyzer extends AbstractFailureAnalyzer<NoSuchBeanDefinitionException>
-		implements Ordered {
+		implements Ordered, BeanFactoryAware {
 
-	private final BeanFactory beanFactory;
-
-	NoDslContextBeanFailureAnalyzer(BeanFactory beanFactory) {
-		this.beanFactory = beanFactory;
-	}
+	private BeanFactory beanFactory;
 
 	@Override
 	protected FailureAnalysis analyze(Throwable rootFailure, NoSuchBeanDefinitionException cause) {
@@ -60,6 +58,12 @@ class NoDslContextBeanFailureAnalyzer extends AbstractFailureAnalyzer<NoSuchBean
 	@Override
 	public int getOrder() {
 		return 0;
+	}
+
+	@Override
+	public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
+		this.beanFactory = beanFactory;
+
 	}
 
 }

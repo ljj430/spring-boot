@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,13 +23,14 @@ import org.springframework.boot.actuate.amqp.RabbitHealthIndicator;
 import org.springframework.boot.actuate.autoconfigure.health.CompositeHealthContributorConfiguration;
 import org.springframework.boot.actuate.autoconfigure.health.ConditionalOnEnabledHealthIndicator;
 import org.springframework.boot.actuate.health.HealthContributor;
-import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 /**
  * {@link EnableAutoConfiguration Auto-configuration} for {@link RabbitHealthIndicator}.
@@ -37,16 +38,13 @@ import org.springframework.context.annotation.Bean;
  * @author Christian Dupuis
  * @since 2.0.0
  */
-@AutoConfiguration(after = RabbitAutoConfiguration.class)
+@Configuration(proxyBeanMethods = false)
 @ConditionalOnClass(RabbitTemplate.class)
 @ConditionalOnBean(RabbitTemplate.class)
 @ConditionalOnEnabledHealthIndicator("rabbit")
+@AutoConfigureAfter(RabbitAutoConfiguration.class)
 public class RabbitHealthContributorAutoConfiguration
 		extends CompositeHealthContributorConfiguration<RabbitHealthIndicator, RabbitTemplate> {
-
-	public RabbitHealthContributorAutoConfiguration() {
-		super(RabbitHealthIndicator::new);
-	}
 
 	@Bean
 	@ConditionalOnMissingBean(name = { "rabbitHealthIndicator", "rabbitHealthContributor" })

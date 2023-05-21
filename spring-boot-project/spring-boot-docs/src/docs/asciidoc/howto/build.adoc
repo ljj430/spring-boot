@@ -60,8 +60,8 @@ To use it, add the following declaration for the https://github.com/git-commit-i
 	<build>
 		<plugins>
 			<plugin>
-				<groupId>io.github.git-commit-id</groupId>
-				<artifactId>git-commit-id-maven-plugin</artifactId>
+				<groupId>pl.project13.maven</groupId>
+				<artifactId>git-commit-id-plugin</artifactId>
 			</plugin>
 		</plugins>
 	</build>
@@ -72,7 +72,7 @@ Gradle users can achieve the same result by using the https://plugins.gradle.org
 [source,gradle,indent=0,subs="verbatim"]
 ----
 	plugins {
-		id "com.gorylenko.gradle-git-properties" version "2.4.1"
+		id "com.gorylenko.gradle-git-properties" version "2.3.2"
 	}
 ----
 
@@ -118,7 +118,7 @@ If you use the `spring-boot-starter-parent` POM, you can declare the plugin and 
 If you do not use the parent POM, you can still use the plugin.
 However, you must additionally add an `<executions>` section, as follows:
 
-[source,xml,indent=0,subs="verbatim,attributes"]
+[source,xml,indent=0,subs="verbatim"]
 ----
 	<build>
 		<plugins>
@@ -212,7 +212,7 @@ For example, to indicate that JRuby should be flagged for unpacking by using the
 [[howto.build.create-a-nonexecutable-jar]]
 === Create a Non-executable JAR with Exclusions
 Often, if you have an executable and a non-executable jar as two separate build products, the executable version has additional configuration files that are not needed in a library jar.
-For example, the `application.yaml` configuration file might be excluded from the non-executable JAR.
+For example, the `application.yml` configuration file might be excluded from the non-executable JAR.
 
 In Maven, the executable jar must be the main artifact and you can add a classified jar for the library, as follows:
 
@@ -236,7 +236,7 @@ In Maven, the executable jar must be the main artifact and you can add a classif
 						<configuration>
 							<classifier>lib</classifier>
 							<excludes>
-								<exclude>application.yaml</exclude>
+								<exclude>application.yml</exclude>
 							</excludes>
 						</configuration>
 					</execution>
@@ -257,7 +257,7 @@ See {spring-boot-maven-plugin-docs}#run-example-debug[this example] for more det
 
 
 [[howto.build.build-an-executable-archive-with-ant-without-using-spring-boot-antlib]]
-=== Build an Executable Archive From Ant without Using spring-boot-antlib
+=== Build an Executable Archive from Ant without Using spring-boot-antlib
 To build with Ant, you need to grab dependencies, compile, and then create a jar or war archive.
 To make it executable, you can either use the `spring-boot-antlib` module or you can follow these instructions:
 

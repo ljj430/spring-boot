@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,22 +54,22 @@ class EndpointMBeanTests {
 
 	private static final String[] NO_SIGNATURE = {};
 
-	private final TestExposableJmxEndpoint endpoint = new TestExposableJmxEndpoint(new TestJmxOperation());
+	private TestExposableJmxEndpoint endpoint = new TestExposableJmxEndpoint(new TestJmxOperation());
 
-	private final TestJmxOperationResponseMapper responseMapper = new TestJmxOperationResponseMapper();
+	private TestJmxOperationResponseMapper responseMapper = new TestJmxOperationResponseMapper();
 
 	@Test
 	void createWhenResponseMapperIsNullShouldThrowException() {
 		assertThatIllegalArgumentException()
-			.isThrownBy(() -> new EndpointMBean(null, null, mock(ExposableJmxEndpoint.class)))
-			.withMessageContaining("ResponseMapper must not be null");
+				.isThrownBy(() -> new EndpointMBean(null, null, mock(ExposableJmxEndpoint.class)))
+				.withMessageContaining("ResponseMapper must not be null");
 	}
 
 	@Test
 	void createWhenEndpointIsNullShouldThrowException() {
 		assertThatIllegalArgumentException()
-			.isThrownBy(() -> new EndpointMBean(mock(JmxOperationResponseMapper.class), null, null))
-			.withMessageContaining("Endpoint must not be null");
+				.isThrownBy(() -> new EndpointMBean(mock(JmxOperationResponseMapper.class), null, null))
+				.withMessageContaining("Endpoint must not be null");
 	}
 
 	@Test
@@ -93,9 +93,8 @@ class EndpointMBeanTests {
 		}));
 		EndpointMBean bean = new EndpointMBean(this.responseMapper, null, endpoint);
 		assertThatExceptionOfType(MBeanException.class)
-			.isThrownBy(() -> bean.invoke("testOperation", NO_PARAMS, NO_SIGNATURE))
-			.withCauseInstanceOf(IllegalStateException.class)
-			.withMessageContaining("test failure");
+				.isThrownBy(() -> bean.invoke("testOperation", NO_PARAMS, NO_SIGNATURE))
+				.withCauseInstanceOf(IllegalStateException.class).withMessageContaining("test failure");
 
 	}
 
@@ -106,18 +105,17 @@ class EndpointMBeanTests {
 		}));
 		EndpointMBean bean = new EndpointMBean(this.responseMapper, null, endpoint);
 		assertThatExceptionOfType(MBeanException.class)
-			.isThrownBy(() -> bean.invoke("testOperation", NO_PARAMS, NO_SIGNATURE))
-			.withCauseInstanceOf(UnsupportedOperationException.class)
-			.withMessageContaining("test failure");
+				.isThrownBy(() -> bean.invoke("testOperation", NO_PARAMS, NO_SIGNATURE))
+				.withCauseInstanceOf(UnsupportedOperationException.class).withMessageContaining("test failure");
 	}
 
 	@Test
 	void invokeWhenActionNameIsNotAnOperationShouldThrowException() {
 		EndpointMBean bean = createEndpointMBean();
 		assertThatExceptionOfType(ReflectionException.class)
-			.isThrownBy(() -> bean.invoke("missingOperation", NO_PARAMS, NO_SIGNATURE))
-			.withCauseInstanceOf(IllegalArgumentException.class)
-			.withMessageContaining("no operation named missingOperation");
+				.isThrownBy(() -> bean.invoke("missingOperation", NO_PARAMS, NO_SIGNATURE))
+				.withCauseInstanceOf(IllegalArgumentException.class)
+				.withMessageContaining("no operation named missingOperation");
 	}
 
 	@Test
@@ -145,9 +143,8 @@ class EndpointMBeanTests {
 		TestExposableJmxEndpoint endpoint = new TestExposableJmxEndpoint(operation);
 		EndpointMBean bean = new EndpointMBean(this.responseMapper, null, endpoint);
 		assertThatExceptionOfType(ReflectionException.class)
-			.isThrownBy(() -> bean.invoke("testOperation", NO_PARAMS, NO_SIGNATURE))
-			.withRootCauseInstanceOf(IllegalArgumentException.class)
-			.withMessageContaining("test failure");
+				.isThrownBy(() -> bean.invoke("testOperation", NO_PARAMS, NO_SIGNATURE))
+				.withRootCauseInstanceOf(IllegalArgumentException.class).withMessageContaining("test failure");
 	}
 
 	@Test
@@ -181,15 +178,15 @@ class EndpointMBeanTests {
 	void getAttributeShouldThrowException() {
 		EndpointMBean bean = createEndpointMBean();
 		assertThatExceptionOfType(AttributeNotFoundException.class).isThrownBy(() -> bean.getAttribute("test"))
-			.withMessageContaining("EndpointMBeans do not support attributes");
+				.withMessageContaining("EndpointMBeans do not support attributes");
 	}
 
 	@Test
 	void setAttributeShouldThrowException() {
 		EndpointMBean bean = createEndpointMBean();
 		assertThatExceptionOfType(AttributeNotFoundException.class)
-			.isThrownBy(() -> bean.setAttribute(new Attribute("test", "test")))
-			.withMessageContaining("EndpointMBeans do not support attributes");
+				.isThrownBy(() -> bean.setAttribute(new Attribute("test", "test")))
+				.withMessageContaining("EndpointMBeans do not support attributes");
 	}
 
 	@Test

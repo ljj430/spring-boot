@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.springframework.boot;
 
+import java.security.AccessControlException;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashSet;
@@ -60,7 +61,7 @@ class SpringApplicationShutdownHook implements Runnable {
 
 	private final ApplicationContextClosedListener contextCloseListener = new ApplicationContextClosedListener();
 
-	private final AtomicBoolean shutdownHookAdded = new AtomicBoolean();
+	private final AtomicBoolean shutdownHookAdded = new AtomicBoolean(false);
 
 	private boolean inProgress;
 
@@ -84,7 +85,12 @@ class SpringApplicationShutdownHook implements Runnable {
 	}
 
 	void addRuntimeShutdownHook() {
-		Runtime.getRuntime().addShutdownHook(new Thread(this, "SpringApplicationShutdownHook"));
+		try {
+			Runtime.getRuntime().addShutdownHook(new Thread(this, "SpringApplicationShutdownHook"));
+		}
+		catch (AccessControlException ex) {
+			// Not allowed in some environments
+		}
 	}
 
 	void deregisterFailedApplicationContext(ConfigurableApplicationContext applicationContext) {
@@ -163,14 +169,13 @@ class SpringApplicationShutdownHook implements Runnable {
 	/**
 	 * The handler actions for this shutdown hook.
 	 */
-	private class Handlers implements SpringApplicationShutdownHandlers, Runnable {
+	private class Handlers implements SpringApplicationShutdownHandlers {
 
 		private final Set<Runnable> actions = Collections.newSetFromMap(new IdentityHashMap<>());
 
 		@Override
 		public void add(Runnable action) {
 			Assert.notNull(action, "Action must not be null");
-			addRuntimeShutdownHookIfNecessary();
 			synchronized (SpringApplicationShutdownHook.class) {
 				assertNotInProgress();
 				this.actions.add(action);
@@ -188,12 +193,6 @@ class SpringApplicationShutdownHook implements Runnable {
 
 		Set<Runnable> getActions() {
 			return this.actions;
-		}
-
-		@Override
-		public void run() {
-			SpringApplicationShutdownHook.this.run();
-			SpringApplicationShutdownHook.this.reset();
 		}
 
 	}
@@ -214,7 +213,7 @@ class SpringApplicationShutdownHook implements Runnable {
 				ApplicationContext applicationContext = event.getApplicationContext();
 				SpringApplicationShutdownHook.this.contexts.remove(applicationContext);
 				SpringApplicationShutdownHook.this.closedContexts
-					.add((ConfigurableApplicationContext) applicationContext);
+						.add((ConfigurableApplicationContext) applicationContext);
 			}
 		}
 

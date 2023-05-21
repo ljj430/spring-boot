@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.AnyNestedCondition;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -37,7 +37,6 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.rsocket.annotation.support.RSocketMessageHandler;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
-import org.springframework.security.authentication.ReactiveAuthenticationManagerResolver;
 import org.springframework.security.core.userdetails.MapReactiveUserDetailsService;
 import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
 import org.springframework.security.core.userdetails.User;
@@ -49,21 +48,19 @@ import org.springframework.util.StringUtils;
  * Default user {@link Configuration @Configuration} for a reactive web application.
  * Configures a {@link ReactiveUserDetailsService} with a default user and generated
  * password. This backs-off completely if there is a bean of type
- * {@link ReactiveUserDetailsService}, {@link ReactiveAuthenticationManager}, or
- * {@link ReactiveAuthenticationManagerResolver}.
+ * {@link ReactiveUserDetailsService} or {@link ReactiveAuthenticationManager}.
  *
  * @author Madhura Bhave
  * @since 2.0.0
  */
-@AutoConfiguration(after = RSocketMessagingAutoConfiguration.class)
+@Configuration(proxyBeanMethods = false)
 @ConditionalOnClass({ ReactiveAuthenticationManager.class })
-@ConditionalOnMissingBean(
-		value = { ReactiveAuthenticationManager.class, ReactiveUserDetailsService.class,
-				ReactiveAuthenticationManagerResolver.class },
+@ConditionalOnMissingBean(value = { ReactiveAuthenticationManager.class, ReactiveUserDetailsService.class },
 		type = { "org.springframework.security.oauth2.jwt.ReactiveJwtDecoder",
 				"org.springframework.security.oauth2.server.resource.introspection.ReactiveOpaqueTokenIntrospector" })
 @Conditional(ReactiveUserDetailsServiceAutoConfiguration.ReactiveUserDetailsServiceCondition.class)
 @EnableConfigurationProperties(SecurityProperties.class)
+@AutoConfigureAfter(RSocketMessagingAutoConfiguration.class)
 public class ReactiveUserDetailsServiceAutoConfiguration {
 
 	private static final String NOOP_PASSWORD_PREFIX = "{noop}";

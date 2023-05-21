@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,6 @@ import java.nio.file.Paths;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
-import java.time.OffsetDateTime;
 import java.util.Random;
 import java.util.Set;
 
@@ -37,18 +36,15 @@ import org.apache.commons.compress.utils.IOUtils;
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.TaskOutcome;
 import org.junit.jupiter.api.TestTemplate;
+import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
 import org.springframework.boot.buildpack.platform.docker.DockerApi;
-import org.springframework.boot.buildpack.platform.docker.DockerApi.ImageApi;
-import org.springframework.boot.buildpack.platform.docker.DockerApi.VolumeApi;
-import org.springframework.boot.buildpack.platform.docker.type.Image;
+import org.springframework.boot.buildpack.platform.docker.type.ImageName;
 import org.springframework.boot.buildpack.platform.docker.type.ImageReference;
-import org.springframework.boot.buildpack.platform.docker.type.VolumeName;
 import org.springframework.boot.buildpack.platform.io.FilePermissions;
 import org.springframework.boot.gradle.junit.GradleCompatibility;
-import org.springframework.boot.testsupport.gradle.testkit.GradleBuild;
-import org.springframework.boot.testsupport.junit.DisabledOnOs;
+import org.springframework.boot.gradle.testkit.GradleBuild;
 import org.springframework.boot.testsupport.testcontainers.DisabledIfDockerUnavailable;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -58,12 +54,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Andy Wilkinson
  * @author Scott Frederick
- * @author Rafael Ceccone
  */
 @GradleCompatibility(configurationCache = true)
 @DisabledIfDockerUnavailable
-@DisabledOnOs(os = { OS.LINUX, OS.MAC }, architecture = "aarch64",
-		disabledReason = "The builder image has no ARM support")
 class BootBuildImageIntegrationTests {
 
 	GradleBuild gradleBuild;
@@ -72,37 +65,39 @@ class BootBuildImageIntegrationTests {
 	void buildsImageWithDefaultBuilder() throws IOException {
 		writeMainClass();
 		writeLongNameResource();
-		BuildResult result = this.gradleBuild.build("bootBuildImage");
+		BuildResult result = this.gradleBuild.build("bootBuildImage", "--pullPolicy=IF_NOT_PRESENT");
 		String projectName = this.gradleBuild.getProjectDir().getName();
 		assertThat(result.task(":bootBuildImage").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
 		assertThat(result.getOutput()).contains("docker.io/library/" + projectName);
 		assertThat(result.getOutput()).contains("---> Test Info buildpack building");
-		assertThat(result.getOutput()).contains("Network status: HTTP/2 200");
+		assertThat(result.getOutput()).contains("env: BP_JVM_VERSION=8.*");
 		assertThat(result.getOutput()).contains("---> Test Info buildpack done");
-		removeImages(projectName);
+		removeImage(projectName);
 	}
 
 	@TestTemplate
 	void buildsImageWithWarPackaging() throws IOException {
 		writeMainClass();
 		writeLongNameResource();
-		BuildResult result = this.gradleBuild.build("bootBuildImage", "-PapplyWarPlugin");
+		BuildResult result = this.gradleBuild.build("bootBuildImage", "-PapplyWarPlugin",
+				"--pullPolicy=IF_NOT_PRESENT");
 		String projectName = this.gradleBuild.getProjectDir().getName();
 		assertThat(result.task(":bootBuildImage").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
 		assertThat(result.getOutput()).contains("docker.io/library/" + projectName);
 		assertThat(result.getOutput()).contains("---> Test Info buildpack building");
+		assertThat(result.getOutput()).contains("env: BP_JVM_VERSION=8.*");
 		assertThat(result.getOutput()).contains("---> Test Info buildpack done");
 		File buildLibs = new File(this.gradleBuild.getProjectDir(), "build/libs");
 		assertThat(buildLibs.listFiles())
-			.containsExactly(new File(buildLibs, this.gradleBuild.getProjectDir().getName() + ".war"));
-		removeImages(projectName);
+				.containsExactly(new File(buildLibs, this.gradleBuild.getProjectDir().getName() + ".war"));
+		removeImage(projectName);
 	}
 
 	@TestTemplate
 	void buildsImageWithWarPackagingAndJarConfiguration() throws IOException {
 		writeMainClass();
 		writeLongNameResource();
-		BuildResult result = this.gradleBuild.build("bootBuildImage");
+		BuildResult result = this.gradleBuild.build("bootBuildImage", "--pullPolicy=IF_NOT_PRESENT");
 		String projectName = this.gradleBuild.getProjectDir().getName();
 		assertThat(result.task(":bootBuildImage").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
 		assertThat(result.getOutput()).contains("docker.io/library/" + projectName);
@@ -110,32 +105,32 @@ class BootBuildImageIntegrationTests {
 		assertThat(result.getOutput()).contains("---> Test Info buildpack done");
 		File buildLibs = new File(this.gradleBuild.getProjectDir(), "build/libs");
 		assertThat(buildLibs.listFiles())
-			.containsExactly(new File(buildLibs, this.gradleBuild.getProjectDir().getName() + ".war"));
-		removeImages(projectName);
+				.containsExactly(new File(buildLibs, this.gradleBuild.getProjectDir().getName() + ".war"));
+		removeImage(projectName);
 	}
 
 	@TestTemplate
 	void buildsImageWithCustomName() throws IOException {
 		writeMainClass();
 		writeLongNameResource();
-		BuildResult result = this.gradleBuild.build("bootBuildImage");
+		BuildResult result = this.gradleBuild.build("bootBuildImage", "--pullPolicy=IF_NOT_PRESENT");
 		assertThat(result.task(":bootBuildImage").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
 		assertThat(result.getOutput()).contains("example/test-image-name");
 		assertThat(result.getOutput()).contains("---> Test Info buildpack building");
 		assertThat(result.getOutput()).contains("---> Test Info buildpack done");
-		removeImages("example/test-image-name");
+		removeImage("example/test-image-name");
 	}
 
 	@TestTemplate
 	void buildsImageWithCustomBuilderAndRunImage() throws IOException {
 		writeMainClass();
 		writeLongNameResource();
-		BuildResult result = this.gradleBuild.build("bootBuildImage");
+		BuildResult result = this.gradleBuild.build("bootBuildImage", "--pullPolicy=IF_NOT_PRESENT");
 		assertThat(result.task(":bootBuildImage").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
 		assertThat(result.getOutput()).contains("example/test-image-custom");
 		assertThat(result.getOutput()).contains("---> Test Info buildpack building");
 		assertThat(result.getOutput()).contains("---> Test Info buildpack done");
-		removeImages("example/test-image-custom");
+		removeImage("example/test-image-custom");
 	}
 
 	@TestTemplate
@@ -144,16 +139,13 @@ class BootBuildImageIntegrationTests {
 		writeLongNameResource();
 		BuildResult result = this.gradleBuild.build("bootBuildImage", "--pullPolicy=IF_NOT_PRESENT",
 				"--imageName=example/test-image-cmd",
-				"--builder=projects.registry.vmware.com/springboot/spring-boot-cnb-builder:0.0.2",
-				"--runImage=projects.registry.vmware.com/springboot/run:tiny-cnb", "--createdDate=2020-07-01T12:34:56Z",
-				"--applicationDirectory=/application");
+				"--builder=projects.registry.vmware.com/springboot/spring-boot-cnb-builder:0.0.1",
+				"--runImage=projects.registry.vmware.com/springboot/run:tiny-cnb");
 		assertThat(result.task(":bootBuildImage").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
 		assertThat(result.getOutput()).contains("example/test-image-cmd");
 		assertThat(result.getOutput()).contains("---> Test Info buildpack building");
 		assertThat(result.getOutput()).contains("---> Test Info buildpack done");
-		Image image = new DockerApi().image().inspect(ImageReference.of("example/test-image-cmd"));
-		assertThat(image.getCreated()).isEqualTo("2020-07-01T12:34:56Z");
-		removeImages("example/test-image-cmd");
+		removeImage("example/test-image-cmd");
 	}
 
 	@TestTemplate
@@ -161,26 +153,26 @@ class BootBuildImageIntegrationTests {
 		writeMainClass();
 		writeLongNameResource();
 		String projectName = this.gradleBuild.getProjectDir().getName();
-		BuildResult result = this.gradleBuild.build("bootBuildImage");
+		BuildResult result = this.gradleBuild.build("bootBuildImage", "--pullPolicy=ALWAYS");
 		assertThat(result.task(":bootBuildImage").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
 		assertThat(result.getOutput()).contains("Pulled builder image").contains("Pulled run image");
 		result = this.gradleBuild.build("bootBuildImage", "--pullPolicy=IF_NOT_PRESENT");
 		assertThat(result.task(":bootBuildImage").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
 		assertThat(result.getOutput()).doesNotContain("Pulled builder image").doesNotContain("Pulled run image");
-		removeImages(projectName);
+		removeImage(projectName);
 	}
 
 	@TestTemplate
 	void buildsImageWithBuildpackFromBuilder() throws IOException {
 		writeMainClass();
 		writeLongNameResource();
-		BuildResult result = this.gradleBuild.build("bootBuildImage");
+		BuildResult result = this.gradleBuild.build("bootBuildImage", "--pullPolicy=IF_NOT_PRESENT");
 		String projectName = this.gradleBuild.getProjectDir().getName();
 		assertThat(result.task(":bootBuildImage").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
 		assertThat(result.getOutput()).contains("docker.io/library/" + projectName);
 		assertThat(result.getOutput()).contains("---> Test Info buildpack building")
-			.contains("---> Test Info buildpack done");
-		removeImages(projectName);
+				.contains("---> Test Info buildpack done");
+		removeImage(projectName);
 	}
 
 	@TestTemplate
@@ -189,12 +181,12 @@ class BootBuildImageIntegrationTests {
 		writeMainClass();
 		writeLongNameResource();
 		writeBuildpackContent();
-		BuildResult result = this.gradleBuild.build("bootBuildImage");
+		BuildResult result = this.gradleBuild.build("bootBuildImage", "--pullPolicy=IF_NOT_PRESENT");
 		String projectName = this.gradleBuild.getProjectDir().getName();
 		assertThat(result.task(":bootBuildImage").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
 		assertThat(result.getOutput()).contains("docker.io/library/" + projectName);
 		assertThat(result.getOutput()).contains("---> Hello World buildpack");
-		removeImages(projectName);
+		removeImage(projectName);
 	}
 
 	@TestTemplate
@@ -204,25 +196,25 @@ class BootBuildImageIntegrationTests {
 		writeLongNameResource();
 		writeBuildpackContent();
 		tarGzipBuildpackContent();
-		BuildResult result = this.gradleBuild.build("bootBuildImage");
+		BuildResult result = this.gradleBuild.build("bootBuildImage", "--pullPolicy=IF_NOT_PRESENT");
 		String projectName = this.gradleBuild.getProjectDir().getName();
 		assertThat(result.task(":bootBuildImage").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
 		assertThat(result.getOutput()).contains("docker.io/library/" + projectName);
 		assertThat(result.getOutput()).contains("---> Hello World buildpack");
-		removeImages(projectName);
+		removeImage(projectName);
 	}
 
 	@TestTemplate
 	void buildsImageWithBuildpacksFromImages() throws IOException {
 		writeMainClass();
 		writeLongNameResource();
-		BuildResult result = this.gradleBuild.build("bootBuildImage");
+		BuildResult result = this.gradleBuild.build("bootBuildImage", "--pullPolicy=IF_NOT_PRESENT");
 		String projectName = this.gradleBuild.getProjectDir().getName();
 		assertThat(result.task(":bootBuildImage").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
 		assertThat(result.getOutput()).contains("docker.io/library/" + projectName);
 		assertThat(result.getOutput()).contains("---> Test Info buildpack building")
-			.contains("---> Test Info buildpack done");
-		removeImages(projectName);
+				.contains("---> Test Info buildpack done");
+		removeImage(projectName);
 	}
 
 	@TestTemplate
@@ -230,7 +222,7 @@ class BootBuildImageIntegrationTests {
 		writeMainClass();
 		writeLongNameResource();
 		writeCertificateBindingFiles();
-		BuildResult result = this.gradleBuild.build("bootBuildImage");
+		BuildResult result = this.gradleBuild.build("bootBuildImage", "--pullPolicy=IF_NOT_PRESENT");
 		String projectName = this.gradleBuild.getProjectDir().getName();
 		assertThat(result.task(":bootBuildImage").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
 		assertThat(result.getOutput()).contains("docker.io/library/" + projectName);
@@ -239,125 +231,23 @@ class BootBuildImageIntegrationTests {
 		assertThat(result.getOutput()).contains("binding: certificates/test1.crt=---certificate one---");
 		assertThat(result.getOutput()).contains("binding: certificates/test2.crt=---certificate two---");
 		assertThat(result.getOutput()).contains("---> Test Info buildpack done");
-		removeImages(projectName);
+		removeImage(projectName);
 	}
 
 	@TestTemplate
-	void buildsImageWithTag() throws IOException {
-		writeMainClass();
-		writeLongNameResource();
-		BuildResult result = this.gradleBuild.build("bootBuildImage");
-		String projectName = this.gradleBuild.getProjectDir().getName();
-		assertThat(result.task(":bootBuildImage").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
-		assertThat(result.getOutput()).contains("docker.io/library/" + projectName);
-		assertThat(result.getOutput()).contains("---> Test Info buildpack building");
-		assertThat(result.getOutput()).contains("---> Test Info buildpack done");
-		assertThat(result.getOutput()).contains("example.com/myapp:latest");
-		removeImages(projectName, "example.com/myapp:latest");
-	}
-
-	@TestTemplate
-	void buildsImageWithLaunchScript() throws IOException {
-		writeMainClass();
-		writeLongNameResource();
-		BuildResult result = this.gradleBuild.build("bootBuildImage");
-		String projectName = this.gradleBuild.getProjectDir().getName();
-		assertThat(result.task(":bootBuildImage").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
-		assertThat(result.getOutput()).contains("docker.io/library/" + projectName);
-		assertThat(result.getOutput()).contains("---> Test Info buildpack building");
-		assertThat(result.getOutput()).contains("---> Test Info buildpack done");
-		removeImages(projectName);
-	}
-
-	@TestTemplate
-	void buildsImageWithNetworkModeNone() throws IOException {
-		writeMainClass();
-		writeLongNameResource();
-		BuildResult result = this.gradleBuild.build("bootBuildImage");
-		String projectName = this.gradleBuild.getProjectDir().getName();
-		assertThat(result.task(":bootBuildImage").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
-		assertThat(result.getOutput()).contains("docker.io/library/" + projectName);
-		assertThat(result.getOutput()).contains("---> Test Info buildpack building");
-		assertThat(result.getOutput()).contains("Network status: curl failed");
-		assertThat(result.getOutput()).contains("---> Test Info buildpack done");
-		removeImages(projectName);
-	}
-
-	@TestTemplate
-	void buildsImageWithVolumeCaches() throws IOException {
-		writeMainClass();
-		writeLongNameResource();
-		BuildResult result = this.gradleBuild.build("bootBuildImage");
-		String projectName = this.gradleBuild.getProjectDir().getName();
-		assertThat(result.task(":bootBuildImage").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
-		assertThat(result.getOutput()).contains("docker.io/library/" + projectName);
-		assertThat(result.getOutput()).contains("---> Test Info buildpack building");
-		assertThat(result.getOutput()).contains("---> Test Info buildpack done");
-		removeImages(projectName);
-		deleteVolumes("cache-" + projectName + ".build", "cache-" + projectName + ".launch");
-	}
-
-	@TestTemplate
-	void buildsImageWithCreatedDate() throws IOException {
-		writeMainClass();
-		writeLongNameResource();
-		BuildResult result = this.gradleBuild.build("bootBuildImage");
-		String projectName = this.gradleBuild.getProjectDir().getName();
-		assertThat(result.task(":bootBuildImage").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
-		assertThat(result.getOutput()).contains("docker.io/library/" + projectName);
-		assertThat(result.getOutput()).contains("---> Test Info buildpack building");
-		assertThat(result.getOutput()).contains("---> Test Info buildpack done");
-		Image image = new DockerApi().image().inspect(ImageReference.of("docker.io/library/" + projectName));
-		assertThat(image.getCreated()).isEqualTo("2020-07-01T12:34:56Z");
-		removeImages(projectName);
-	}
-
-	@TestTemplate
-	void buildsImageWithCurrentCreatedDate() throws IOException {
-		writeMainClass();
-		writeLongNameResource();
-		BuildResult result = this.gradleBuild.build("bootBuildImage");
-		String projectName = this.gradleBuild.getProjectDir().getName();
-		assertThat(result.task(":bootBuildImage").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
-		assertThat(result.getOutput()).contains("docker.io/library/" + projectName);
-		assertThat(result.getOutput()).contains("---> Test Info buildpack building");
-		assertThat(result.getOutput()).contains("---> Test Info buildpack done");
-		Image image = new DockerApi().image().inspect(ImageReference.of("docker.io/library/" + projectName));
-		OffsetDateTime createdDateTime = OffsetDateTime.parse(image.getCreated());
-		OffsetDateTime current = OffsetDateTime.now().withOffsetSameInstant(createdDateTime.getOffset());
-		assertThat(createdDateTime.getYear()).isEqualTo(current.getYear());
-		assertThat(createdDateTime.getMonth()).isEqualTo(current.getMonth());
-		assertThat(createdDateTime.getDayOfMonth()).isEqualTo(current.getDayOfMonth());
-		removeImages(projectName);
-	}
-
-	@TestTemplate
-	void buildsImageWithApplicationDirectory() throws IOException {
-		writeMainClass();
-		writeLongNameResource();
-		BuildResult result = this.gradleBuild.build("bootBuildImage");
-		String projectName = this.gradleBuild.getProjectDir().getName();
-		assertThat(result.task(":bootBuildImage").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
-		assertThat(result.getOutput()).contains("docker.io/library/" + projectName);
-		assertThat(result.getOutput()).contains("---> Test Info buildpack building");
-		assertThat(result.getOutput()).contains("---> Test Info buildpack done");
-		removeImages(projectName);
-	}
-
-	@TestTemplate
-	void failsWithInvalidCreatedDate() throws IOException {
+	void failsWithLaunchScript() throws IOException {
 		writeMainClass();
 		writeLongNameResource();
 		BuildResult result = this.gradleBuild.buildAndFail("bootBuildImage");
 		assertThat(result.task(":bootBuildImage").getOutcome()).isEqualTo(TaskOutcome.FAILED);
-		assertThat(result.getOutput()).contains("Error parsing 'invalid date' as an image created date");
+		assertThat(result.getOutput()).contains("not compatible with buildpacks");
 	}
 
 	@TestTemplate
 	void failsWithBuilderError() throws IOException {
 		writeMainClass();
 		writeLongNameResource();
-		BuildResult result = this.gradleBuild.buildAndFail("bootBuildImage");
+		BuildResult result = this.gradleBuild.buildAndFail("bootBuildImage", "--pullPolicy=IF_NOT_PRESENT");
 		assertThat(result.task(":bootBuildImage").getOutcome()).isEqualTo(TaskOutcome.FAILED);
 		assertThat(result.getOutput()).contains("Forced builder failure");
 		assertThat(result.getOutput()).containsPattern("Builder lifecycle '.*' failed with status code");
@@ -370,34 +260,25 @@ class BootBuildImageIntegrationTests {
 		BuildResult result = this.gradleBuild.buildAndFail("bootBuildImage", "--imageName=example/Invalid-Image-Name");
 		assertThat(result.task(":bootBuildImage").getOutcome()).isEqualTo(TaskOutcome.FAILED);
 		assertThat(result.getOutput()).containsPattern("Unable to parse image reference")
-			.containsPattern("example/Invalid-Image-Name");
+				.containsPattern("example/Invalid-Image-Name");
+	}
+
+	@TestTemplate
+	void failsWithPublishMissingPublishRegistry() throws IOException {
+		writeMainClass();
+		writeLongNameResource();
+		BuildResult result = this.gradleBuild.buildAndFail("bootBuildImage", "--publishImage");
+		assertThat(result.task(":bootBuildImage").getOutcome()).isEqualTo(TaskOutcome.FAILED);
+		assertThat(result.getOutput()).contains("requires docker.publishRegistry");
 	}
 
 	@TestTemplate
 	void failsWithBuildpackNotInBuilder() throws IOException {
 		writeMainClass();
 		writeLongNameResource();
-		BuildResult result = this.gradleBuild.buildAndFail("bootBuildImage");
+		BuildResult result = this.gradleBuild.buildAndFail("bootBuildImage", "--pullPolicy=IF_NOT_PRESENT");
 		assertThat(result.task(":bootBuildImage").getOutcome()).isEqualTo(TaskOutcome.FAILED);
 		assertThat(result.getOutput()).contains("'urn:cnb:builder:example/does-not-exist:0.0.1' not found in builder");
-	}
-
-	@TestTemplate
-	void failsWithInvalidTag() throws IOException {
-		writeMainClass();
-		writeLongNameResource();
-		BuildResult result = this.gradleBuild.buildAndFail("bootBuildImage");
-		assertThat(result.task(":bootBuildImage").getOutcome()).isEqualTo(TaskOutcome.FAILED);
-		assertThat(result.getOutput()).containsPattern("Unable to parse image reference")
-			.containsPattern("example/Invalid-Tag-Name");
-	}
-
-	@TestTemplate
-	void failsWhenCachesAreConfiguredTwice() throws IOException {
-		writeMainClass();
-		writeLongNameResource();
-		BuildResult result = this.gradleBuild.buildAndFail("bootBuildImage");
-		assertThat(result.getOutput()).containsPattern("Each image building cache can be configured only once");
 	}
 
 	private void writeMainClass() throws IOException {
@@ -425,18 +306,17 @@ class BootBuildImageIntegrationTests {
 	private void writeLongNameResource() throws IOException {
 		StringBuilder name = new StringBuilder();
 		new Random().ints('a', 'z' + 1).limit(128).forEach((i) -> name.append((char) i));
-		Path path = this.gradleBuild.getProjectDir()
-			.toPath()
-			.resolve(Paths.get("src", "main", "resources", name.toString()));
+		Path path = this.gradleBuild.getProjectDir().toPath()
+				.resolve(Paths.get("src", "main", "resources", name.toString()));
 		Files.createDirectories(path.getParent());
 		Files.createFile(path);
 	}
 
 	private void writeBuildpackContent() throws IOException {
 		FileAttribute<Set<PosixFilePermission>> dirAttribute = PosixFilePermissions
-			.asFileAttribute(PosixFilePermissions.fromString("rwxr-xr-x"));
+				.asFileAttribute(PosixFilePermissions.fromString("rwxr-xr-x"));
 		FileAttribute<Set<PosixFilePermission>> execFileAttribute = PosixFilePermissions
-			.asFileAttribute(PosixFilePermissions.fromString("rwxrwxrwx"));
+				.asFileAttribute(PosixFilePermissions.fromString("rwxrwxrwx"));
 		File buildpackDir = new File(this.gradleBuild.getProjectDir(), "buildpack/hello-world");
 		Files.createDirectories(buildpackDir.toPath(), dirAttribute);
 		File binDir = new File(buildpackDir, "bin");
@@ -523,18 +403,9 @@ class BootBuildImageIntegrationTests {
 		}
 	}
 
-	private void removeImages(String... names) throws IOException {
-		ImageApi imageApi = new DockerApi().image();
-		for (String name : names) {
-			imageApi.remove(ImageReference.of(name), false);
-		}
-	}
-
-	private void deleteVolumes(String... names) throws IOException {
-		VolumeApi volumeApi = new DockerApi().volume();
-		for (String name : names) {
-			volumeApi.delete(VolumeName.of(name), false);
-		}
+	private void removeImage(String name) throws IOException {
+		ImageReference imageReference = ImageReference.of(ImageName.of(name));
+		new DockerApi().image().remove(imageReference, false);
 	}
 
 }

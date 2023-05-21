@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ public class TestJarFile {
 
 	private final List<ZipEntrySource> entries = new ArrayList<>();
 
-	public TestJarFile(File temporaryDirectory) {
+	public TestJarFile(File temporaryDirectory) throws IOException {
 		this.temporaryDirectory = temporaryDirectory;
 		this.jarSource = new File(temporaryDirectory, "jar-source");
 	}
@@ -59,7 +59,7 @@ public class TestJarFile {
 		File file = getFilePath(filename);
 		file.getParentFile().mkdirs();
 		InputStream inputStream = getClass()
-			.getResourceAsStream("/" + classToCopy.getName().replace('.', '/') + ".class");
+				.getResourceAsStream("/" + classToCopy.getName().replace('.', '/') + ".class");
 		copyToFile(inputStream, file);
 		if (time != null) {
 			file.setLastModified(time);
@@ -68,15 +68,11 @@ public class TestJarFile {
 	}
 
 	public void addFile(String filename, File fileToCopy) throws IOException {
-		try (InputStream inputStream = new FileInputStream(fileToCopy)) {
-			addFile(filename, inputStream);
-		}
-	}
-
-	public void addFile(String filename, InputStream inputStream) throws IOException {
 		File file = getFilePath(filename);
 		file.getParentFile().mkdirs();
-		copyToFile(inputStream, file);
+		try (InputStream inputStream = new FileInputStream(fileToCopy)) {
+			copyToFile(inputStream, file);
+		}
 		this.entries.add(new FileSource(filename, file));
 	}
 
@@ -119,11 +115,11 @@ public class TestJarFile {
 		return this.jarSource;
 	}
 
-	public File getFile() {
+	public File getFile() throws IOException {
 		return getFile("jar");
 	}
 
-	public File getFile(String extension) {
+	public File getFile(String extension) throws IOException {
 		File file = new File(this.temporaryDirectory, UUID.randomUUID() + "." + extension);
 		ZipUtil.pack(this.entries.toArray(new ZipEntrySource[0]), file);
 		return file;

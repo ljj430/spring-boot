@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,8 @@ package org.springframework.boot.autoconfigure.validation;
 
 import java.util.HashMap;
 
-import jakarta.validation.constraints.Min;
+import javax.validation.constraints.Min;
+
 import org.junit.jupiter.api.Test;
 
 import org.springframework.boot.test.context.FilteredClassLoader;
@@ -53,7 +54,7 @@ class ValidatorAdapterTests {
 			assertThat(wrapper.supports(SampleData.class)).isTrue();
 			MapBindingResult errors = new MapBindingResult(new HashMap<String, Object>(), "test");
 			wrapper.validate(new SampleData(40), errors);
-			assertThat(errors.getErrorCount()).isOne();
+			assertThat(errors.getErrorCount()).isEqualTo(1);
 		});
 	}
 
@@ -84,11 +85,12 @@ class ValidatorAdapterTests {
 	@Test
 	void wrapperWhenValidationProviderNotPresentShouldNotThrowException() {
 		ClassPathResource hibernateValidator = new ClassPathResource(
-				"META-INF/services/jakarta.validation.spi.ValidationProvider");
+				"META-INF/services/javax.validation.spi.ValidationProvider");
 		this.contextRunner
-			.withClassLoader(new FilteredClassLoader(FilteredClassLoader.ClassPathResourceFilter.of(hibernateValidator),
-					FilteredClassLoader.PackageFilter.of("org.hibernate.validator")))
-			.run((context) -> ValidatorAdapter.get(context, null));
+				.withClassLoader(
+						new FilteredClassLoader(FilteredClassLoader.ClassPathResourceFilter.of(hibernateValidator),
+								FilteredClassLoader.PackageFilter.of("org.hibernate.validator")))
+				.run((context) -> ValidatorAdapter.get(context, null));
 	}
 
 	@Configuration(proxyBeanMethods = false)
@@ -133,7 +135,7 @@ class ValidatorAdapterTests {
 	static class SampleData {
 
 		@Min(42)
-		private final int counter;
+		private int counter;
 
 		SampleData(int counter) {
 			this.counter = counter;

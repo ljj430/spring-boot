@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,10 @@
 
 package org.springframework.boot.actuate.autoconfigure.metrics;
 
-import java.io.File;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
@@ -35,7 +29,6 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  * @author Jon Schneider
  * @author Alexander Abramov
  * @author Tadaya Tsuyukubo
- * @author Chris Bono
  * @since 2.0.0
  */
 @ConfigurationProperties("management.metrics")
@@ -63,8 +56,6 @@ public class MetricsProperties {
 
 	private final Data data = new Data();
 
-	private final System system = new System();
-
 	private final Distribution distribution = new Distribution();
 
 	public boolean isUseGlobalRegistry() {
@@ -89,10 +80,6 @@ public class MetricsProperties {
 
 	public Data getData() {
 		return this.data;
-	}
-
-	public System getSystem() {
-		return this.system;
 	}
 
 	public Distribution getDistribution() {
@@ -143,13 +130,20 @@ public class MetricsProperties {
 				 */
 				private String metricName = "http.client.requests";
 
-				@Deprecated(since = "3.0.0", forRemoval = true)
-				@DeprecatedConfigurationProperty(replacement = "management.observations.http.client.requests.name")
+				/**
+				 * Auto-timed request settings.
+				 */
+				@NestedConfigurationProperty
+				private final AutoTimeProperties autotime = new AutoTimeProperties();
+
+				public AutoTimeProperties getAutotime() {
+					return this.autotime;
+				}
+
 				public String getMetricName() {
 					return this.metricName;
 				}
 
-				@Deprecated(since = "3.0.0", forRemoval = true)
 				public void setMetricName(String metricName) {
 					this.metricName = metricName;
 				}
@@ -188,16 +182,35 @@ public class MetricsProperties {
 				 */
 				private String metricName = "http.server.requests";
 
-				@Deprecated(since = "3.0.0", forRemoval = true)
-				@DeprecatedConfigurationProperty(replacement = "management.observations.http.server.requests.name")
+				/**
+				 * Whether the trailing slash should be ignored when recording metrics.
+				 */
+				private boolean ignoreTrailingSlash = true;
+
+				/**
+				 * Auto-timed request settings.
+				 */
+				@NestedConfigurationProperty
+				private final AutoTimeProperties autotime = new AutoTimeProperties();
+
+				public AutoTimeProperties getAutotime() {
+					return this.autotime;
+				}
+
 				public String getMetricName() {
 					return this.metricName;
 				}
 
-				@Deprecated(since = "3.0.0", forRemoval = true)
-				@DeprecatedConfigurationProperty(replacement = "management.observations.http.server.requests.name")
 				public void setMetricName(String metricName) {
 					this.metricName = metricName;
+				}
+
+				public boolean isIgnoreTrailingSlash() {
+					return this.ignoreTrailingSlash;
+				}
+
+				public void setIgnoreTrailingSlash(boolean ignoreTrailingSlash) {
+					this.ignoreTrailingSlash = ignoreTrailingSlash;
 				}
 
 			}
@@ -237,33 +250,6 @@ public class MetricsProperties {
 
 			public AutoTimeProperties getAutotime() {
 				return this.autotime;
-			}
-
-		}
-
-	}
-
-	public static class System {
-
-		private final Diskspace diskspace = new Diskspace();
-
-		public Diskspace getDiskspace() {
-			return this.diskspace;
-		}
-
-		public static class Diskspace {
-
-			/**
-			 * Comma-separated list of paths to report disk metrics for.
-			 */
-			private List<File> paths = new ArrayList<>(Collections.singletonList(new File(".")));
-
-			public List<File> getPaths() {
-				return this.paths;
-			}
-
-			public void setPaths(List<File> paths) {
-				this.paths = paths;
 			}
 
 		}
@@ -310,21 +296,6 @@ public class MetricsProperties {
 		 */
 		private final Map<String, String> maximumExpectedValue = new LinkedHashMap<>();
 
-		/**
-		 * Maximum amount of time that samples for meter IDs starting with the specified
-		 * name are accumulated to decaying distribution statistics before they are reset
-		 * and rotated. The longest match wins, the key `all` can also be used to
-		 * configure all meters.
-		 */
-		private final Map<String, Duration> expiry = new LinkedHashMap<>();
-
-		/**
-		 * Number of histograms for meter IDs starting with the specified name to keep in
-		 * the ring buffer. The longest match wins, the key `all` can also be used to
-		 * configure all meters.
-		 */
-		private final Map<String, Integer> bufferLength = new LinkedHashMap<>();
-
 		public Map<String, Boolean> getPercentilesHistogram() {
 			return this.percentilesHistogram;
 		}
@@ -343,14 +314,6 @@ public class MetricsProperties {
 
 		public Map<String, String> getMaximumExpectedValue() {
 			return this.maximumExpectedValue;
-		}
-
-		public Map<String, Duration> getExpiry() {
-			return this.expiry;
-		}
-
-		public Map<String, Integer> getBufferLength() {
-			return this.bufferLength;
 		}
 
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -103,11 +103,11 @@ public class JettyWebServer implements WebServer {
 	}
 
 	private StatisticsHandler findStatisticsHandler(Handler handler) {
-		if (handler instanceof StatisticsHandler statisticsHandler) {
-			return statisticsHandler;
+		if (handler instanceof StatisticsHandler) {
+			return (StatisticsHandler) handler;
 		}
-		if (handler instanceof HandlerWrapper handlerWrapper) {
-			return findStatisticsHandler(handlerWrapper.getHandler());
+		if (handler instanceof HandlerWrapper) {
+			return findStatisticsHandler(((HandlerWrapper) handler).getHandler());
 		}
 		return null;
 	}
@@ -161,8 +161,9 @@ public class JettyWebServer implements WebServer {
 						connector.start();
 					}
 					catch (IOException ex) {
-						if (connector instanceof NetworkConnector networkConnector) {
-							PortInUseException.throwIfPortBindingException(ex, networkConnector::getPort);
+						if (connector instanceof NetworkConnector) {
+							PortInUseException.throwIfPortBindingException(ex,
+									() -> ((NetworkConnector) connector).getPort());
 						}
 						throw ex;
 					}
@@ -199,33 +200,30 @@ public class JettyWebServer implements WebServer {
 	}
 
 	private String getContextPath() {
-		return Arrays.stream(this.server.getHandlers())
-			.map(this::findContextHandler)
-			.filter(Objects::nonNull)
-			.map(ContextHandler::getContextPath)
-			.collect(Collectors.joining(" "));
+		return Arrays.stream(this.server.getHandlers()).map(this::findContextHandler).filter(Objects::nonNull)
+				.map(ContextHandler::getContextPath).collect(Collectors.joining(" "));
 	}
 
 	private ContextHandler findContextHandler(Handler handler) {
-		while (handler instanceof HandlerWrapper handlerWrapper) {
-			if (handler instanceof ContextHandler contextHandler) {
-				return contextHandler;
+		while (handler instanceof HandlerWrapper) {
+			if (handler instanceof ContextHandler) {
+				return (ContextHandler) handler;
 			}
-			handler = handlerWrapper.getHandler();
+			handler = ((HandlerWrapper) handler).getHandler();
 		}
 		return null;
 	}
 
 	private void handleDeferredInitialize(Handler... handlers) throws Exception {
 		for (Handler handler : handlers) {
-			if (handler instanceof JettyEmbeddedWebAppContext jettyEmbeddedWebAppContext) {
-				jettyEmbeddedWebAppContext.deferredInitialize();
+			if (handler instanceof JettyEmbeddedWebAppContext) {
+				((JettyEmbeddedWebAppContext) handler).deferredInitialize();
 			}
-			else if (handler instanceof HandlerWrapper handlerWrapper) {
-				handleDeferredInitialize(handlerWrapper.getHandler());
+			else if (handler instanceof HandlerWrapper) {
+				handleDeferredInitialize(((HandlerWrapper) handler).getHandler());
 			}
-			else if (handler instanceof HandlerCollection handlerCollection) {
-				handleDeferredInitialize(handlerCollection.getHandlers());
+			else if (handler instanceof HandlerCollection) {
+				handleDeferredInitialize(((HandlerCollection) handler).getHandlers());
 			}
 		}
 	}
@@ -262,8 +260,8 @@ public class JettyWebServer implements WebServer {
 	}
 
 	private Integer getLocalPort(Connector connector) {
-		if (connector instanceof NetworkConnector networkConnector) {
-			return networkConnector.getLocalPort();
+		if (connector instanceof NetworkConnector) {
+			return ((NetworkConnector) connector).getLocalPort();
 		}
 		return 0;
 	}

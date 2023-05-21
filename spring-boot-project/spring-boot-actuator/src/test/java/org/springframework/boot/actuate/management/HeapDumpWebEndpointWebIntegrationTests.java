@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package org.springframework.boot.actuate.management;
 
 import java.io.File;
-import java.nio.file.Files;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
@@ -60,15 +60,8 @@ class HeapDumpWebEndpointWebIntegrationTests {
 
 	@WebEndpointTest
 	void getRequestShouldReturnHeapDumpInResponseBody(WebTestClient client) {
-		client.get()
-			.uri("/actuator/heapdump")
-			.exchange()
-			.expectStatus()
-			.isOk()
-			.expectHeader()
-			.contentType(MediaType.APPLICATION_OCTET_STREAM)
-			.expectBody(String.class)
-			.isEqualTo("HEAPDUMP");
+		client.get().uri("/actuator/heapdump").exchange().expectStatus().isOk().expectHeader()
+				.contentType(MediaType.APPLICATION_OCTET_STREAM).expectBody(String.class).isEqualTo("HEAPDUMP");
 		assertHeapDumpFileIsDeleted();
 	}
 
@@ -90,7 +83,7 @@ class HeapDumpWebEndpointWebIntegrationTests {
 
 		private boolean available;
 
-		private final String heapDump = "HEAPDUMP";
+		private String heapDump = "HEAPDUMP";
 
 		private File file;
 
@@ -105,13 +98,15 @@ class HeapDumpWebEndpointWebIntegrationTests {
 
 		@Override
 		protected HeapDumper createHeapDumper() {
-			return (live) -> {
-				this.file = Files.createTempFile("heap-", ".dump").toFile();
+			return (file, live) -> {
+				this.file = file;
 				if (!TestHeapDumpWebEndpoint.this.available) {
 					throw new HeapDumperUnavailableException("Not available", null);
 				}
-				FileCopyUtils.copy(TestHeapDumpWebEndpoint.this.heapDump.getBytes(), this.file);
-				return this.file;
+				if (file.exists()) {
+					throw new IOException("File exists");
+				}
+				FileCopyUtils.copy(TestHeapDumpWebEndpoint.this.heapDump.getBytes(), file);
 			};
 		}
 

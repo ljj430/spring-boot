@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.boot.test.mock.mockito;
 
 import java.io.InputStream;
+import java.lang.reflect.Field;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,7 +32,6 @@ import org.springframework.test.context.support.DependencyInjectionTestExecution
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.assertArg;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
@@ -45,13 +45,16 @@ import static org.mockito.Mockito.mock;
 @ExtendWith(MockitoExtension.class)
 class MockitoTestExecutionListenerTests {
 
-	private final MockitoTestExecutionListener listener = new MockitoTestExecutionListener();
+	private MockitoTestExecutionListener listener = new MockitoTestExecutionListener();
 
 	@Mock
 	private ApplicationContext applicationContext;
 
 	@Mock
 	private MockitoPostProcessor postProcessor;
+
+	@Captor
+	private ArgumentCaptor<Field> fieldCaptor;
 
 	@Test
 	void prepareTestInstanceShouldInitMockitoAnnotations() throws Exception {
@@ -68,9 +71,8 @@ class MockitoTestExecutionListenerTests {
 		TestContext testContext = mockTestContext(instance);
 		given(testContext.getApplicationContext()).willReturn(this.applicationContext);
 		this.listener.prepareTestInstance(testContext);
-		then(this.postProcessor).should()
-			.inject(assertArg((field) -> assertThat(field.getName()).isEqualTo("mockBean")), eq(instance),
-					any(MockDefinition.class));
+		then(this.postProcessor).should().inject(this.fieldCaptor.capture(), eq(instance), any(MockDefinition.class));
+		assertThat(this.fieldCaptor.getValue().getName()).isEqualTo("mockBean");
 	}
 
 	@Test
@@ -86,11 +88,10 @@ class MockitoTestExecutionListenerTests {
 		TestContext mockTestContext = mockTestContext(instance);
 		given(mockTestContext.getApplicationContext()).willReturn(this.applicationContext);
 		given(mockTestContext.getAttribute(DependencyInjectionTestExecutionListener.REINJECT_DEPENDENCIES_ATTRIBUTE))
-			.willReturn(Boolean.TRUE);
+				.willReturn(Boolean.TRUE);
 		this.listener.beforeTestMethod(mockTestContext);
-		then(this.postProcessor).should()
-			.inject(assertArg((field) -> assertThat(field.getName()).isEqualTo("mockBean")), eq(instance),
-					any(MockDefinition.class));
+		then(this.postProcessor).should().inject(this.fieldCaptor.capture(), eq(instance), any(MockDefinition.class));
+		assertThat(this.fieldCaptor.getValue().getName()).isEqualTo("mockBean");
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })

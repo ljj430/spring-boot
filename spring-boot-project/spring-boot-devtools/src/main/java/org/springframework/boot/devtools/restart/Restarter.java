@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,6 +46,7 @@ import org.springframework.boot.devtools.restart.FailureHandler.Outcome;
 import org.springframework.boot.devtools.restart.classloader.ClassLoaderFiles;
 import org.springframework.boot.devtools.restart.classloader.RestartClassLoader;
 import org.springframework.boot.logging.DeferredLog;
+import org.springframework.boot.system.JavaVersion;
 import org.springframework.cglib.core.ClassNameReader;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.GenericApplicationContext;
@@ -106,7 +107,7 @@ public class Restarter {
 
 	private boolean enabled = true;
 
-	private final URL[] initialUrls;
+	private URL[] initialUrls;
 
 	private final String mainClassName;
 
@@ -320,27 +321,30 @@ public class Restarter {
 		System.runFinalization();
 	}
 
-	private void cleanupCaches() {
+	private void cleanupCaches() throws Exception {
 		Introspector.flushCaches();
 		cleanupKnownCaches();
 	}
 
-	private void cleanupKnownCaches() {
-		// Whilst not strictly necessary it helps to clean up soft reference caches
+	private void cleanupKnownCaches() throws Exception {
+		// Whilst not strictly necessary it helps to cleanup soft reference caches
 		// early rather than waiting for memory limits to be reached
 		ResolvableType.clearCache();
 		cleanCachedIntrospectionResultsCache();
 		ReflectionUtils.clearCache();
 		clearAnnotationUtilsCache();
+		if (!JavaVersion.getJavaVersion().isEqualOrNewerThan(JavaVersion.NINE)) {
+			clear("com.sun.naming.internal.ResourceManager", "propertiesCache");
+		}
 	}
 
-	private void cleanCachedIntrospectionResultsCache() {
+	private void cleanCachedIntrospectionResultsCache() throws Exception {
 		clear(CachedIntrospectionResults.class, "acceptedClassLoaders");
 		clear(CachedIntrospectionResults.class, "strongClassCache");
 		clear(CachedIntrospectionResults.class, "softClassCache");
 	}
 
-	private void clearAnnotationUtilsCache() {
+	private void clearAnnotationUtilsCache() throws Exception {
 		try {
 			AnnotationUtils.clearCache();
 		}
@@ -350,7 +354,18 @@ public class Restarter {
 		}
 	}
 
-	private void clear(Class<?> type, String fieldName) {
+	private void clear(String className, String fieldName) {
+		try {
+			clear(Class.forName(className), fieldName);
+		}
+		catch (Exception ex) {
+			if (this.logger.isDebugEnabled()) {
+				this.logger.debug("Unable to clear field " + className + " " + fieldName, ex);
+			}
+		}
+	}
+
+	private void clear(Class<?> type, String fieldName) throws Exception {
 		try {
 			Field field = type.getDeclaredField(fieldName);
 			field.setAccessible(true);
@@ -411,8 +426,8 @@ public class Restarter {
 		if (applicationContext != null && applicationContext.getParent() != null) {
 			return;
 		}
-		if (applicationContext instanceof GenericApplicationContext genericContext) {
-			prepare(genericContext);
+		if (applicationContext instanceof GenericApplicationContext) {
+			prepare((GenericApplicationContext) applicationContext);
 		}
 		this.rootContexts.add(applicationContext);
 	}

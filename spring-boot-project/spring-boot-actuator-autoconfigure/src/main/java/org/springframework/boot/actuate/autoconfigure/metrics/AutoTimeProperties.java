@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,10 @@
 
 package org.springframework.boot.actuate.autoconfigure.metrics;
 
+import io.micrometer.core.instrument.Timer.Builder;
+
+import org.springframework.boot.actuate.metrics.AutoTimer;
+
 /**
  * Nested configuration properties for items that are automatically timed.
  *
@@ -24,21 +28,12 @@ package org.springframework.boot.actuate.autoconfigure.metrics;
  * @author Phillip Webb
  * @since 2.2.0
  */
-public final class AutoTimeProperties {
+public final class AutoTimeProperties implements AutoTimer {
 
-	/**
-	 * Whether to enable auto-timing.
-	 */
 	private boolean enabled = true;
 
-	/**
-	 * Whether to publish percentile histrograms.
-	 */
 	private boolean percentilesHistogram;
 
-	/**
-	 * Percentiles for which additional time series should be published.
-	 */
 	private double[] percentiles;
 
 	/**
@@ -47,6 +42,7 @@ public final class AutoTimeProperties {
 	public AutoTimeProperties() {
 	}
 
+	@Override
 	public boolean isEnabled() {
 		return this.enabled;
 	}
@@ -69,6 +65,11 @@ public final class AutoTimeProperties {
 
 	public void setPercentiles(double[] percentiles) {
 		this.percentiles = percentiles;
+	}
+
+	@Override
+	public void apply(Builder builder) {
+		builder.publishPercentileHistogram(this.percentilesHistogram).publishPercentiles(this.percentiles);
 	}
 
 }

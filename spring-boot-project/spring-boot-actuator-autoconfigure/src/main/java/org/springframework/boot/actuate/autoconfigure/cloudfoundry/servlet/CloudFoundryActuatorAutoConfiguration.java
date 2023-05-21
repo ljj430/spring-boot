@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.actuate.autoconfigure.cloudfoundry.CloudFoundryWebEndpointDiscoverer;
@@ -30,10 +31,10 @@ import org.springframework.boot.actuate.autoconfigure.info.InfoEndpointAutoConfi
 import org.springframework.boot.actuate.autoconfigure.web.servlet.ServletManagementContextAutoConfiguration;
 import org.springframework.boot.actuate.endpoint.ExposableEndpoint;
 import org.springframework.boot.actuate.endpoint.invoke.ParameterValueMapper;
+import org.springframework.boot.actuate.endpoint.web.EndpointLinksResolver;
 import org.springframework.boot.actuate.endpoint.web.EndpointMapping;
 import org.springframework.boot.actuate.endpoint.web.EndpointMediaTypes;
 import org.springframework.boot.actuate.endpoint.web.ExposableWebEndpoint;
-import org.springframework.boot.actuate.endpoint.web.PathMappedEndpoints;
 import org.springframework.boot.actuate.endpoint.web.annotation.ControllerEndpointsSupplier;
 import org.springframework.boot.actuate.endpoint.web.annotation.ServletEndpointsSupplier;
 import org.springframework.boot.actuate.health.HealthEndpoint;
@@ -42,7 +43,7 @@ import org.springframework.boot.actuate.info.GitInfoContributor;
 import org.springframework.boot.actuate.info.InfoContributor;
 import org.springframework.boot.actuate.info.InfoEndpoint;
 import org.springframework.boot.actuate.info.InfoPropertiesInfoContributor;
-import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -65,9 +66,6 @@ import org.springframework.security.config.annotation.web.WebSecurityConfigurer;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
-import org.springframework.security.web.util.matcher.OrRequestMatcher;
-import org.springframework.security.web.util.matcher.RequestMatcher;
-import org.springframework.util.CollectionUtils;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.servlet.DispatcherServlet;
 
@@ -78,16 +76,15 @@ import org.springframework.web.servlet.DispatcherServlet;
  * @author Madhura Bhave
  * @since 2.0.0
  */
-@AutoConfiguration(after = { ServletManagementContextAutoConfiguration.class, HealthEndpointAutoConfiguration.class,
-		InfoEndpointAutoConfiguration.class })
+@Configuration(proxyBeanMethods = false)
 @ConditionalOnProperty(prefix = "management.cloudfoundry", name = "enabled", matchIfMissing = true)
+@AutoConfigureAfter({ ServletManagementContextAutoConfiguration.class, HealthEndpointAutoConfiguration.class,
+		InfoEndpointAutoConfiguration.class })
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 @ConditionalOnClass(DispatcherServlet.class)
 @ConditionalOnBean(DispatcherServlet.class)
 @ConditionalOnCloudPlatform(CloudPlatform.CLOUD_FOUNDRY)
 public class CloudFoundryActuatorAutoConfiguration {
-
-	private static final String BASE_PATH = "/cloudfoundryapplication";
 
 	@Bean
 	@ConditionalOnMissingBean
@@ -105,9 +102,9 @@ public class CloudFoundryActuatorAutoConfiguration {
 	public CloudFoundryInfoEndpointWebExtension cloudFoundryInfoEndpointWebExtension(GitProperties properties,
 			ObjectProvider<InfoContributor> infoContributors) {
 		List<InfoContributor> contributors = infoContributors.orderedStream()
-			.map((infoContributor) -> (infoContributor instanceof GitInfoContributor)
-					? new GitInfoContributor(properties, InfoPropertiesInfoContributor.Mode.FULL) : infoContributor)
-			.toList();
+				.map((infoContributor) -> (infoContributor instanceof GitInfoContributor)
+						? new GitInfoContributor(properties, InfoPropertiesInfoContributor.Mode.FULL) : infoContributor)
+				.collect(Collectors.toList());
 		return new CloudFoundryInfoEndpointWebExtension(new InfoEndpoint(contributors));
 	}
 
@@ -126,7 +123,8 @@ public class CloudFoundryActuatorAutoConfiguration {
 		allEndpoints.addAll(servletEndpointsSupplier.getEndpoints());
 		allEndpoints.addAll(controllerEndpointsSupplier.getEndpoints());
 		return new CloudFoundryWebEndpointServletHandlerMapping(new EndpointMapping("/cloudfoundryapplication"),
-				webEndpoints, endpointMediaTypes, getCorsConfiguration(), securityInterceptor, allEndpoints);
+				webEndpoints, endpointMediaTypes, getCorsConfiguration(), securityInterceptor,
+				new EndpointLinksResolver(allEndpoints));
 	}
 
 	private CloudFoundrySecurityInterceptor getSecurityInterceptor(RestTemplateBuilder restTemplateBuilder,
@@ -151,8 +149,8 @@ public class CloudFoundryActuatorAutoConfiguration {
 		CorsConfiguration corsConfiguration = new CorsConfiguration();
 		corsConfiguration.addAllowedOrigin(CorsConfiguration.ALL);
 		corsConfiguration.setAllowedMethods(Arrays.asList(HttpMethod.GET.name(), HttpMethod.POST.name()));
-		corsConfiguration
-			.setAllowedHeaders(Arrays.asList(HttpHeaders.AUTHORIZATION, "X-Cf-App-Instance", HttpHeaders.CONTENT_TYPE));
+		corsConfiguration.setAllowedHeaders(
+				Arrays.asList(HttpHeaders.AUTHORIZATION, "X-Cf-App-Instance", HttpHeaders.CONTENT_TYPE));
 		return corsConfiguration;
 	}
 
@@ -166,9 +164,8 @@ public class CloudFoundryActuatorAutoConfiguration {
 	public static class IgnoredCloudFoundryPathsWebSecurityConfiguration {
 
 		@Bean
-		IgnoredCloudFoundryPathsWebSecurityCustomizer ignoreCloudFoundryPathsWebSecurityCustomizer(
-				CloudFoundryWebEndpointServletHandlerMapping handlerMapping) {
-			return new IgnoredCloudFoundryPathsWebSecurityCustomizer(handlerMapping);
+		IgnoredCloudFoundryPathsWebSecurityCustomizer ignoreCloudFoundryPathsWebSecurityCustomizer() {
+			return new IgnoredCloudFoundryPathsWebSecurityCustomizer();
 		}
 
 	}
@@ -176,22 +173,9 @@ public class CloudFoundryActuatorAutoConfiguration {
 	@Order(SecurityProperties.IGNORED_ORDER)
 	static class IgnoredCloudFoundryPathsWebSecurityCustomizer implements WebSecurityCustomizer {
 
-		private final PathMappedEndpoints pathMappedEndpoints;
-
-		IgnoredCloudFoundryPathsWebSecurityCustomizer(CloudFoundryWebEndpointServletHandlerMapping handlerMapping) {
-			this.pathMappedEndpoints = new PathMappedEndpoints(BASE_PATH, handlerMapping::getAllEndpoints);
-		}
-
 		@Override
 		public void customize(WebSecurity web) {
-			List<RequestMatcher> requestMatchers = new ArrayList<>();
-			this.pathMappedEndpoints.getAllPaths()
-				.forEach((path) -> requestMatchers.add(new AntPathRequestMatcher(path + "/**")));
-			requestMatchers.add(new AntPathRequestMatcher(BASE_PATH));
-			requestMatchers.add(new AntPathRequestMatcher(BASE_PATH + "/"));
-			if (!CollectionUtils.isEmpty(requestMatchers)) {
-				web.ignoring().requestMatchers(new OrRequestMatcher(requestMatchers));
-			}
+			web.ignoring().requestMatchers(new AntPathRequestMatcher("/cloudfoundryapplication/**"));
 		}
 
 	}

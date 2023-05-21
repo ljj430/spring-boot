@@ -7,25 +7,10 @@ plugins {
 	id "org.springframework.boot.optional-dependencies"
 }
 
-description = "Spring Boot Gradle Plugins"
+description = "Spring Boot Gradle Plugin"
 
 configurations {
 	documentation
-	"testCompileClasspath" {
-		// Downgrade SLF4J is required for tests to run in Eclipse
-		resolutionStrategy.force("org.slf4j:slf4j-api:1.7.36")
-	}
-	all {
-		resolutionStrategy {
-			eachDependency { dependency ->
-				// Downgrade Jackson as Gradle cannot cope with 2.15.0's multi-version
-				// jar files with bytecode in META-INF/versions/19
-				if (dependency.requested.group.startsWith("com.fasterxml.jackson")) {
-					dependency.useVersion("2.14.2")
-				}
-			}
-		}
-	}
 }
 
 dependencies {
@@ -37,13 +22,11 @@ dependencies {
 	implementation("org.apache.commons:commons-compress")
 	implementation("org.springframework:spring-core")
 
-	optional("org.graalvm.buildtools:native-gradle-plugin")
 	optional("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion") {
 		exclude(group: "commons-logging", module: "commons-logging")
 	}
 
 	testImplementation(project(":spring-boot-project:spring-boot-tools:spring-boot-test-support"))
-	testImplementation(project(":spring-boot-project:spring-boot-tools:spring-boot-gradle-test-support"))
 	testImplementation("com.tngtech.archunit:archunit-junit5:0.22.0")
 	testImplementation("org.assertj:assertj-core")
 	testImplementation("org.junit.jupiter:junit-jupiter")
@@ -59,12 +42,6 @@ gradlePlugin {
 			displayName = "Spring Boot Gradle Plugin"
 			description = "Spring Boot Gradle Plugin"
 			implementationClass = "org.springframework.boot.gradle.plugin.SpringBootPlugin"
-		}
-		springBootAotPlugin {
-			id = "org.springframework.boot.aot"
-			displayName = "Spring Boot AOT Gradle Plugin"
-			description = "Spring Boot AOT Gradle Plugin"
-			implementationClass = "org.springframework.boot.gradle.plugin.SpringBootAotPlugin"
 		}
 	}
 }
@@ -109,10 +86,6 @@ task asciidoctorPdf(type: org.asciidoctor.gradle.jvm.AsciidoctorTask) {
 	}
 }
 
-tasks.withType(org.asciidoctor.gradle.jvm.AbstractAsciidoctorTask) {
-	attributes "native-build-tools-version": nativeBuildToolsVersion
-}
-
 javadoc {
 	options {
 		author = true
@@ -123,8 +96,6 @@ javadoc {
 		splitIndex = true
 		use = true
 		windowTitle = "Spring Boot Gradle Plugin ${project.version} API"
-		links "https://docs.gradle.org/$gradle.gradleVersion/javadoc/"
-		links "https://docs.oracle.com/en/java/javase/17/docs/api/"
 	}
 }
 
@@ -145,8 +116,4 @@ task zip(type: Zip) {
 
 artifacts {
 	"documentation" zip
-}
-
-toolchain {
-	maximumCompatibleJavaVersion = JavaLanguageVersion.of(18)
 }

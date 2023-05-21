@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,11 @@ import org.apache.commons.compress.archivers.tar.TarConstants;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
+import org.apache.maven.plugins.annotations.Execute;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
+import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.plugins.annotations.ResolutionScope;
 
 import org.springframework.boot.buildpack.platform.build.AbstractBuildLog;
 import org.springframework.boot.buildpack.platform.build.BuildLog;
@@ -51,14 +55,19 @@ import org.springframework.boot.loader.tools.Libraries;
 import org.springframework.util.StringUtils;
 
 /**
- * Package an application into an OCI image using a buildpack.
+ * Package an application into a OCI image using a buildpack.
  *
  * @author Phillip Webb
  * @author Scott Frederick
- * @author Jeroen Meijer
  * @since 2.3.0
  */
-public abstract class BuildImageMojo extends AbstractPackagerMojo {
+@Mojo(name = "build-image", defaultPhase = LifecyclePhase.PACKAGE, requiresProject = true, threadSafe = true,
+		requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME,
+		requiresDependencyCollection = ResolutionScope.COMPILE_PLUS_RUNTIME)
+@Execute(phase = LifecyclePhase.PACKAGE)
+public class BuildImageMojo extends AbstractPackagerMojo {
+
+	private static final String BUILDPACK_JVM_VERSION_KEY = "BP_JVM_VERSION";
 
 	static {
 		System.setProperty("org.slf4j.simpleLogger.log.org.apache.http.wire", "ERROR");
@@ -102,23 +111,21 @@ public abstract class BuildImageMojo extends AbstractPackagerMojo {
 	private Image image;
 
 	/**
-	 * Alias for {@link Image#name} to support configuration through command-line
-	 * property.
+	 * Alias for {@link Image#name} to support configuration via command-line property.
 	 * @since 2.3.0
 	 */
 	@Parameter(property = "spring-boot.build-image.imageName", readonly = true)
 	String imageName;
 
 	/**
-	 * Alias for {@link Image#builder} to support configuration through command-line
-	 * property.
+	 * Alias for {@link Image#builder} to support configuration via command-line property.
 	 * @since 2.3.0
 	 */
 	@Parameter(property = "spring-boot.build-image.builder", readonly = true)
 	String imageBuilder;
 
 	/**
-	 * Alias for {@link Image#runImage} to support configuration through command-line
+	 * Alias for {@link Image#runImage} to support configuration via command-line
 	 * property.
 	 * @since 2.3.1
 	 */
@@ -126,7 +133,7 @@ public abstract class BuildImageMojo extends AbstractPackagerMojo {
 	String runImage;
 
 	/**
-	 * Alias for {@link Image#cleanCache} to support configuration through command-line
+	 * Alias for {@link Image#cleanCache} to support configuration via command-line
 	 * property.
 	 * @since 2.4.0
 	 */
@@ -134,42 +141,17 @@ public abstract class BuildImageMojo extends AbstractPackagerMojo {
 	Boolean cleanCache;
 
 	/**
-	 * Alias for {@link Image#pullPolicy} to support configuration through command-line
+	 * Alias for {@link Image#pullPolicy} to support configuration via command-line
 	 * property.
 	 */
 	@Parameter(property = "spring-boot.build-image.pullPolicy", readonly = true)
 	PullPolicy pullPolicy;
 
 	/**
-	 * Alias for {@link Image#publish} to support configuration through command-line
-	 * property.
+	 * Alias for {@link Image#publish} to support configuration via command-line property.
 	 */
 	@Parameter(property = "spring-boot.build-image.publish", readonly = true)
 	Boolean publish;
-
-	/**
-	 * Alias for {@link Image#network} to support configuration through command-line
-	 * property.
-	 * @since 2.6.0
-	 */
-	@Parameter(property = "spring-boot.build-image.network", readonly = true)
-	String network;
-
-	/**
-	 * Alias for {@link Image#createdDate} to support configuration through command-line
-	 * property.
-	 * @since 3.1.0
-	 */
-	@Parameter(property = "spring-boot.build-image.createdDate", readonly = true)
-	String createdDate;
-
-	/**
-	 * Alias for {@link Image#applicationDirectory} to support configuration through
-	 * command-line property.
-	 * @since 3.1.0
-	 */
-	@Parameter(property = "spring-boot.build-image.applicationDirectory", readonly = true)
-	String applicationDirectory;
 
 	/**
 	 * Docker configuration options.
@@ -234,7 +216,7 @@ public abstract class BuildImageMojo extends AbstractPackagerMojo {
 		Libraries libraries = getLibraries(Collections.emptySet());
 		try {
 			DockerConfiguration dockerConfiguration = (this.docker != null) ? this.docker.asDockerConfiguration()
-					: new Docker().asDockerConfiguration();
+					: null;
 			BuildRequest request = getBuildRequest(libraries);
 			Builder builder = new Builder(new MojoBuildLog(this::getLog), dockerConfiguration);
 			builder.build(request);
@@ -244,7 +226,7 @@ public abstract class BuildImageMojo extends AbstractPackagerMojo {
 		}
 	}
 
-	private BuildRequest getBuildRequest(Libraries libraries) {
+	private BuildRequest getBuildRequest(Libraries libraries) throws MojoExecutionException {
 		ImagePackager imagePackager = new ImagePackager(getArchiveFile(), getBackupFile());
 		Function<Owner, TarArchive> content = (owner) -> getApplicationContent(owner, libraries, imagePackager);
 		Image image = (this.image != null) ? this.image : new Image();
@@ -266,16 +248,15 @@ public abstract class BuildImageMojo extends AbstractPackagerMojo {
 		if (image.publish == null && this.publish != null) {
 			image.setPublish(this.publish);
 		}
-		if (image.network == null && this.network != null) {
-			image.setNetwork(this.network);
-		}
-		if (image.createdDate == null && this.createdDate != null) {
-			image.setCreatedDate(this.createdDate);
-		}
-		if (image.applicationDirectory == null && this.applicationDirectory != null) {
-			image.setApplicationDirectory(this.applicationDirectory);
+		if (image.publish != null && image.publish && publishRegistryNotConfigured()) {
+			throw new MojoExecutionException("Publishing an image requires docker.publishRegistry to be configured");
 		}
 		return customize(image.getBuildRequest(this.project.getArtifact(), content));
+	}
+
+	private boolean publishRegistryNotConfigured() {
+		return this.docker == null || this.docker.getPublishRegistry() == null
+				|| this.docker.getPublishRegistry().isEmpty();
 	}
 
 	private TarArchive getApplicationContent(Owner owner, Libraries libraries, ImagePackager imagePackager) {
@@ -297,8 +278,8 @@ public abstract class BuildImageMojo extends AbstractPackagerMojo {
 	}
 
 	/**
-	 * Return the {@link File} to use to back up the original source.
-	 * @return the file to use to back up the original source
+	 * Return the {@link File} to use to backup the original source.
+	 * @return the file to use to backup the original source
 	 */
 	private File getBackupFile() {
 		Artifact source = getSourceArtifact(null);
@@ -309,7 +290,19 @@ public abstract class BuildImageMojo extends AbstractPackagerMojo {
 	}
 
 	private BuildRequest customize(BuildRequest request) {
+		request = customizeEnvironment(request);
 		request = customizeCreator(request);
+		return request;
+	}
+
+	private BuildRequest customizeEnvironment(BuildRequest request) {
+		if (!request.getEnv().containsKey(BUILDPACK_JVM_VERSION_KEY)) {
+			JavaCompilerPluginConfiguration compilerConfiguration = new JavaCompilerPluginConfiguration(this.project);
+			String targetJavaVersion = compilerConfiguration.getTargetMajorVersion();
+			if (StringUtils.hasText(targetJavaVersion)) {
+				return request.withEnv(BUILDPACK_JVM_VERSION_KEY, targetJavaVersion + ".*");
+			}
+		}
 		return request;
 	}
 

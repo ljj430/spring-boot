@@ -53,7 +53,7 @@ class SpyBeanOnTestFieldForExistingBeanWithQualifierIntegrationTests {
 	private ApplicationContext applicationContext;
 
 	@Test
-	void testMocking() {
+	void testMocking() throws Exception {
 		this.caller.sayGreeting();
 		then(this.service).should().greeting();
 	}

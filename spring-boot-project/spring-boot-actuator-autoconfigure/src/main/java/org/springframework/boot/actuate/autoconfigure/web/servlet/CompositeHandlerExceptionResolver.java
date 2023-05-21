@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,12 +18,11 @@ package org.springframework.boot.actuate.autoconfigure.web.servlet;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
-import org.springframework.beans.factory.BeanFactory;
-import org.springframework.beans.factory.HierarchicalBeanFactory;
 import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.servlet.error.DefaultErrorAttributes;
@@ -39,50 +38,34 @@ import org.springframework.web.servlet.mvc.support.DefaultHandlerExceptionResolv
  * @author Stephane Nicoll
  * @author Phillip Webb
  * @author Scott Frederick
- * @author Guirong Hu
  */
 class CompositeHandlerExceptionResolver implements HandlerExceptionResolver {
 
 	@Autowired
 	private ListableBeanFactory beanFactory;
 
-	private volatile List<HandlerExceptionResolver> resolvers;
+	private List<HandlerExceptionResolver> resolvers;
 
 	@Override
 	public ModelAndView resolveException(HttpServletRequest request, HttpServletResponse response, Object handler,
 			Exception ex) {
-		for (HandlerExceptionResolver resolver : getResolvers()) {
-			ModelAndView resolved = resolver.resolveException(request, response, handler, ex);
-			if (resolved != null) {
-				return resolved;
-			}
+		if (this.resolvers == null) {
+			this.resolvers = extractResolvers();
 		}
-		return null;
+		return this.resolvers.stream().map((resolver) -> resolver.resolveException(request, response, handler, ex))
+				.filter(Objects::nonNull).findFirst().orElse(null);
 	}
 
-	private List<HandlerExceptionResolver> getResolvers() {
-		List<HandlerExceptionResolver> resolvers = this.resolvers;
-		if (resolvers == null) {
-			resolvers = new ArrayList<>();
-			collectResolverBeans(resolvers, this.beanFactory);
-			resolvers.remove(this);
-			AnnotationAwareOrderComparator.sort(resolvers);
-			if (resolvers.isEmpty()) {
-				resolvers.add(new DefaultErrorAttributes());
-				resolvers.add(new DefaultHandlerExceptionResolver());
-			}
-			this.resolvers = resolvers;
+	private List<HandlerExceptionResolver> extractResolvers() {
+		List<HandlerExceptionResolver> list = new ArrayList<>(
+				this.beanFactory.getBeansOfType(HandlerExceptionResolver.class).values());
+		list.remove(this);
+		AnnotationAwareOrderComparator.sort(list);
+		if (list.isEmpty()) {
+			list.add(new DefaultErrorAttributes());
+			list.add(new DefaultHandlerExceptionResolver());
 		}
-		return resolvers;
-	}
-
-	private void collectResolverBeans(List<HandlerExceptionResolver> resolvers, BeanFactory beanFactory) {
-		if (beanFactory instanceof ListableBeanFactory listableBeanFactory) {
-			resolvers.addAll(listableBeanFactory.getBeansOfType(HandlerExceptionResolver.class).values());
-		}
-		if (beanFactory instanceof HierarchicalBeanFactory hierarchicalBeanFactory) {
-			collectResolverBeans(resolvers, hierarchicalBeanFactory.getParentBeanFactory());
-		}
+		return list;
 	}
 
 }

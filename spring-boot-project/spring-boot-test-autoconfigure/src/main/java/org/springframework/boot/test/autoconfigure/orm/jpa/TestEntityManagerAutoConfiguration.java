@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,14 @@
 
 package org.springframework.boot.test.autoconfigure.orm.jpa;
 
-import jakarta.persistence.EntityManagerFactory;
+import javax.persistence.EntityManagerFactory;
 
-import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 /**
  * Auto-configuration for {@link TestEntityManager}.
@@ -31,8 +32,9 @@ import org.springframework.context.annotation.Bean;
  * @since 1.4.0
  * @see AutoConfigureTestEntityManager
  */
-@AutoConfiguration(after = HibernateJpaAutoConfiguration.class)
+@Configuration(proxyBeanMethods = false)
 @ConditionalOnClass({ EntityManagerFactory.class })
+@AutoConfigureAfter(HibernateJpaAutoConfiguration.class)
 public class TestEntityManagerAutoConfiguration {
 
 	@Bean

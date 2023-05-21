@@ -2,3 +2,9 @@ plugins {
 	id 'application'
 	id 'org.springframework.boot' version '{version}'
 }
+
+bootRun {
+	doFirst {
+		println "Main class name = ${bootRun.mainClass.get()}"
+	}
+}

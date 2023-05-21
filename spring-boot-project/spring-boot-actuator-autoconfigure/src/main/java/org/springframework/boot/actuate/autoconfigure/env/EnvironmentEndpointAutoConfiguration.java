@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,18 +16,15 @@
 
 package org.springframework.boot.actuate.autoconfigure.env;
 
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.actuate.autoconfigure.endpoint.condition.ConditionalOnAvailableEndpoint;
-import org.springframework.boot.actuate.autoconfigure.endpoint.expose.EndpointExposure;
-import org.springframework.boot.actuate.endpoint.SanitizingFunction;
 import org.springframework.boot.actuate.env.EnvironmentEndpoint;
 import org.springframework.boot.actuate.env.EnvironmentEndpointWebExtension;
-import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 
 /**
@@ -37,27 +34,31 @@ import org.springframework.core.env.Environment;
  * @author Stephane Nicoll
  * @since 2.0.0
  */
-@AutoConfiguration
+@Configuration(proxyBeanMethods = false)
 @ConditionalOnAvailableEndpoint(endpoint = EnvironmentEndpoint.class)
 @EnableConfigurationProperties(EnvironmentEndpointProperties.class)
 public class EnvironmentEndpointAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public EnvironmentEndpoint environmentEndpoint(Environment environment, EnvironmentEndpointProperties properties,
-			ObjectProvider<SanitizingFunction> sanitizingFunctions) {
-		return new EnvironmentEndpoint(environment, sanitizingFunctions.orderedStream().toList(),
-				properties.getShowValues());
+	public EnvironmentEndpoint environmentEndpoint(Environment environment, EnvironmentEndpointProperties properties) {
+		EnvironmentEndpoint endpoint = new EnvironmentEndpoint(environment);
+		String[] keysToSanitize = properties.getKeysToSanitize();
+		if (keysToSanitize != null) {
+			endpoint.setKeysToSanitize(keysToSanitize);
+		}
+		String[] additionalKeysToSanitize = properties.getAdditionalKeysToSanitize();
+		if (additionalKeysToSanitize != null) {
+			endpoint.keysToSanitize(additionalKeysToSanitize);
+		}
+		return endpoint;
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnBean(EnvironmentEndpoint.class)
-	@ConditionalOnAvailableEndpoint(exposure = { EndpointExposure.WEB, EndpointExposure.CLOUD_FOUNDRY })
-	public EnvironmentEndpointWebExtension environmentEndpointWebExtension(EnvironmentEndpoint environmentEndpoint,
-			EnvironmentEndpointProperties properties) {
-		return new EnvironmentEndpointWebExtension(environmentEndpoint, properties.getShowValues(),
-				properties.getRoles());
+	public EnvironmentEndpointWebExtension environmentEndpointWebExtension(EnvironmentEndpoint environmentEndpoint) {
+		return new EnvironmentEndpointWebExtension(environmentEndpoint);
 	}
 
 }

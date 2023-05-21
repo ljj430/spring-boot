@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import java.util.Map;
 
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.boot.actuate.endpoint.ApiVersion;
@@ -40,8 +39,8 @@ class CompositeHealthTests {
 	@Test
 	void createWhenStatusIsNullThrowsException() {
 		assertThatIllegalArgumentException()
-			.isThrownBy(() -> new CompositeHealth(ApiVersion.V3, null, Collections.emptyMap()))
-			.withMessage("Status must not be null");
+				.isThrownBy(() -> new CompositeHealth(ApiVersion.V3, null, Collections.emptyMap()))
+				.withMessage("Status must not be null");
 	}
 
 	@Test
@@ -88,7 +87,8 @@ class CompositeHealthTests {
 		components.put("db1", Health.up().build());
 		components.put("db2", Health.down().withDetail("a", "b").build());
 		CompositeHealth health = new CompositeHealth(ApiVersion.V2, Status.UP, components);
-		JsonMapper mapper = JsonMapper.builder().disable(MapperFeature.CAN_OVERRIDE_ACCESS_MODIFIERS).build();
+		ObjectMapper mapper = new ObjectMapper();
+		mapper.disable(MapperFeature.CAN_OVERRIDE_ACCESS_MODIFIERS);
 		String json = mapper.writeValueAsString(health);
 		assertThat(json).isEqualTo("{\"status\":\"UP\",\"details\":{\"db1\":{\"status\":\"UP\"},"
 				+ "\"db2\":{\"status\":\"DOWN\",\"details\":{\"a\":\"b\"}}}}");

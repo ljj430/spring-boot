@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,12 +29,11 @@ import org.springframework.boot.autoconfigure.data.alt.elasticsearch.CityElastic
 import org.springframework.boot.autoconfigure.data.elasticsearch.city.City;
 import org.springframework.boot.autoconfigure.data.elasticsearch.city.CityRepository;
 import org.springframework.boot.autoconfigure.data.empty.EmptyDataPackage;
-import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchClientAutoConfiguration;
 import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.boot.testsupport.testcontainers.DockerImageNames;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.elasticsearch.client.elc.ElasticsearchTemplate;
+import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
 import org.springframework.data.elasticsearch.repository.config.EnableElasticsearchRepositories;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -51,33 +50,29 @@ class ElasticsearchRepositoriesAutoConfigurationTests {
 
 	@Container
 	static final ElasticsearchContainer elasticsearch = new ElasticsearchContainer(DockerImageNames.elasticsearch())
-		.withEnv("ES_JAVA_OPTS", "-Xms32m -Xmx512m")
-		.withStartupAttempts(5)
-		.withStartupTimeout(Duration.ofMinutes(10));
+			.withStartupAttempts(5).withStartupTimeout(Duration.ofMinutes(10));
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(ElasticsearchRestClientAutoConfiguration.class,
-				ElasticsearchClientAutoConfiguration.class, ElasticsearchRepositoriesAutoConfiguration.class,
-				ElasticsearchDataAutoConfiguration.class))
-		.withPropertyValues("spring.elasticsearch.uris=" + elasticsearch.getHttpHostAddress());
+			.withConfiguration(AutoConfigurations.of(ElasticsearchRestClientAutoConfiguration.class,
+					ElasticsearchRepositoriesAutoConfiguration.class, ElasticsearchDataAutoConfiguration.class))
+			.withPropertyValues("spring.elasticsearch.rest.uris=" + elasticsearch.getHttpHostAddress());
 
 	@Test
 	void testDefaultRepositoryConfiguration() {
-		this.contextRunner.withUserConfiguration(TestConfiguration.class)
-			.run((context) -> assertThat(context).hasSingleBean(CityRepository.class)
-				.hasSingleBean(ElasticsearchTemplate.class));
+		this.contextRunner.withUserConfiguration(TestConfiguration.class).run((context) -> assertThat(context)
+				.hasSingleBean(CityRepository.class).hasSingleBean(ElasticsearchRestTemplate.class));
 	}
 
 	@Test
 	void testNoRepositoryConfiguration() {
 		this.contextRunner.withUserConfiguration(EmptyConfiguration.class)
-			.run((context) -> assertThat(context).hasSingleBean(ElasticsearchTemplate.class));
+				.run((context) -> assertThat(context).hasSingleBean(ElasticsearchRestTemplate.class));
 	}
 
 	@Test
 	void doesNotTriggerDefaultRepositoryDetectionIfCustomized() {
 		this.contextRunner.withUserConfiguration(CustomizedConfiguration.class)
-			.run((context) -> assertThat(context).hasSingleBean(CityElasticsearchDbRepository.class));
+				.run((context) -> assertThat(context).hasSingleBean(CityElasticsearchDbRepository.class));
 	}
 
 	@Configuration(proxyBeanMethods = false)

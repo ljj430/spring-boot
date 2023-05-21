@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,9 @@
 
 package org.springframework.boot.diagnostics.analyzer;
 
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.NoUniqueBeanDefinitionException;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -30,13 +32,14 @@ import org.springframework.util.StringUtils;
  * by a {@link NoUniqueBeanDefinitionException}.
  *
  * @author Andy Wilkinson
- * @author Scott Frederick
  */
-class NoUniqueBeanDefinitionFailureAnalyzer extends AbstractInjectionFailureAnalyzer<NoUniqueBeanDefinitionException> {
+class NoUniqueBeanDefinitionFailureAnalyzer extends AbstractInjectionFailureAnalyzer<NoUniqueBeanDefinitionException>
+		implements BeanFactoryAware {
 
-	private final ConfigurableBeanFactory beanFactory;
+	private ConfigurableBeanFactory beanFactory;
 
-	NoUniqueBeanDefinitionFailureAnalyzer(BeanFactory beanFactory) {
+	@Override
+	public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
 		Assert.isInstanceOf(ConfigurableBeanFactory.class, beanFactory);
 		this.beanFactory = (ConfigurableBeanFactory) beanFactory;
 	}
@@ -76,14 +79,9 @@ class NoUniqueBeanDefinitionFailureAnalyzer extends AbstractInjectionFailureAnal
 	private String getDefinitionDescription(String beanName, BeanDefinition definition) {
 		if (StringUtils.hasText(definition.getFactoryMethodName())) {
 			return String.format("\t- %s: defined by method '%s' in %s%n", beanName, definition.getFactoryMethodName(),
-					getResourceDescription(definition));
+					definition.getResourceDescription());
 		}
-		return String.format("\t- %s: defined in %s%n", beanName, getResourceDescription(definition));
-	}
-
-	private String getResourceDescription(BeanDefinition definition) {
-		String resourceDescription = definition.getResourceDescription();
-		return (resourceDescription != null) ? resourceDescription : "unknown location";
+		return String.format("\t- %s: defined in %s%n", beanName, definition.getResourceDescription());
 	}
 
 	private String[] extractBeanNames(NoUniqueBeanDefinitionException cause) {

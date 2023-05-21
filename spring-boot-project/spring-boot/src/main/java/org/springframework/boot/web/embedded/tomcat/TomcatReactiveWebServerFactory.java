@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,6 @@ import org.apache.tomcat.util.scan.StandardJarScanFilter;
 import org.springframework.boot.util.LambdaSafe;
 import org.springframework.boot.web.reactive.server.AbstractReactiveWebServerFactory;
 import org.springframework.boot.web.reactive.server.ReactiveWebServerFactory;
-import org.springframework.boot.web.server.Ssl;
 import org.springframework.boot.web.server.WebServer;
 import org.springframework.http.server.reactive.HttpHandler;
 import org.springframework.http.server.reactive.TomcatHttpHandlerAdapter;
@@ -75,7 +74,7 @@ public class TomcatReactiveWebServerFactory extends AbstractReactiveWebServerFac
 
 	private List<LifecycleListener> contextLifecycleListeners = new ArrayList<>();
 
-	private final List<LifecycleListener> serverLifecycleListeners = getDefaultServerLifecycleListeners();
+	private List<LifecycleListener> serverLifecycleListeners = getDefaultServerLifecycleListeners();
 
 	private Set<TomcatContextCustomizer> tomcatContextCustomizers = new LinkedHashSet<>();
 
@@ -153,11 +152,10 @@ public class TomcatReactiveWebServerFactory extends AbstractReactiveWebServerFac
 		context.setPath("");
 		context.setDocBase(docBase.getAbsolutePath());
 		context.addLifecycleListener(new Tomcat.FixContextListener());
-		ClassLoader parentClassLoader = ClassUtils.getDefaultClassLoader();
-		context.setParentClassLoader(parentClassLoader);
+		context.setParentClassLoader(ClassUtils.getDefaultClassLoader());
 		skipAllTldScanning(context);
 		WebappLoader loader = new WebappLoader();
-		loader.setLoaderInstance(new TomcatEmbeddedWebappClassLoader(parentClassLoader));
+		loader.setLoaderClass(TomcatEmbeddedWebappClassLoader.class.getName());
 		loader.setDelegate(true);
 		context.setLoader(loader);
 		Tomcat.addServlet(context, "httpHandlerServlet", servlet).setAsyncSupported(true);
@@ -200,7 +198,7 @@ public class TomcatReactiveWebServerFactory extends AbstractReactiveWebServerFac
 		if (getHttp2() != null && getHttp2().isEnabled()) {
 			connector.addUpgradeProtocol(new Http2Protocol());
 		}
-		if (Ssl.isEnabled(getSsl())) {
+		if (getSsl() != null && getSsl().isEnabled()) {
 			customizeSsl(connector);
 		}
 		TomcatConnectorCustomizer compression = new CompressionConnectorCustomizer(getCompression());
@@ -212,9 +210,8 @@ public class TomcatReactiveWebServerFactory extends AbstractReactiveWebServerFac
 
 	@SuppressWarnings("unchecked")
 	private void invokeProtocolHandlerCustomizers(ProtocolHandler protocolHandler) {
-		LambdaSafe
-			.callbacks(TomcatProtocolHandlerCustomizer.class, this.tomcatProtocolHandlerCustomizers, protocolHandler)
-			.invoke((customizer) -> customizer.customize(protocolHandler));
+		LambdaSafe.callbacks(TomcatProtocolHandlerCustomizer.class, this.tomcatProtocolHandlerCustomizers,
+				protocolHandler).invoke((customizer) -> customizer.customize(protocolHandler));
 	}
 
 	private void customizeProtocol(AbstractProtocol<?> protocol) {
@@ -224,7 +221,7 @@ public class TomcatReactiveWebServerFactory extends AbstractReactiveWebServerFac
 	}
 
 	private void customizeSsl(Connector connector) {
-		new SslConnectorCustomizer(getSsl().getClientAuth(), getSslBundle()).customize(connector);
+		new SslConnectorCustomizer(getSsl(), getSslStoreProvider()).customize(connector);
 	}
 
 	@Override

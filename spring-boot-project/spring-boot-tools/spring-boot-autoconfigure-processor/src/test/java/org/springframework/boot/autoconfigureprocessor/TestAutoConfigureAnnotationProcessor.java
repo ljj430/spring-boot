@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,11 @@
 
 package org.springframework.boot.autoconfigureprocessor;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.Map;
+import java.util.Properties;
 
 import javax.annotation.processing.SupportedAnnotationTypes;
 
@@ -25,7 +28,6 @@ import javax.annotation.processing.SupportedAnnotationTypes;
  * Version of {@link AutoConfigureAnnotationProcessor} used for testing.
  *
  * @author Madhura Bhave
- * @author Scott Frederick
  */
 @SupportedAnnotationTypes({ "org.springframework.boot.autoconfigureprocessor.TestConditionalOnClass",
 		"org.springframework.boot.autoconfigureprocessor.TestConditionalOnBean",
@@ -33,34 +35,44 @@ import javax.annotation.processing.SupportedAnnotationTypes;
 		"org.springframework.boot.autoconfigureprocessor.TestConditionalOnWebApplication",
 		"org.springframework.boot.autoconfigureprocessor.TestAutoConfigureBefore",
 		"org.springframework.boot.autoconfigureprocessor.TestAutoConfigureAfter",
-		"org.springframework.boot.autoconfigureprocessor.TestAutoConfigureOrder",
-		"org.springframework.boot.autoconfigureprocessor.TestAutoConfiguration" })
+		"org.springframework.boot.autoconfigureprocessor.TestAutoConfigureOrder" })
 public class TestAutoConfigureAnnotationProcessor extends AutoConfigureAnnotationProcessor {
 
-	public TestAutoConfigureAnnotationProcessor() {
+	private final File outputLocation;
+
+	public TestAutoConfigureAnnotationProcessor(File outputLocation) {
+		this.outputLocation = outputLocation;
 	}
 
 	@Override
-	protected List<PropertyGenerator> getPropertyGenerators() {
-		List<PropertyGenerator> generators = new ArrayList<>();
-		String annotationPackage = "org.springframework.boot.autoconfigureprocessor";
-		generators.add(PropertyGenerator.of(annotationPackage, "ConditionalOnClass")
-			.withAnnotation("TestConditionalOnClass", new OnClassConditionValueExtractor()));
-		generators.add(PropertyGenerator.of(annotationPackage, "ConditionalOnBean")
-			.withAnnotation("TestConditionalOnBean", new OnBeanConditionValueExtractor()));
-		generators.add(PropertyGenerator.of(annotationPackage, "ConditionalOnSingleCandidate")
-			.withAnnotation("TestConditionalOnSingleCandidate", new OnBeanConditionValueExtractor()));
-		generators.add(PropertyGenerator.of(annotationPackage, "ConditionalOnWebApplication")
-			.withAnnotation("TestConditionalOnWebApplication", ValueExtractor.allFrom("type")));
-		generators.add(PropertyGenerator.of(annotationPackage, "AutoConfigureBefore", true)
-			.withAnnotation("TestAutoConfigureBefore", ValueExtractor.allFrom("value", "name"))
-			.withAnnotation("TestAutoConfiguration", ValueExtractor.allFrom("before", "beforeName")));
-		generators.add(PropertyGenerator.of(annotationPackage, "AutoConfigureAfter", true)
-			.withAnnotation("TestAutoConfigureAfter", ValueExtractor.allFrom("value", "name"))
-			.withAnnotation("TestAutoConfiguration", ValueExtractor.allFrom("after", "afterName")));
-		generators.add(PropertyGenerator.of(annotationPackage, "AutoConfigureOrder")
-			.withAnnotation("TestAutoConfigureOrder", ValueExtractor.allFrom("value")));
-		return generators;
+	protected void addAnnotations(Map<String, String> annotations) {
+		put(annotations, "ConditionalOnClass", TestConditionalOnClass.class);
+		put(annotations, "ConditionalOnBean", TestConditionalOnBean.class);
+		put(annotations, "ConditionalOnSingleCandidate", TestConditionalOnSingleCandidate.class);
+		put(annotations, "ConditionalOnWebApplication", TestConditionalOnWebApplication.class);
+		put(annotations, "AutoConfigureBefore", TestAutoConfigureBefore.class);
+		put(annotations, "AutoConfigureAfter", TestAutoConfigureAfter.class);
+		put(annotations, "AutoConfigureOrder", TestAutoConfigureOrder.class);
+	}
+
+	private void put(Map<String, String> annotations, String key, Class<?> value) {
+		annotations.put(key, value.getName());
+	}
+
+	public Properties getWrittenProperties() throws IOException {
+		File file = getWrittenFile();
+		if (!file.exists()) {
+			return null;
+		}
+		try (FileInputStream inputStream = new FileInputStream(file)) {
+			Properties properties = new Properties();
+			properties.load(inputStream);
+			return properties;
+		}
+	}
+
+	public File getWrittenFile() {
+		return new File(this.outputLocation, PROPERTIES_PATH);
 	}
 
 }

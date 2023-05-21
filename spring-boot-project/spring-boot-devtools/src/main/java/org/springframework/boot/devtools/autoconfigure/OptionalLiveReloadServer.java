@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,14 +49,13 @@ public class OptionalLiveReloadServer implements InitializingBean {
 		startServer();
 	}
 
-	void startServer() {
+	void startServer() throws Exception {
 		if (this.server != null) {
 			try {
-				int port = this.server.getPort();
 				if (!this.server.isStarted()) {
-					port = this.server.start();
+					this.server.start();
 				}
-				logger.info(LogMessage.format("LiveReload server is running on port %s", port));
+				logger.info(LogMessage.format("LiveReload server is running on port %s", this.server.getPort()));
 			}
 			catch (Exception ex) {
 				logger.warn("Unable to start LiveReload server");

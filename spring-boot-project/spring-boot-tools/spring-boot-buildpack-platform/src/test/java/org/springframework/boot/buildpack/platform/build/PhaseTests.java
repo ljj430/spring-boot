@@ -31,7 +31,6 @@ import static org.mockito.Mockito.mock;
  *
  * @author Phillip Webb
  * @author Scott Frederick
- * @author Jeroen Meijer
  */
 class PhaseTests {
 
@@ -60,12 +59,13 @@ class PhaseTests {
 	}
 
 	@Test
-	void applyWhenWithDaemonAccessUpdatesConfigurationWithRootUser() {
+	void applyWhenWithDaemonAccessUpdatesConfigurationWithRootUserAndDomainSocketBinding() {
 		Phase phase = new Phase("test", false);
 		phase.withDaemonAccess();
 		Update update = mock(Update.class);
 		phase.apply(update);
 		then(update).should().withUser("root");
+		then(update).should().withBinding(Binding.from("/var/run/docker.sock", "/var/run/docker.sock"));
 		then(update).should().withCommand("/cnb/lifecycle/test", NO_ARGS);
 		then(update).should().withLabel("author", "spring-boot");
 		then(update).shouldHaveNoMoreInteractions();
@@ -128,32 +128,6 @@ class PhaseTests {
 		then(update).should().withLabel("author", "spring-boot");
 		then(update).should().withEnv("name1", "value1");
 		then(update).should().withEnv("name2", "value2");
-		then(update).shouldHaveNoMoreInteractions();
-	}
-
-	@Test
-	void applyWhenWithNetworkModeUpdatesConfigurationWithNetworkMode() {
-		Phase phase = new Phase("test", true);
-		phase.withNetworkMode("test");
-		Update update = mock(Update.class);
-		phase.apply(update);
-		then(update).should().withCommand("/cnb/lifecycle/test");
-		then(update).should().withNetworkMode("test");
-		then(update).should().withLabel("author", "spring-boot");
-		then(update).shouldHaveNoMoreInteractions();
-	}
-
-	@Test
-	void applyWhenWithSecurityOptionsUpdatesConfigurationWithSecurityOptions() {
-		Phase phase = new Phase("test", true);
-		phase.withSecurityOption("option1=value1");
-		phase.withSecurityOption("option2=value2");
-		Update update = mock(Update.class);
-		phase.apply(update);
-		then(update).should().withCommand("/cnb/lifecycle/test");
-		then(update).should().withLabel("author", "spring-boot");
-		then(update).should().withSecurityOption("option1=value1");
-		then(update).should().withSecurityOption("option2=value2");
 		then(update).shouldHaveNoMoreInteractions();
 	}
 

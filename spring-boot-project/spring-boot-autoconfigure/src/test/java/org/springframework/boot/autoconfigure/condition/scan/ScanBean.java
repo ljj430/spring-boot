@@ -18,7 +18,7 @@ package org.springframework.boot.autoconfigure.condition.scan;
 
 public class ScanBean {
 
-	private final String value;
+	private String value;
 
 	public ScanBean(String value) {
 		this.value = value;

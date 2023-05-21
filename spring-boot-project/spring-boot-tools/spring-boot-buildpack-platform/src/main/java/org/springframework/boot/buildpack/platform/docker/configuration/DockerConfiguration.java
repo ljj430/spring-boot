@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,26 +33,19 @@ public final class DockerConfiguration {
 
 	private final DockerRegistryAuthentication publishAuthentication;
 
-	private final boolean bindHostToBuilder;
-
 	public DockerConfiguration() {
-		this(null, null, null, false);
+		this(null, null, null);
 	}
 
 	private DockerConfiguration(DockerHost host, DockerRegistryAuthentication builderAuthentication,
-			DockerRegistryAuthentication publishAuthentication, boolean bindHostToBuilder) {
+			DockerRegistryAuthentication publishAuthentication) {
 		this.host = host;
 		this.builderAuthentication = builderAuthentication;
 		this.publishAuthentication = publishAuthentication;
-		this.bindHostToBuilder = bindHostToBuilder;
 	}
 
 	public DockerHost getHost() {
 		return this.host;
-	}
-
-	public boolean isBindHostToBuilder() {
-		return this.bindHostToBuilder;
 	}
 
 	public DockerRegistryAuthentication getBuilderRegistryAuthentication() {
@@ -66,18 +59,13 @@ public final class DockerConfiguration {
 	public DockerConfiguration withHost(String address, boolean secure, String certificatePath) {
 		Assert.notNull(address, "Address must not be null");
 		return new DockerConfiguration(new DockerHost(address, secure, certificatePath), this.builderAuthentication,
-				this.publishAuthentication, this.bindHostToBuilder);
-	}
-
-	public DockerConfiguration withBindHostToBuilder(boolean bindHostToBuilder) {
-		return new DockerConfiguration(this.host, this.builderAuthentication, this.publishAuthentication,
-				bindHostToBuilder);
+				this.publishAuthentication);
 	}
 
 	public DockerConfiguration withBuilderRegistryTokenAuthentication(String token) {
 		Assert.notNull(token, "Token must not be null");
 		return new DockerConfiguration(this.host, new DockerRegistryTokenAuthentication(token),
-				this.publishAuthentication, this.bindHostToBuilder);
+				this.publishAuthentication);
 	}
 
 	public DockerConfiguration withBuilderRegistryUserAuthentication(String username, String password, String url,
@@ -85,13 +73,13 @@ public final class DockerConfiguration {
 		Assert.notNull(username, "Username must not be null");
 		Assert.notNull(password, "Password must not be null");
 		return new DockerConfiguration(this.host, new DockerRegistryUserAuthentication(username, password, url, email),
-				this.publishAuthentication, this.bindHostToBuilder);
+				this.publishAuthentication);
 	}
 
 	public DockerConfiguration withPublishRegistryTokenAuthentication(String token) {
 		Assert.notNull(token, "Token must not be null");
 		return new DockerConfiguration(this.host, this.builderAuthentication,
-				new DockerRegistryTokenAuthentication(token), this.bindHostToBuilder);
+				new DockerRegistryTokenAuthentication(token));
 	}
 
 	public DockerConfiguration withPublishRegistryUserAuthentication(String username, String password, String url,
@@ -99,12 +87,7 @@ public final class DockerConfiguration {
 		Assert.notNull(username, "Username must not be null");
 		Assert.notNull(password, "Password must not be null");
 		return new DockerConfiguration(this.host, this.builderAuthentication,
-				new DockerRegistryUserAuthentication(username, password, url, email), this.bindHostToBuilder);
-	}
-
-	public DockerConfiguration withEmptyPublishRegistryAuthentication() {
-		return new DockerConfiguration(this.host, this.builderAuthentication,
-				new DockerRegistryUserAuthentication("", "", "", ""), this.bindHostToBuilder);
+				new DockerRegistryUserAuthentication(username, password, url, email));
 	}
 
 }

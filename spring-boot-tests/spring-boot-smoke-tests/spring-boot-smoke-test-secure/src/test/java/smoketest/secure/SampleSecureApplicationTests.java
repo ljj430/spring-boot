@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,6 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -58,28 +57,26 @@ class SampleSecureApplicationTests {
 	@Test
 	void secure() {
 		assertThatExceptionOfType(AuthenticationException.class)
-			.isThrownBy(() -> SampleSecureApplicationTests.this.service.secure());
+				.isThrownBy(() -> SampleSecureApplicationTests.this.service.secure());
 	}
 
 	@Test
 	void authenticated() {
-		SecurityContextHolder.getContext()
-			.setAuthentication(new UsernamePasswordAuthenticationToken("user", "N/A",
-					AuthorityUtils.commaSeparatedStringToAuthorityList("ROLE_USER")));
-		assertThat(this.service.secure()).isEqualTo("Hello Security");
+		SecurityContextHolder.getContext().setAuthentication(this.authentication);
+		assertThat("Hello Security").isEqualTo(this.service.secure());
 	}
 
 	@Test
 	void preauth() {
 		SecurityContextHolder.getContext().setAuthentication(this.authentication);
-		assertThat(this.service.authorized()).isEqualTo("Hello World");
+		assertThat("Hello World").isEqualTo(this.service.authorized());
 	}
 
 	@Test
 	void denied() {
 		SecurityContextHolder.getContext().setAuthentication(this.authentication);
 		assertThatExceptionOfType(AccessDeniedException.class)
-			.isThrownBy(() -> SampleSecureApplicationTests.this.service.denied());
+				.isThrownBy(() -> SampleSecureApplicationTests.this.service.denied());
 	}
 
 }

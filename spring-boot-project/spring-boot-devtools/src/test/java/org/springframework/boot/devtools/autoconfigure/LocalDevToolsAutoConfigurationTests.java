@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,6 +111,16 @@ class LocalDevToolsAutoConfigurationTests {
 		assertThat(properties.getCache().getPeriod()).isZero();
 	}
 
+	@SuppressWarnings("deprecation")
+	@Test
+	void deprecatedResourceCachePeriodIsZeroWhenDeprecatedResourcePropertiesAreInUse() throws Exception {
+		this.context = getContext(() -> initializeAndRun(WebResourcesConfig.class,
+				Collections.singletonMap("spring.resources.add-mappings", false)));
+		Resources properties = this.context
+				.getBean(org.springframework.boot.autoconfigure.web.ResourceProperties.class);
+		assertThat(properties.getCache().getPeriod()).isZero();
+	}
+
 	@Test
 	void liveReloadServer() throws Exception {
 		this.context = getContext(() -> initializeAndRun(Config.class));
@@ -153,7 +163,7 @@ class LocalDevToolsAutoConfigurationTests {
 		properties.put("spring.devtools.livereload.enabled", false);
 		this.context = getContext(() -> initializeAndRun(Config.class, properties));
 		assertThatExceptionOfType(NoSuchBeanDefinitionException.class)
-			.isThrownBy(() -> this.context.getBean(OptionalLiveReloadServer.class));
+				.isThrownBy(() -> this.context.getBean(OptionalLiveReloadServer.class));
 	}
 
 	@Test
@@ -185,7 +195,7 @@ class LocalDevToolsAutoConfigurationTests {
 		properties.put("spring.devtools.restart.enabled", false);
 		this.context = getContext(() -> initializeAndRun(Config.class, properties));
 		assertThatExceptionOfType(NoSuchBeanDefinitionException.class)
-			.isThrownBy(() -> this.context.getBean(ClassPathFileSystemWatcher.class));
+				.isThrownBy(() -> this.context.getBean(ClassPathFileSystemWatcher.class));
 	}
 
 	@Test
@@ -208,20 +218,19 @@ class LocalDevToolsAutoConfigurationTests {
 		Object watcher = ReflectionTestUtils.getField(classPathWatcher, "fileSystemWatcher");
 		@SuppressWarnings("unchecked")
 		Map<File, Object> directories = (Map<File, Object>) ReflectionTestUtils.getField(watcher, "directories");
-		assertThat(directories).hasSize(2)
-			.containsKey(new File("src/main/java").getAbsoluteFile())
-			.containsKey(new File("src/test/java").getAbsoluteFile());
+		assertThat(directories).hasSize(2).containsKey(new File("src/main/java").getAbsoluteFile())
+				.containsKey(new File("src/test/java").getAbsoluteFile());
 	}
 
 	@Test
 	void devToolsSwitchesJspServletToDevelopmentMode() throws Exception {
 		this.context = getContext(() -> initializeAndRun(Config.class));
 		TomcatWebServer tomcatContainer = (TomcatWebServer) ((ServletWebServerApplicationContext) this.context)
-			.getWebServer();
+				.getWebServer();
 		Container context = tomcatContainer.getTomcat().getHost().findChildren()[0];
 		StandardWrapper jspServletWrapper = (StandardWrapper) context.findChild("jsp");
 		EmbeddedServletOptions options = (EmbeddedServletOptions) ReflectionTestUtils
-			.getField(jspServletWrapper.getServlet(), "options");
+				.getField(jspServletWrapper.getServlet(), "options");
 		assertThat(options.getDevelopment()).isTrue();
 	}
 
@@ -276,9 +285,10 @@ class LocalDevToolsAutoConfigurationTests {
 
 	}
 
+	@SuppressWarnings("deprecation")
 	@Configuration(proxyBeanMethods = false)
-	@Import({ ServletWebServerFactoryAutoConfiguration.class, LocalDevToolsAutoConfiguration.class,
-			WebProperties.class })
+	@Import({ ServletWebServerFactoryAutoConfiguration.class, LocalDevToolsAutoConfiguration.class, WebProperties.class,
+			org.springframework.boot.autoconfigure.web.ResourceProperties.class })
 	static class WebResourcesConfig {
 
 	}

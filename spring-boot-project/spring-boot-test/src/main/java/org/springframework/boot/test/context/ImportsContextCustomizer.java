@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,14 +60,14 @@ import org.springframework.util.ReflectionUtils;
  */
 class ImportsContextCustomizer implements ContextCustomizer {
 
-	private static final String TEST_CLASS_NAME_ATTRIBUTE = "testClassName";
+	static final String TEST_CLASS_ATTRIBUTE = "testClass";
 
-	private final String testClassName;
+	private final Class<?> testClass;
 
 	private final ContextCustomizerKey key;
 
 	ImportsContextCustomizer(Class<?> testClass) {
-		this.testClassName = testClass.getName();
+		this.testClass = testClass;
 		this.key = new ContextCustomizerKey(testClass);
 	}
 
@@ -83,22 +83,21 @@ class ImportsContextCustomizer implements ContextCustomizer {
 	private void registerCleanupPostProcessor(BeanDefinitionRegistry registry, AnnotatedBeanDefinitionReader reader) {
 		BeanDefinition definition = registerBean(registry, reader, ImportsCleanupPostProcessor.BEAN_NAME,
 				ImportsCleanupPostProcessor.class);
-		definition.setRole(BeanDefinition.ROLE_INFRASTRUCTURE);
-		definition.getConstructorArgumentValues().addIndexedArgumentValue(0, this.testClassName);
+		definition.getConstructorArgumentValues().addIndexedArgumentValue(0, this.testClass);
 	}
 
 	private void registerImportsConfiguration(BeanDefinitionRegistry registry, AnnotatedBeanDefinitionReader reader) {
 		BeanDefinition definition = registerBean(registry, reader, ImportsConfiguration.BEAN_NAME,
 				ImportsConfiguration.class);
-		definition.setAttribute(TEST_CLASS_NAME_ATTRIBUTE, this.testClassName);
+		definition.setAttribute(TEST_CLASS_ATTRIBUTE, this.testClass);
 	}
 
 	private BeanDefinitionRegistry getBeanDefinitionRegistry(ApplicationContext context) {
-		if (context instanceof BeanDefinitionRegistry beanDefinitionRegistry) {
-			return beanDefinitionRegistry;
+		if (context instanceof BeanDefinitionRegistry) {
+			return (BeanDefinitionRegistry) context;
 		}
-		if (context instanceof AbstractApplicationContext abstractContext) {
-			return (BeanDefinitionRegistry) abstractContext.getBeanFactory();
+		if (context instanceof AbstractApplicationContext) {
+			return (BeanDefinitionRegistry) ((AbstractApplicationContext) context).getBeanFactory();
 		}
 		throw new IllegalStateException("Could not locate BeanDefinitionRegistry");
 	}
@@ -162,8 +161,8 @@ class ImportsContextCustomizer implements ContextCustomizer {
 		@Override
 		public String[] selectImports(AnnotationMetadata importingClassMetadata) {
 			BeanDefinition definition = this.beanFactory.getBeanDefinition(ImportsConfiguration.BEAN_NAME);
-			Object testClassName = definition.getAttribute(TEST_CLASS_NAME_ATTRIBUTE);
-			return (testClassName != null) ? new String[] { (String) testClassName } : NO_IMPORTS;
+			Object testClass = (definition != null) ? definition.getAttribute(TEST_CLASS_ATTRIBUTE) : null;
+			return (testClass != null) ? new String[] { ((Class<?>) testClass).getName() } : NO_IMPORTS;
 		}
 
 	}
@@ -177,10 +176,10 @@ class ImportsContextCustomizer implements ContextCustomizer {
 
 		static final String BEAN_NAME = ImportsCleanupPostProcessor.class.getName();
 
-		private final String testClassName;
+		private final Class<?> testClass;
 
-		ImportsCleanupPostProcessor(String testClassName) {
-			this.testClassName = testClassName;
+		ImportsCleanupPostProcessor(Class<?> testClass) {
+			this.testClass = testClass;
 		}
 
 		@Override
@@ -193,7 +192,7 @@ class ImportsContextCustomizer implements ContextCustomizer {
 				String[] names = registry.getBeanDefinitionNames();
 				for (String name : names) {
 					BeanDefinition definition = registry.getBeanDefinition(name);
-					if (this.testClassName.equals(definition.getBeanClassName())) {
+					if (this.testClass.getName().equals(definition.getBeanClassName())) {
 						registry.removeBeanDefinition(name);
 					}
 				}
@@ -223,7 +222,7 @@ class ImportsContextCustomizer implements ContextCustomizer {
 			filters.add(new JavaLangAnnotationFilter());
 			filters.add(new KotlinAnnotationFilter());
 			filters.add(new SpockAnnotationFilter());
-			filters.add(new JUnitAnnotationFilter());
+			filters.add(new JunitAnnotationFilter());
 			ANNOTATION_FILTERS = Collections.unmodifiableSet(filters);
 		}
 
@@ -284,8 +283,8 @@ class ImportsContextCustomizer implements ContextCustomizer {
 		}
 
 		private Class<?>[] getImports(Annotation annotation) {
-			if (annotation instanceof Import importAnnotation) {
-				return importAnnotation.value();
+			if (annotation instanceof Import) {
+				return ((Import) annotation).value();
 			}
 			return NO_IMPORTS;
 		}
@@ -389,7 +388,7 @@ class ImportsContextCustomizer implements ContextCustomizer {
 	/**
 	 * {@link AnnotationFilter} for JUnit annotations.
 	 */
-	private static final class JUnitAnnotationFilter implements AnnotationFilter {
+	private static final class JunitAnnotationFilter implements AnnotationFilter {
 
 		@Override
 		public boolean isIgnored(Annotation annotation) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.springframework.boot.actuate.web.mappings.servlet;
 
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.mvc.condition.MediaTypeExpression;
@@ -46,28 +47,16 @@ public class RequestMappingConditionsDescription {
 	private final List<MediaTypeExpressionDescription> produces;
 
 	RequestMappingConditionsDescription(RequestMappingInfo requestMapping) {
-		this.consumes = requestMapping.getConsumesCondition()
-			.getExpressions()
-			.stream()
-			.map(MediaTypeExpressionDescription::new)
-			.toList();
-		this.headers = requestMapping.getHeadersCondition()
-			.getExpressions()
-			.stream()
-			.map(NameValueExpressionDescription::new)
-			.toList();
+		this.consumes = requestMapping.getConsumesCondition().getExpressions().stream()
+				.map(MediaTypeExpressionDescription::new).collect(Collectors.toList());
+		this.headers = requestMapping.getHeadersCondition().getExpressions().stream()
+				.map(NameValueExpressionDescription::new).collect(Collectors.toList());
 		this.methods = requestMapping.getMethodsCondition().getMethods();
-		this.params = requestMapping.getParamsCondition()
-			.getExpressions()
-			.stream()
-			.map(NameValueExpressionDescription::new)
-			.toList();
+		this.params = requestMapping.getParamsCondition().getExpressions().stream()
+				.map(NameValueExpressionDescription::new).collect(Collectors.toList());
 		this.patterns = extractPathPatterns(requestMapping);
-		this.produces = requestMapping.getProducesCondition()
-			.getExpressions()
-			.stream()
-			.map(MediaTypeExpressionDescription::new)
-			.toList();
+		this.produces = requestMapping.getProducesCondition().getExpressions().stream()
+				.map(MediaTypeExpressionDescription::new).collect(Collectors.toList());
 	}
 
 	private Set<String> extractPathPatterns(RequestMappingInfo requestMapping) {

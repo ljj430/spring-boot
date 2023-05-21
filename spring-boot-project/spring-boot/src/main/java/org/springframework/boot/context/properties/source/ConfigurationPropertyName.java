@@ -34,7 +34,7 @@ import org.springframework.util.StringUtils;
  * equivalent.
  * <p>
  * The "{@code [}" and "{@code ]}" characters may be used to indicate an associative
- * index(i.e. a {@link Map} key or a {@link Collection} index). Indexes names are not
+ * index(i.e. a {@link Map} key or a {@link Collection} index. Indexes names are not
  * restricted and are considered case-sensitive.
  * <p>
  * Here are some typical examples:
@@ -59,7 +59,7 @@ public final class ConfigurationPropertyName implements Comparable<Configuration
 	 */
 	public static final ConfigurationPropertyName EMPTY = new ConfigurationPropertyName(Elements.EMPTY);
 
-	private final Elements elements;
+	private Elements elements;
 
 	private final CharSequence[] uniformElements;
 

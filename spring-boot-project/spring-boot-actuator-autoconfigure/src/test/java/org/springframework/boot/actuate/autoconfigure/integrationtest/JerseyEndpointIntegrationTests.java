@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package org.springframework.boot.actuate.autoconfigure.integrationtest;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -45,8 +44,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.servlet.DispatcherServlet;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 /**
  * Integration tests for the Jersey actuator endpoints.
  *
@@ -63,17 +60,14 @@ class JerseyEndpointIntegrationTests {
 	@Test
 	void linksPageIsNotAvailableWhenDisabled() {
 		getContextRunner(new Class<?>[] { EndpointsConfiguration.class, ResourceConfigConfiguration.class })
-			.withPropertyValues("management.endpoints.web.discovery.enabled:false")
-			.run((context) -> {
-				int port = context.getSourceApplicationContext(AnnotationConfigServletWebServerApplicationContext.class)
-					.getWebServer()
-					.getPort();
-				WebTestClient client = WebTestClient.bindToServer()
-					.baseUrl("http://localhost:" + port)
-					.responseTimeout(Duration.ofMinutes(5))
-					.build();
-				client.get().uri("/actuator").exchange().expectStatus().isNotFound();
-			});
+				.withPropertyValues("management.endpoints.web.discovery.enabled:false").run((context) -> {
+					int port = context
+							.getSourceApplicationContext(AnnotationConfigServletWebServerApplicationContext.class)
+							.getWebServer().getPort();
+					WebTestClient client = WebTestClient.bindToServer().baseUrl("http://localhost:" + port)
+							.responseTimeout(Duration.ofMinutes(5)).build();
+					client.get().uri("/actuator").exchange().expectStatus().isNotFound();
+				});
 	}
 
 	@Test
@@ -88,56 +82,23 @@ class JerseyEndpointIntegrationTests {
 				getAutoconfigurations(SecurityAutoConfiguration.class, ManagementWebSecurityAutoConfiguration.class));
 		contextRunner.run((context) -> {
 			int port = context.getSourceApplicationContext(AnnotationConfigServletWebServerApplicationContext.class)
-				.getWebServer()
-				.getPort();
-			WebTestClient client = WebTestClient.bindToServer()
-				.baseUrl("http://localhost:" + port)
-				.responseTimeout(Duration.ofMinutes(5))
-				.build();
+					.getWebServer().getPort();
+			WebTestClient client = WebTestClient.bindToServer().baseUrl("http://localhost:" + port)
+					.responseTimeout(Duration.ofMinutes(5)).build();
 			client.get().uri("/actuator").exchange().expectStatus().isUnauthorized();
 		});
-	}
 
-	@Test
-	void endpointObjectMapperCanBeApplied() {
-		WebApplicationContextRunner contextRunner = getContextRunner(new Class<?>[] { EndpointsConfiguration.class,
-				ResourceConfigConfiguration.class, EndpointObjectMapperConfiguration.class });
-		contextRunner.run((context) -> {
-			int port = context.getSourceApplicationContext(AnnotationConfigServletWebServerApplicationContext.class)
-				.getWebServer()
-				.getPort();
-			WebTestClient client = WebTestClient.bindToServer()
-				.baseUrl("http://localhost:" + port)
-				.responseTimeout(Duration.ofMinutes(5))
-				.build();
-			client.get().uri("/actuator/beans").exchange().expectStatus().isOk().expectBody().consumeWith((result) -> {
-				String json = new String(result.getResponseBody(), StandardCharsets.UTF_8);
-				assertThat(json).contains("\"scope\":\"notelgnis\"");
-			});
-		});
 	}
 
 	protected void testJerseyEndpoints(Class<?>[] userConfigurations) {
 		getContextRunner(userConfigurations).run((context) -> {
 			int port = context.getSourceApplicationContext(AnnotationConfigServletWebServerApplicationContext.class)
-				.getWebServer()
-				.getPort();
-			WebTestClient client = WebTestClient.bindToServer()
-				.baseUrl("http://localhost:" + port)
-				.responseTimeout(Duration.ofMinutes(5))
-				.build();
-			client.get()
-				.uri("/actuator")
-				.exchange()
-				.expectStatus()
-				.isOk()
-				.expectBody()
-				.jsonPath("_links.beans")
-				.isNotEmpty()
-				.jsonPath("_links.restcontroller")
-				.doesNotExist()
-				.jsonPath("_links.controller")
-				.doesNotExist();
+					.getWebServer().getPort();
+			WebTestClient client = WebTestClient.bindToServer().baseUrl("http://localhost:" + port)
+					.responseTimeout(Duration.ofMinutes(5)).build();
+			client.get().uri("/actuator").exchange().expectStatus().isOk().expectBody().jsonPath("_links.beans")
+					.isNotEmpty().jsonPath("_links.restcontroller").doesNotExist().jsonPath("_links.controller")
+					.doesNotExist();
 		});
 	}
 
@@ -145,10 +106,10 @@ class JerseyEndpointIntegrationTests {
 			Class<?>... additionalAutoConfigurations) {
 		FilteredClassLoader classLoader = new FilteredClassLoader(DispatcherServlet.class);
 		return new WebApplicationContextRunner(AnnotationConfigServletWebServerApplicationContext::new)
-			.withClassLoader(classLoader)
-			.withConfiguration(AutoConfigurations.of(getAutoconfigurations(additionalAutoConfigurations)))
-			.withUserConfiguration(userConfigurations)
-			.withPropertyValues("management.endpoints.web.exposure.include:*", "server.port:0");
+				.withClassLoader(classLoader)
+				.withConfiguration(AutoConfigurations.of(getAutoconfigurations(additionalAutoConfigurations)))
+				.withUserConfiguration(userConfigurations)
+				.withPropertyValues("management.endpoints.web.exposure.include:*", "server.port:0");
 	}
 
 	private Class<?>[] getAutoconfigurations(Class<?>... additional) {

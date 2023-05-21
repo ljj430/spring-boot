@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package org.springframework.boot.actuate.autoconfigure.endpoint.jmx;
 
+import java.util.stream.Collectors;
+
 import javax.management.MBeanServer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,7 +25,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.LazyInitializationExcludeFilter;
 import org.springframework.boot.actuate.autoconfigure.endpoint.EndpointAutoConfiguration;
-import org.springframework.boot.actuate.autoconfigure.endpoint.expose.EndpointExposure;
 import org.springframework.boot.actuate.autoconfigure.endpoint.expose.IncludeExcludeEndpointFilter;
 import org.springframework.boot.actuate.endpoint.EndpointFilter;
 import org.springframework.boot.actuate.endpoint.annotation.Endpoint;
@@ -36,17 +37,17 @@ import org.springframework.boot.actuate.endpoint.jmx.JmxEndpointExporter;
 import org.springframework.boot.actuate.endpoint.jmx.JmxEndpointsSupplier;
 import org.springframework.boot.actuate.endpoint.jmx.JmxOperationResponseMapper;
 import org.springframework.boot.actuate.endpoint.jmx.annotation.JmxEndpointDiscoverer;
-import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnSingleCandidate;
-import org.springframework.boot.autoconfigure.condition.SearchStrategy;
 import org.springframework.boot.autoconfigure.jmx.JmxAutoConfiguration;
-import org.springframework.boot.autoconfigure.jmx.JmxProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.util.ObjectUtils;
 
 /**
@@ -58,8 +59,9 @@ import org.springframework.util.ObjectUtils;
  * @author Phillip Webb
  * @since 2.0.0
  */
-@AutoConfiguration(after = { JmxAutoConfiguration.class, EndpointAutoConfiguration.class })
-@EnableConfigurationProperties({ JmxEndpointProperties.class, JmxProperties.class })
+@Configuration(proxyBeanMethods = false)
+@AutoConfigureAfter({ JmxAutoConfiguration.class, EndpointAutoConfiguration.class })
+@EnableConfigurationProperties(JmxEndpointProperties.class)
 @ConditionalOnProperty(prefix = "spring.jmx", name = "enabled", havingValue = "true")
 public class JmxEndpointAutoConfiguration {
 
@@ -67,13 +69,9 @@ public class JmxEndpointAutoConfiguration {
 
 	private final JmxEndpointProperties properties;
 
-	private final JmxProperties jmxProperties;
-
-	public JmxEndpointAutoConfiguration(ApplicationContext applicationContext, JmxEndpointProperties properties,
-			JmxProperties jmxProperties) {
+	public JmxEndpointAutoConfiguration(ApplicationContext applicationContext, JmxEndpointProperties properties) {
 		this.applicationContext = applicationContext;
 		this.properties = properties;
-		this.jmxProperties = jmxProperties;
 	}
 
 	@Bean
@@ -82,14 +80,16 @@ public class JmxEndpointAutoConfiguration {
 			ObjectProvider<OperationInvokerAdvisor> invokerAdvisors,
 			ObjectProvider<EndpointFilter<ExposableJmxEndpoint>> filters) {
 		return new JmxEndpointDiscoverer(this.applicationContext, parameterValueMapper,
-				invokerAdvisors.orderedStream().toList(), filters.orderedStream().toList());
+				invokerAdvisors.orderedStream().collect(Collectors.toList()),
+				filters.orderedStream().collect(Collectors.toList()));
 	}
 
 	@Bean
-	@ConditionalOnMissingBean(value = EndpointObjectNameFactory.class, search = SearchStrategy.CURRENT)
-	public DefaultEndpointObjectNameFactory endpointObjectNameFactory(MBeanServer mBeanServer) {
+	@ConditionalOnMissingBean(EndpointObjectNameFactory.class)
+	public DefaultEndpointObjectNameFactory endpointObjectNameFactory(MBeanServer mBeanServer,
+			Environment environment) {
 		String contextId = ObjectUtils.getIdentityHexString(this.applicationContext);
-		return new DefaultEndpointObjectNameFactory(this.properties, this.jmxProperties, mBeanServer, contextId);
+		return new DefaultEndpointObjectNameFactory(this.properties, environment, mBeanServer, contextId);
 	}
 
 	@Bean
@@ -108,7 +108,7 @@ public class JmxEndpointAutoConfiguration {
 	public IncludeExcludeEndpointFilter<ExposableJmxEndpoint> jmxIncludeExcludePropertyEndpointFilter() {
 		JmxEndpointProperties.Exposure exposure = this.properties.getExposure();
 		return new IncludeExcludeEndpointFilter<>(ExposableJmxEndpoint.class, exposure.getInclude(),
-				exposure.getExclude(), EndpointExposure.JMX.getDefaultIncludes());
+				exposure.getExclude(), "*");
 	}
 
 	@Bean

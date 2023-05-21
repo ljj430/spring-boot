@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,8 +49,8 @@ class ApplicationContextServerWebExchangeMatcherTests {
 	@Test
 	void createWhenContextClassIsNullShouldThrowException() {
 		assertThatIllegalArgumentException()
-			.isThrownBy(() -> new TestApplicationContextServerWebExchangeMatcher<>(null))
-			.withMessageContaining("Context class must not be null");
+				.isThrownBy(() -> new TestApplicationContextServerWebExchangeMatcher<>(null))
+				.withMessageContaining("Context class must not be null");
 	}
 
 	@Test
@@ -58,8 +58,7 @@ class ApplicationContextServerWebExchangeMatcherTests {
 		ServerWebExchange exchange = createExchange();
 		StaticApplicationContext context = (StaticApplicationContext) exchange.getApplicationContext();
 		assertThat(new TestApplicationContextServerWebExchangeMatcher<>(ApplicationContext.class)
-			.callMatchesAndReturnProvidedContext(exchange)
-			.get()).isEqualTo(context);
+				.callMatchesAndReturnProvidedContext(exchange).get()).isEqualTo(context);
 	}
 
 	@Test
@@ -68,15 +67,14 @@ class ApplicationContextServerWebExchangeMatcherTests {
 		StaticApplicationContext context = (StaticApplicationContext) exchange.getApplicationContext();
 		context.registerSingleton("existingBean", ExistingBean.class);
 		assertThat(new TestApplicationContextServerWebExchangeMatcher<>(ExistingBean.class)
-			.callMatchesAndReturnProvidedContext(exchange)
-			.get()).isEqualTo(context.getBean(ExistingBean.class));
+				.callMatchesAndReturnProvidedContext(exchange).get()).isEqualTo(context.getBean(ExistingBean.class));
 	}
 
 	@Test
 	void matchesWhenContextClassIsMissingBeanShouldProvideException() {
 		ServerWebExchange exchange = createExchange();
 		Supplier<ExistingBean> supplier = new TestApplicationContextServerWebExchangeMatcher<>(ExistingBean.class)
-			.callMatchesAndReturnProvidedContext(exchange);
+				.callMatchesAndReturnProvidedContext(exchange);
 		assertThatExceptionOfType(NoSuchBeanDefinitionException.class).isThrownBy(supplier::get);
 	}
 
@@ -84,9 +82,9 @@ class ApplicationContextServerWebExchangeMatcherTests {
 	void matchesWhenContextIsNull() {
 		MockServerWebExchange exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/path").build());
 		assertThatIllegalStateException()
-			.isThrownBy(() -> new TestApplicationContextServerWebExchangeMatcher<>(ExistingBean.class)
-				.callMatchesAndReturnProvidedContext(exchange))
-			.withMessageContaining("No ApplicationContext found on ServerWebExchange.");
+				.isThrownBy(() -> new TestApplicationContextServerWebExchangeMatcher<>(ExistingBean.class)
+						.callMatchesAndReturnProvidedContext(exchange))
+				.withMessageContaining("No ApplicationContext found on ServerWebExchange.");
 	}
 
 	private ServerWebExchange createExchange() {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,12 @@
 
 package org.springframework.boot.actuate.health;
 
-import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.springframework.boot.actuate.health.HealthEndpointSupport.HealthResult;
-import org.springframework.boot.test.system.CapturedOutput;
-import org.springframework.boot.test.system.OutputCaptureExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -36,9 +32,8 @@ import static org.mockito.Mockito.mock;
  * @author Phillip Webb
  * @author Scott Frederick
  */
-@ExtendWith(OutputCaptureExtension.class)
-class HealthEndpointTests extends
-		HealthEndpointSupportTests<HealthEndpoint, HealthContributorRegistry, HealthContributor, HealthComponent> {
+class HealthEndpointTests
+		extends HealthEndpointSupportTests<HealthContributorRegistry, HealthContributor, HealthComponent> {
 
 	@Test
 	void healthReturnsSystemHealth() {
@@ -52,8 +47,7 @@ class HealthEndpointTests extends
 	void healthWithNoContributorReturnsUp() {
 		assertThat(this.registry).isEmpty();
 		HealthComponent health = create(this.registry,
-				HealthEndpointGroups.of(mock(HealthEndpointGroup.class), Collections.emptyMap()))
-			.health();
+				HealthEndpointGroups.of(mock(HealthEndpointGroup.class), Collections.emptyMap())).health();
 		assertThat(health.getStatus()).isEqualTo(Status.UP);
 		assertThat(health).isInstanceOf(Health.class);
 	}
@@ -72,27 +66,9 @@ class HealthEndpointTests extends
 		assertThat(health).isEqualTo(this.up);
 	}
 
-	@Test
-	void healthWhenIndicatorIsSlow(CapturedOutput output) {
-		HealthIndicator indicator = () -> {
-			try {
-				Thread.sleep(100);
-			}
-			catch (InterruptedException ex) {
-			}
-			return this.up;
-		};
-		this.registry.registerContributor("test", indicator);
-		create(this.registry, this.groups, Duration.ofMillis(10)).health();
-		assertThat(output).contains("Health contributor");
-		assertThat(output).contains("to respond");
-
-	}
-
 	@Override
-	protected HealthEndpoint create(HealthContributorRegistry registry, HealthEndpointGroups groups,
-			Duration slowIndicatorLoggingThreshold) {
-		return new HealthEndpoint(registry, groups, slowIndicatorLoggingThreshold);
+	protected HealthEndpoint create(HealthContributorRegistry registry, HealthEndpointGroups groups) {
+		return new HealthEndpoint(registry, groups);
 	}
 
 	@Override

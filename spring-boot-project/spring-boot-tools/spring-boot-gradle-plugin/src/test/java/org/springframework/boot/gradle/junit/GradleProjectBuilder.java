@@ -68,7 +68,7 @@ public final class GradleProjectBuilder {
 			builder.withName(this.name);
 		}
 		if (JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_17)) {
-			NativeServices.initializeOnClient(userHome);
+			NativeServices.initialize(userHome);
 			try {
 				ProjectBuilderImpl.getGlobalServices();
 			}

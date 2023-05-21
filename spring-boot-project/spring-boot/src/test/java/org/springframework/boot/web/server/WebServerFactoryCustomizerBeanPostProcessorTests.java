@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ import static org.mockito.Mockito.mock;
 @ExtendWith(MockitoExtension.class)
 class WebServerFactoryCustomizerBeanPostProcessorTests {
 
-	private final WebServerFactoryCustomizerBeanPostProcessor processor = new WebServerFactoryCustomizerBeanPostProcessor();
+	private WebServerFactoryCustomizerBeanPostProcessor processor = new WebServerFactoryCustomizerBeanPostProcessor();
 
 	@Mock
 	private ListableBeanFactory beanFactory;
@@ -56,7 +56,8 @@ class WebServerFactoryCustomizerBeanPostProcessorTests {
 	@Test
 	void setBeanFactoryWhenNotListableShouldThrowException() {
 		assertThatIllegalArgumentException().isThrownBy(() -> this.processor.setBeanFactory(mock(BeanFactory.class)))
-			.withMessageContaining("WebServerCustomizerBeanPostProcessor can only be used with a ListableBeanFactory");
+				.withMessageContaining(
+						"WebServerCustomizerBeanPostProcessor can only be used with a ListableBeanFactory");
 	}
 
 	@Test
@@ -152,7 +153,7 @@ class WebServerFactoryCustomizerBeanPostProcessorTests {
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	private void addMockBeans(Map<String, ?> beans) {
 		given(this.beanFactory.getBeansOfType(WebServerFactoryCustomizer.class, false, false))
-			.willReturn((Map<String, WebServerFactoryCustomizer>) beans);
+				.willReturn((Map<String, WebServerFactoryCustomizer>) beans);
 	}
 
 	private void postProcessBeforeInitialization(Class<?> type) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,10 +28,10 @@ import java.util.Map;
 import java.util.Set;
 
 import org.springframework.boot.context.annotation.DeterminableImports;
-import org.springframework.boot.context.annotation.ImportCandidates;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.core.io.support.SpringFactoriesLoader;
 import org.springframework.core.type.AnnotationMetadata;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.LinkedMultiValueMap;
@@ -44,8 +44,6 @@ import org.springframework.util.ObjectUtils;
  *
  * @author Phillip Webb
  * @author Andy Wilkinson
- * @author Moritz Halbritter
- * @author Scott Frederick
  */
 class ImportAutoConfigurationImportSelector extends AutoConfigurationImportSelector implements DeterminableImports {
 
@@ -96,13 +94,13 @@ class ImportAutoConfigurationImportSelector extends AutoConfigurationImportSelec
 	}
 
 	protected Collection<String> loadFactoryNames(Class<?> source) {
-		return ImportCandidates.load(source, getBeanClassLoader()).getCandidates();
+		return SpringFactoriesLoader.loadFactoryNames(source, getBeanClassLoader());
 	}
 
 	@Override
 	protected Set<String> getExclusions(AnnotationMetadata metadata, AnnotationAttributes attributes) {
 		Set<String> exclusions = new LinkedHashSet<>();
-		Class<?> source = ClassUtils.resolveClassName(metadata.getClassName(), getBeanClassLoader());
+		Class<?> source = ClassUtils.resolveClassName(metadata.getClassName(), null);
 		for (String annotationName : ANNOTATION_NAMES) {
 			AnnotationAttributes merged = AnnotatedElementUtils.getMergedAnnotationAttributes(source, annotationName);
 			Class<?>[] exclude = (merged != null) ? merged.getClassArray("exclude") : null;
@@ -126,7 +124,7 @@ class ImportAutoConfigurationImportSelector extends AutoConfigurationImportSelec
 
 	protected final Map<Class<?>, List<Annotation>> getAnnotations(AnnotationMetadata metadata) {
 		MultiValueMap<Class<?>, Annotation> annotations = new LinkedMultiValueMap<>();
-		Class<?> source = ClassUtils.resolveClassName(metadata.getClassName(), getBeanClassLoader());
+		Class<?> source = ClassUtils.resolveClassName(metadata.getClassName(), null);
 		collectAnnotations(source, annotations, new HashSet<>());
 		return Collections.unmodifiableMap(annotations);
 	}

@@ -4,12 +4,8 @@ include::authors.adoc[]
 v{spring-boot-version}
 include::attributes.adoc[]
 
-ifdef::backend-spring-html[]
-This document is also available as {spring-boot-docs}/html/[multiple HTML pages] and as {spring-boot-docs}/pdf/spring-boot-reference.pdf[a PDF].
-endif::[]
-ifdef::backend-spring-pdf[]
-This document is also available as {spring-boot-docs}/html/[multiple HTML pages] and as {spring-boot-docs}/htmlsingle/[a single HTML page].
-endif::[]
+This document is also available as {spring-boot-docs}/html/[Multi-page HTML], {spring-boot-docs}/htmlsingle/[Single page HTML] and {spring-boot-docs}/pdf/spring-boot-reference.pdf[PDF].
+
 
 include::legal.adoc[leveloffset=+1]
 
@@ -25,21 +21,9 @@ include::using.adoc[leveloffset=+1]
 
 include::features.adoc[leveloffset=+1]
 
-include::web.adoc[leveloffset=+1]
-
-include::data.adoc[leveloffset=+1]
-
-include::messaging.adoc[leveloffset=+1]
-
-include::io.adoc[leveloffset=+1]
-
-include::container-images.adoc[leveloffset=+1]
-
 include::actuator.adoc[leveloffset=+1]
 
 include::deployment.adoc[leveloffset=+1]
-
-include::native-image.adoc[leveloffset=+1]
 
 include::cli.adoc[leveloffset=+1]
 

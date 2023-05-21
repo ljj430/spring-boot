@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,9 +22,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 
+import org.springframework.boot.buildpack.platform.docker.configuration.DockerConfiguration;
 import org.springframework.boot.buildpack.platform.docker.configuration.DockerHost;
-import org.springframework.boot.buildpack.platform.docker.configuration.ResolvedDockerHost;
 import org.springframework.boot.buildpack.platform.io.IOConsumer;
+import org.springframework.boot.buildpack.platform.system.Environment;
 
 /**
  * HTTP transport used for docker access.
@@ -36,7 +37,7 @@ import org.springframework.boot.buildpack.platform.io.IOConsumer;
 public interface HttpTransport {
 
 	/**
-	 * Perform an HTTP GET operation.
+	 * Perform a HTTP GET operation.
 	 * @param uri the destination URI (excluding any host/port)
 	 * @return the operation response
 	 * @throws IOException on IO error
@@ -44,7 +45,7 @@ public interface HttpTransport {
 	Response get(URI uri) throws IOException;
 
 	/**
-	 * Perform an HTTP POST operation.
+	 * Perform a HTTP POST operation.
 	 * @param uri the destination URI (excluding any host/port)
 	 * @return the operation response
 	 * @throws IOException on IO error
@@ -52,7 +53,7 @@ public interface HttpTransport {
 	Response post(URI uri) throws IOException;
 
 	/**
-	 * Perform an HTTP POST operation.
+	 * Perform a HTTP POST operation.
 	 * @param uri the destination URI (excluding any host/port)
 	 * @param registryAuth registry authentication credentials
 	 * @return the operation response
@@ -61,7 +62,7 @@ public interface HttpTransport {
 	Response post(URI uri, String registryAuth) throws IOException;
 
 	/**
-	 * Perform an HTTP POST operation.
+	 * Perform a HTTP POST operation.
 	 * @param uri the destination URI (excluding any host/port)
 	 * @param contentType the content type to write
 	 * @param writer a content writer
@@ -71,7 +72,7 @@ public interface HttpTransport {
 	Response post(URI uri, String contentType, IOConsumer<OutputStream> writer) throws IOException;
 
 	/**
-	 * Perform an HTTP PUT operation.
+	 * Perform a HTTP PUT operation.
 	 * @param uri the destination URI (excluding any host/port)
 	 * @param contentType the content type to write
 	 * @param writer a content writer
@@ -81,7 +82,7 @@ public interface HttpTransport {
 	Response put(URI uri, String contentType, IOConsumer<OutputStream> writer) throws IOException;
 
 	/**
-	 * Perform an HTTP DELETE operation.
+	 * Perform a HTTP DELETE operation.
 	 * @param uri the destination URI (excluding any host/port)
 	 * @return the operation response
 	 * @throws IOException on IO error
@@ -89,14 +90,44 @@ public interface HttpTransport {
 	Response delete(URI uri) throws IOException;
 
 	/**
-	 * Create the most suitable {@link HttpTransport} based on the {@link DockerHost}.
-	 * @param dockerHost the Docker host information
+	 * Create the most suitable {@link HttpTransport} based on the
+	 * {@link Environment#SYSTEM system environment}.
+	 * @return a {@link HttpTransport} instance
+	 */
+	static HttpTransport create() {
+		return create(Environment.SYSTEM);
+	}
+
+	/**
+	 * Create the most suitable {@link HttpTransport} based on the
+	 * {@link Environment#SYSTEM system environment}.
+	 * @param dockerHost the Docker engine host configuration
 	 * @return a {@link HttpTransport} instance
 	 */
 	static HttpTransport create(DockerHost dockerHost) {
-		ResolvedDockerHost host = ResolvedDockerHost.from(dockerHost);
-		HttpTransport remote = RemoteHttpClientTransport.createIfPossible(host);
-		return (remote != null) ? remote : LocalHttpClientTransport.create(host);
+		return create(Environment.SYSTEM, dockerHost);
+	}
+
+	/**
+	 * Create the most suitable {@link HttpTransport} based on the given
+	 * {@link Environment}.
+	 * @param environment the source environment
+	 * @return a {@link HttpTransport} instance
+	 */
+	static HttpTransport create(Environment environment) {
+		return create(environment, null);
+	}
+
+	/**
+	 * Create the most suitable {@link HttpTransport} based on the given
+	 * {@link Environment} and {@link DockerConfiguration}.
+	 * @param environment the source environment
+	 * @param dockerHost the Docker engine host configuration
+	 * @return a {@link HttpTransport} instance
+	 */
+	static HttpTransport create(Environment environment, DockerHost dockerHost) {
+		HttpTransport remote = RemoteHttpClientTransport.createIfPossible(environment, dockerHost);
+		return (remote != null) ? remote : LocalHttpClientTransport.create(environment);
 	}
 
 	/**

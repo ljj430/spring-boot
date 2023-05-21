@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package org.springframework.boot.actuate.context.properties;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -39,8 +40,6 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.introspect.Annotated;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMethod;
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
 import com.fasterxml.jackson.databind.ser.BeanSerializerFactory;
 import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
@@ -48,51 +47,45 @@ import com.fasterxml.jackson.databind.ser.PropertyWriter;
 import com.fasterxml.jackson.databind.ser.SerializerFactory;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
-import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.BeansException;
-import org.springframework.boot.actuate.endpoint.OperationResponseBody;
-import org.springframework.boot.actuate.endpoint.SanitizableData;
 import org.springframework.boot.actuate.endpoint.Sanitizer;
-import org.springframework.boot.actuate.endpoint.SanitizingFunction;
-import org.springframework.boot.actuate.endpoint.Show;
 import org.springframework.boot.actuate.endpoint.annotation.Endpoint;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
 import org.springframework.boot.actuate.endpoint.annotation.Selector;
 import org.springframework.boot.context.properties.BoundConfigurationProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.ConfigurationPropertiesBean;
-import org.springframework.boot.context.properties.bind.BindConstructorProvider;
-import org.springframework.boot.context.properties.bind.Bindable;
+import org.springframework.boot.context.properties.ConstructorBinding;
 import org.springframework.boot.context.properties.bind.Name;
 import org.springframework.boot.context.properties.source.ConfigurationProperty;
 import org.springframework.boot.context.properties.source.ConfigurationPropertyName;
-import org.springframework.boot.context.properties.source.ConfigurationPropertySource;
 import org.springframework.boot.origin.Origin;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.core.DefaultParameterNameDiscoverer;
+import org.springframework.core.KotlinDetector;
 import org.springframework.core.ParameterNameDiscoverer;
 import org.springframework.core.annotation.MergedAnnotation;
 import org.springframework.core.annotation.MergedAnnotations;
-import org.springframework.core.env.PropertySource;
+import org.springframework.core.annotation.MergedAnnotations.SearchStrategy;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
-import org.springframework.util.unit.DataSize;
 
 /**
  * {@link Endpoint @Endpoint} to expose application properties from
  * {@link ConfigurationProperties @ConfigurationProperties} annotated beans.
  *
  * <p>
- * To protect sensitive information from being exposed, all property values are masked by
- * default. To configure when property values should be shown, use
- * {@code management.endpoint.configprops.show-values} and
- * {@code management.endpoint.configprops.roles} in your Spring Boot application
- * configuration.
+ * To protect sensitive information from being exposed, certain property values are masked
+ * if their names end with a set of configurable values (default "password" and "secret").
+ * Configure property names by using
+ * {@code management.endpoint.configprops.keys-to-sanitize} in your Spring Boot
+ * application configuration.
  *
  * @author Christian Dupuis
  * @author Dave Syer
@@ -107,120 +100,103 @@ public class ConfigurationPropertiesReportEndpoint implements ApplicationContext
 
 	private static final String CONFIGURATION_PROPERTIES_FILTER_ID = "configurationPropertiesFilter";
 
-	private final Sanitizer sanitizer;
-
-	private final Show showValues;
+	private final Sanitizer sanitizer = new Sanitizer();
 
 	private ApplicationContext context;
 
 	private ObjectMapper objectMapper;
-
-	public ConfigurationPropertiesReportEndpoint(Iterable<SanitizingFunction> sanitizingFunctions, Show showValues) {
-		this.sanitizer = new Sanitizer(sanitizingFunctions);
-		this.showValues = showValues;
-	}
 
 	@Override
 	public void setApplicationContext(ApplicationContext context) throws BeansException {
 		this.context = context;
 	}
 
-	@ReadOperation
-	public ConfigurationPropertiesDescriptor configurationProperties() {
-		boolean showUnsanitized = this.showValues.isShown(true);
-		return getConfigurationProperties(showUnsanitized);
+	public void setKeysToSanitize(String... keysToSanitize) {
+		this.sanitizer.setKeysToSanitize(keysToSanitize);
 	}
 
-	ConfigurationPropertiesDescriptor getConfigurationProperties(boolean showUnsanitized) {
-		return getConfigurationProperties(this.context, (bean) -> true, showUnsanitized);
+	public void keysToSanitize(String... keysToSanitize) {
+		this.sanitizer.keysToSanitize(keysToSanitize);
 	}
 
 	@ReadOperation
-	public ConfigurationPropertiesDescriptor configurationPropertiesWithPrefix(@Selector String prefix) {
-		boolean showUnsanitized = this.showValues.isShown(true);
-		return getConfigurationProperties(prefix, showUnsanitized);
+	public ApplicationConfigurationProperties configurationProperties() {
+		return extract(this.context, (bean) -> true);
 	}
 
-	ConfigurationPropertiesDescriptor getConfigurationProperties(String prefix, boolean showUnsanitized) {
-		return getConfigurationProperties(this.context, (bean) -> bean.getAnnotation().prefix().startsWith(prefix),
-				showUnsanitized);
+	@ReadOperation
+	public ApplicationConfigurationProperties configurationPropertiesWithPrefix(@Selector String prefix) {
+		return extract(this.context, (bean) -> bean.getAnnotation().prefix().startsWith(prefix));
 	}
 
-	private ConfigurationPropertiesDescriptor getConfigurationProperties(ApplicationContext context,
-			Predicate<ConfigurationPropertiesBean> beanFilterPredicate, boolean showUnsanitized) {
+	private ApplicationConfigurationProperties extract(ApplicationContext context,
+			Predicate<ConfigurationPropertiesBean> beanFilterPredicate) {
 		ObjectMapper mapper = getObjectMapper();
-		Map<String, ContextConfigurationPropertiesDescriptor> contexts = new HashMap<>();
+		Map<String, ContextConfigurationProperties> contexts = new HashMap<>();
 		ApplicationContext target = context;
-
 		while (target != null) {
-			contexts.put(target.getId(), describeBeans(mapper, target, beanFilterPredicate, showUnsanitized));
+			contexts.put(target.getId(), describeBeans(mapper, target, beanFilterPredicate));
 			target = target.getParent();
 		}
-		return new ConfigurationPropertiesDescriptor(contexts);
+		return new ApplicationConfigurationProperties(contexts);
 	}
 
 	private ObjectMapper getObjectMapper() {
 		if (this.objectMapper == null) {
-			JsonMapper.Builder builder = JsonMapper.builder();
-			configureJsonMapper(builder);
-			this.objectMapper = builder.build();
+			this.objectMapper = new ObjectMapper();
+			configureObjectMapper(this.objectMapper);
 		}
 		return this.objectMapper;
 	}
 
 	/**
-	 * Configure Jackson's {@link JsonMapper} to be used to serialize the
+	 * Configure Jackson's {@link ObjectMapper} to be used to serialize the
 	 * {@link ConfigurationProperties @ConfigurationProperties} objects into a {@link Map}
 	 * structure.
-	 * @param builder the json mapper builder
-	 * @since 2.6.0
+	 * @param mapper the object mapper
 	 */
-	protected void configureJsonMapper(JsonMapper.Builder builder) {
-		builder.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-		builder.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-		builder.configure(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS, false);
-		builder.configure(MapperFeature.USE_STD_BEAN_NAMING, true);
-		builder.serializationInclusion(Include.NON_NULL);
-		applyConfigurationPropertiesFilter(builder);
-		applySerializationModifier(builder);
-		builder.addModule(new JavaTimeModule());
-		builder.addModule(new ConfigurationPropertiesModule());
+	protected void configureObjectMapper(ObjectMapper mapper) {
+		mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+		mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+		mapper.configure(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS, false);
+		mapper.configure(MapperFeature.USE_STD_BEAN_NAMING, true);
+		mapper.setSerializationInclusion(Include.NON_NULL);
+		applyConfigurationPropertiesFilter(mapper);
+		applySerializationModifier(mapper);
+		mapper.registerModule(new JavaTimeModule());
 	}
 
-	private void applyConfigurationPropertiesFilter(JsonMapper.Builder builder) {
-		builder.annotationIntrospector(new ConfigurationPropertiesAnnotationIntrospector());
-		builder
-			.filterProvider(new SimpleFilterProvider().setDefaultFilter(new ConfigurationPropertiesPropertyFilter()));
+	private void applyConfigurationPropertiesFilter(ObjectMapper mapper) {
+		mapper.setAnnotationIntrospector(new ConfigurationPropertiesAnnotationIntrospector());
+		mapper.setFilterProvider(
+				new SimpleFilterProvider().setDefaultFilter(new ConfigurationPropertiesPropertyFilter()));
 	}
 
 	/**
 	 * Ensure only bindable and non-cyclic bean properties are reported.
-	 * @param builder the JsonMapper builder
+	 * @param mapper the object mapper
 	 */
-	private void applySerializationModifier(JsonMapper.Builder builder) {
+	private void applySerializationModifier(ObjectMapper mapper) {
 		SerializerFactory factory = BeanSerializerFactory.instance
-			.withSerializerModifier(new GenericSerializerModifier());
-		builder.serializerFactory(factory);
+				.withSerializerModifier(new GenericSerializerModifier());
+		mapper.setSerializerFactory(factory);
 	}
 
-	private ContextConfigurationPropertiesDescriptor describeBeans(ObjectMapper mapper, ApplicationContext context,
-			Predicate<ConfigurationPropertiesBean> beanFilterPredicate, boolean showUnsanitized) {
+	private ContextConfigurationProperties describeBeans(ObjectMapper mapper, ApplicationContext context,
+			Predicate<ConfigurationPropertiesBean> beanFilterPredicate) {
 		Map<String, ConfigurationPropertiesBean> beans = ConfigurationPropertiesBean.getAll(context);
-		Map<String, ConfigurationPropertiesBeanDescriptor> descriptors = beans.values()
-			.stream()
-			.filter(beanFilterPredicate)
-			.collect(Collectors.toMap(ConfigurationPropertiesBean::getName,
-					(bean) -> describeBean(mapper, bean, showUnsanitized)));
-		return new ContextConfigurationPropertiesDescriptor(descriptors,
+		Map<String, ConfigurationPropertiesBeanDescriptor> descriptors = beans.values().stream()
+				.filter(beanFilterPredicate)
+				.collect(Collectors.toMap(ConfigurationPropertiesBean::getName, (bean) -> describeBean(mapper, bean)));
+		return new ContextConfigurationProperties(descriptors,
 				(context.getParent() != null) ? context.getParent().getId() : null);
 	}
 
-	private ConfigurationPropertiesBeanDescriptor describeBean(ObjectMapper mapper, ConfigurationPropertiesBean bean,
-			boolean showUnsanitized) {
+	private ConfigurationPropertiesBeanDescriptor describeBean(ObjectMapper mapper, ConfigurationPropertiesBean bean) {
 		String prefix = bean.getAnnotation().prefix();
 		Map<String, Object> serialized = safeSerialize(mapper, bean.getInstance(), prefix);
-		Map<String, Object> properties = sanitize(prefix, serialized, showUnsanitized);
-		Map<String, Object> inputs = getInputs(prefix, serialized, showUnsanitized);
+		Map<String, Object> properties = sanitize(prefix, serialized);
+		Map<String, Object> inputs = getInputs(prefix, serialized);
 		return new ConfigurationPropertiesBeanDescriptor(prefix, properties, inputs);
 	}
 
@@ -247,136 +223,100 @@ public class ConfigurationPropertiesReportEndpoint implements ApplicationContext
 	 * information.
 	 * @param prefix the property prefix
 	 * @param map the source map
-	 * @param showUnsanitized whether to show the unsanitized values
 	 * @return the sanitized map
 	 */
 	@SuppressWarnings("unchecked")
-	private Map<String, Object> sanitize(String prefix, Map<String, Object> map, boolean showUnsanitized) {
+	private Map<String, Object> sanitize(String prefix, Map<String, Object> map) {
 		map.forEach((key, value) -> {
 			String qualifiedKey = getQualifiedKey(prefix, key);
 			if (value instanceof Map) {
-				map.put(key, sanitize(qualifiedKey, (Map<String, Object>) value, showUnsanitized));
+				map.put(key, sanitize(qualifiedKey, (Map<String, Object>) value));
 			}
 			else if (value instanceof List) {
-				map.put(key, sanitize(qualifiedKey, (List<Object>) value, showUnsanitized));
+				map.put(key, sanitize(qualifiedKey, (List<Object>) value));
 			}
 			else {
-				map.put(key, sanitizeWithPropertySourceIfPresent(qualifiedKey, value, showUnsanitized));
+				value = this.sanitizer.sanitize(key, value);
+				value = this.sanitizer.sanitize(qualifiedKey, value);
+				map.put(key, value);
 			}
 		});
 		return map;
 	}
 
-	private Object sanitizeWithPropertySourceIfPresent(String qualifiedKey, Object value, boolean showUnsanitized) {
-		ConfigurationPropertyName currentName = getCurrentName(qualifiedKey);
-		ConfigurationProperty candidate = getCandidate(currentName);
-		PropertySource<?> propertySource = getPropertySource(candidate);
-		if (propertySource != null) {
-			SanitizableData data = new SanitizableData(propertySource, qualifiedKey, value);
-			return this.sanitizer.sanitize(data, showUnsanitized);
-		}
-		SanitizableData data = new SanitizableData(null, qualifiedKey, value);
-		return this.sanitizer.sanitize(data, showUnsanitized);
-	}
-
-	private PropertySource<?> getPropertySource(ConfigurationProperty configurationProperty) {
-		if (configurationProperty == null) {
-			return null;
-		}
-		ConfigurationPropertySource source = configurationProperty.getSource();
-		Object underlyingSource = (source != null) ? source.getUnderlyingSource() : null;
-		return (underlyingSource instanceof PropertySource<?>) ? (PropertySource<?>) underlyingSource : null;
-	}
-
-	private ConfigurationPropertyName getCurrentName(String qualifiedKey) {
-		return ConfigurationPropertyName.adapt(qualifiedKey, '.');
-	}
-
-	private ConfigurationProperty getCandidate(ConfigurationPropertyName currentName) {
-		BoundConfigurationProperties bound = BoundConfigurationProperties.get(this.context);
-		if (bound == null) {
-			return null;
-		}
-		ConfigurationProperty candidate = bound.get(currentName);
-		if (candidate == null && currentName.isLastElementIndexed()) {
-			candidate = bound.get(currentName.chop(currentName.getNumberOfElements() - 1));
-		}
-		return candidate;
-	}
-
 	@SuppressWarnings("unchecked")
-	private List<Object> sanitize(String prefix, List<Object> list, boolean showUnsanitized) {
+	private List<Object> sanitize(String prefix, List<Object> list) {
 		List<Object> sanitized = new ArrayList<>();
-		int index = 0;
 		for (Object item : list) {
-			String name = prefix + "[" + index++ + "]";
 			if (item instanceof Map) {
-				sanitized.add(sanitize(name, (Map<String, Object>) item, showUnsanitized));
+				sanitized.add(sanitize(prefix, (Map<String, Object>) item));
 			}
 			else if (item instanceof List) {
-				sanitized.add(sanitize(name, (List<Object>) item, showUnsanitized));
+				sanitized.add(sanitize(prefix, (List<Object>) item));
 			}
 			else {
-				sanitized.add(sanitizeWithPropertySourceIfPresent(name, item, showUnsanitized));
+				sanitized.add(this.sanitizer.sanitize(prefix, item));
 			}
 		}
 		return sanitized;
 	}
 
 	@SuppressWarnings("unchecked")
-	private Map<String, Object> getInputs(String prefix, Map<String, Object> map, boolean showUnsanitized) {
+	private Map<String, Object> getInputs(String prefix, Map<String, Object> map) {
 		Map<String, Object> augmented = new LinkedHashMap<>(map);
 		map.forEach((key, value) -> {
 			String qualifiedKey = getQualifiedKey(prefix, key);
 			if (value instanceof Map) {
-				augmented.put(key, getInputs(qualifiedKey, (Map<String, Object>) value, showUnsanitized));
+				augmented.put(key, getInputs(qualifiedKey, (Map<String, Object>) value));
 			}
 			else if (value instanceof List) {
-				augmented.put(key, getInputs(qualifiedKey, (List<Object>) value, showUnsanitized));
+				augmented.put(key, getInputs(qualifiedKey, (List<Object>) value));
 			}
 			else {
-				augmented.put(key, applyInput(qualifiedKey, showUnsanitized));
+				augmented.put(key, applyInput(qualifiedKey));
 			}
 		});
 		return augmented;
 	}
 
 	@SuppressWarnings("unchecked")
-	private List<Object> getInputs(String prefix, List<Object> list, boolean showUnsanitized) {
+	private List<Object> getInputs(String prefix, List<Object> list) {
 		List<Object> augmented = new ArrayList<>();
 		int index = 0;
 		for (Object item : list) {
 			String name = prefix + "[" + index++ + "]";
 			if (item instanceof Map) {
-				augmented.add(getInputs(name, (Map<String, Object>) item, showUnsanitized));
+				augmented.add(getInputs(name, (Map<String, Object>) item));
 			}
 			else if (item instanceof List) {
-				augmented.add(getInputs(name, (List<Object>) item, showUnsanitized));
+				augmented.add(getInputs(name, (List<Object>) item));
 			}
 			else {
-				augmented.add(applyInput(name, showUnsanitized));
+				augmented.add(applyInput(name));
 			}
 		}
 		return augmented;
 	}
 
-	private Map<String, Object> applyInput(String qualifiedKey, boolean showUnsanitized) {
-		ConfigurationPropertyName currentName = getCurrentName(qualifiedKey);
-		ConfigurationProperty candidate = getCandidate(currentName);
-		PropertySource<?> propertySource = getPropertySource(candidate);
-		if (propertySource != null) {
-			Object value = stringifyIfNecessary(candidate.getValue());
-			SanitizableData data = new SanitizableData(propertySource, currentName.toString(), value);
-			return getInput(candidate, this.sanitizer.sanitize(data, showUnsanitized));
+	private Map<String, Object> applyInput(String qualifiedKey) {
+		BoundConfigurationProperties bound = BoundConfigurationProperties.get(this.context);
+		if (bound == null) {
+			return Collections.emptyMap();
 		}
-		return Collections.emptyMap();
+		ConfigurationPropertyName currentName = ConfigurationPropertyName.adapt(qualifiedKey, '.');
+		ConfigurationProperty candidate = bound.get(currentName);
+		if (candidate == null && currentName.isLastElementIndexed()) {
+			candidate = bound.get(currentName.chop(currentName.getNumberOfElements() - 1));
+		}
+		return (candidate != null) ? getInput(currentName.toString(), candidate) : Collections.emptyMap();
 	}
 
-	private Map<String, Object> getInput(ConfigurationProperty candidate, Object sanitizedValue) {
+	private Map<String, Object> getInput(String property, ConfigurationProperty candidate) {
 		Map<String, Object> input = new LinkedHashMap<>();
+		Object value = stringifyIfNecessary(candidate.getValue());
 		Origin origin = Origin.from(candidate);
 		List<Origin> originParents = Origin.parentsFrom(candidate);
-		input.put("value", sanitizedValue);
+		input.put("value", this.sanitizer.sanitize(property, value));
 		input.put("origin", (origin != null) ? origin.toString() : "none");
 		if (!originParents.isEmpty()) {
 			input.put("originParents", originParents.stream().map(Object::toString).toArray(String[]::new));
@@ -446,9 +386,9 @@ public class ConfigurationPropertiesReportEndpoint implements ApplicationContext
 		@Override
 		public void serializeAsField(Object pojo, JsonGenerator jgen, SerializerProvider provider,
 				PropertyWriter writer) throws Exception {
-			if (writer instanceof BeanPropertyWriter beanPropertyWriter) {
+			if (writer instanceof BeanPropertyWriter) {
 				try {
-					if (pojo == beanPropertyWriter.get(pojo)) {
+					if (pojo == ((BeanPropertyWriter) writer).get(pojo)) {
 						if (logger.isDebugEnabled()) {
 							logger.debug("Skipping '" + writer.getFullName() + "' on '" + pojo.getClass().getName()
 									+ "' as it is self-referential");
@@ -470,17 +410,6 @@ public class ConfigurationPropertiesReportEndpoint implements ApplicationContext
 	}
 
 	/**
-	 * {@link SimpleModule} for configuring the serializer.
-	 */
-	private static final class ConfigurationPropertiesModule extends SimpleModule {
-
-		private ConfigurationPropertiesModule() {
-			addSerializer(DataSize.class, ToStringSerializer.instance);
-		}
-
-	}
-
-	/**
 	 * {@link BeanSerializerModifier} to return only relevant configuration properties.
 	 */
 	protected static class GenericSerializerModifier extends BeanSerializerModifier {
@@ -492,8 +421,7 @@ public class ConfigurationPropertiesReportEndpoint implements ApplicationContext
 				List<BeanPropertyWriter> beanProperties) {
 			List<BeanPropertyWriter> result = new ArrayList<>();
 			Class<?> beanClass = beanDesc.getType().getRawClass();
-			Bindable<?> bindable = Bindable.of(ClassUtils.getUserClass(beanClass));
-			Constructor<?> bindConstructor = BindConstructorProvider.DEFAULT.getBindConstructor(bindable, false);
+			Constructor<?> bindConstructor = findBindConstructor(ClassUtils.getUserClass(beanClass));
 			for (BeanPropertyWriter writer : beanProperties) {
 				if (isCandidate(beanDesc, writer, bindConstructor)) {
 					result.add(writer);
@@ -510,10 +438,9 @@ public class ConfigurationPropertiesReportEndpoint implements ApplicationContext
 					names = new String[parameters.length];
 				}
 				for (int i = 0; i < parameters.length; i++) {
-					String name = MergedAnnotations.from(parameters[i])
-						.get(Name.class)
-						.getValue(MergedAnnotation.VALUE, String.class)
-						.orElse((names[i] != null) ? names[i] : parameters[i].getName());
+					String name = MergedAnnotations.from(parameters[i]).get(Name.class)
+							.getValue(MergedAnnotation.VALUE, String.class)
+							.orElse((names[i] != null) ? names[i] : parameters[i].getName());
 					if (name.equals(writer.getName())) {
 						return true;
 					}
@@ -528,7 +455,7 @@ public class ConfigurationPropertiesReportEndpoint implements ApplicationContext
 			AnnotatedMethod setter = findSetter(beanDesc, writer);
 			// If there's a setter, we assume it's OK to report on the value,
 			// similarly, if there's no setter but the package names match, we assume
-			// that it is a nested class used solely for binding to config props, so it
+			// that its a nested class used solely for binding to config props, so it
 			// should be kosher. Lists and Maps are also auto-detected by default since
 			// that's what the metadata generator does. This filter is not used if there
 			// is JSON metadata for the property, so it's mainly for user-defined beans.
@@ -562,37 +489,67 @@ public class ConfigurationPropertiesReportEndpoint implements ApplicationContext
 			return StringUtils.capitalize(propertyName);
 		}
 
+		private Constructor<?> findBindConstructor(Class<?> type) {
+			boolean classConstructorBinding = MergedAnnotations
+					.from(type, SearchStrategy.TYPE_HIERARCHY_AND_ENCLOSING_CLASSES)
+					.isPresent(ConstructorBinding.class);
+			if (KotlinDetector.isKotlinPresent() && KotlinDetector.isKotlinType(type)) {
+				Constructor<?> constructor = BeanUtils.findPrimaryConstructor(type);
+				if (constructor != null) {
+					return findBindConstructor(classConstructorBinding, constructor);
+				}
+			}
+			return findBindConstructor(classConstructorBinding, type.getDeclaredConstructors());
+		}
+
+		private Constructor<?> findBindConstructor(boolean classConstructorBinding, Constructor<?>... candidates) {
+			List<Constructor<?>> candidateConstructors = Arrays.stream(candidates)
+					.filter((constructor) -> constructor.getParameterCount() > 0).collect(Collectors.toList());
+			List<Constructor<?>> flaggedConstructors = candidateConstructors.stream()
+					.filter((candidate) -> MergedAnnotations.from(candidate).isPresent(ConstructorBinding.class))
+					.collect(Collectors.toList());
+			if (flaggedConstructors.size() == 1) {
+				return flaggedConstructors.get(0);
+			}
+			if (classConstructorBinding && candidateConstructors.size() == 1) {
+				return candidateConstructors.get(0);
+			}
+			return null;
+		}
+
 	}
 
 	/**
-	 * Description of an application's
-	 * {@link ConfigurationProperties @ConfigurationProperties} beans.
+	 * A description of an application's
+	 * {@link ConfigurationProperties @ConfigurationProperties} beans. Primarily intended
+	 * for serialization to JSON.
 	 */
-	public static final class ConfigurationPropertiesDescriptor implements OperationResponseBody {
+	public static final class ApplicationConfigurationProperties {
 
-		private final Map<String, ContextConfigurationPropertiesDescriptor> contexts;
+		private final Map<String, ContextConfigurationProperties> contexts;
 
-		ConfigurationPropertiesDescriptor(Map<String, ContextConfigurationPropertiesDescriptor> contexts) {
+		private ApplicationConfigurationProperties(Map<String, ContextConfigurationProperties> contexts) {
 			this.contexts = contexts;
 		}
 
-		public Map<String, ContextConfigurationPropertiesDescriptor> getContexts() {
+		public Map<String, ContextConfigurationProperties> getContexts() {
 			return this.contexts;
 		}
 
 	}
 
 	/**
-	 * Description of an application context's
-	 * {@link ConfigurationProperties @ConfigurationProperties} beans.
+	 * A description of an application context's
+	 * {@link ConfigurationProperties @ConfigurationProperties} beans. Primarily intended
+	 * for serialization to JSON.
 	 */
-	public static final class ContextConfigurationPropertiesDescriptor {
+	public static final class ContextConfigurationProperties {
 
 		private final Map<String, ConfigurationPropertiesBeanDescriptor> beans;
 
 		private final String parentId;
 
-		private ContextConfigurationPropertiesDescriptor(Map<String, ConfigurationPropertiesBeanDescriptor> beans,
+		private ContextConfigurationProperties(Map<String, ConfigurationPropertiesBeanDescriptor> beans,
 				String parentId) {
 			this.beans = beans;
 			this.parentId = parentId;
@@ -609,7 +566,8 @@ public class ConfigurationPropertiesReportEndpoint implements ApplicationContext
 	}
 
 	/**
-	 * Description of a {@link ConfigurationProperties @ConfigurationProperties} bean.
+	 * A description of a {@link ConfigurationProperties @ConfigurationProperties} bean.
+	 * Primarily intended for serialization to JSON.
 	 */
 	public static final class ConfigurationPropertiesBeanDescriptor {
 

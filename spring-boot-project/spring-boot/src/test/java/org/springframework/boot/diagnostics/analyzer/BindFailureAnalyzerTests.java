@@ -21,7 +21,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import jakarta.validation.constraints.Min;
+import javax.validation.constraints.Min;
+
 import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.BeanCreationException;
@@ -100,7 +101,7 @@ class BindFailureAnalyzerTests {
 	}
 
 	private static String failure(String property, String value, String origin, String reason) {
-		return String.format("Property: %s%n    Value: \"%s\"%n    Origin: %s%n    Reason: %s", property, value, origin,
+		return String.format("Property: %s%n    Value: %s%n    Origin: %s%n    Reason: %s", property, value, origin,
 				reason);
 	}
 

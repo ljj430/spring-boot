@@ -30,6 +30,7 @@ import reactor.netty.http.server.HttpRequestDecoderSpec;
 import reactor.netty.http.server.HttpServer;
 
 import org.springframework.boot.autoconfigure.web.ServerProperties;
+import org.springframework.boot.autoconfigure.web.ServerProperties.ForwardHeadersStrategy;
 import org.springframework.boot.context.properties.source.ConfigurationPropertySources;
 import org.springframework.boot.web.embedded.netty.NettyReactiveWebServerFactory;
 import org.springframework.boot.web.embedded.netty.NettyServerCustomizer;
@@ -48,7 +49,6 @@ import static org.mockito.Mockito.times;
  *
  * @author Brian Clozel
  * @author Artsiom Yudovin
- * @author Leo Li
  */
 @ExtendWith(MockitoExtension.class)
 class NettyWebServerFactoryCustomizerTests {
@@ -104,26 +104,10 @@ class NettyWebServerFactoryCustomizerTests {
 
 	@Test
 	void setConnectionTimeout() {
-		this.serverProperties.getNetty().setConnectionTimeout(Duration.ofSeconds(1));
+		setupConnectionTimeout(Duration.ofSeconds(1));
 		NettyReactiveWebServerFactory factory = mock(NettyReactiveWebServerFactory.class);
 		this.customizer.customize(factory);
 		verifyConnectionTimeout(factory, 1000);
-	}
-
-	@Test
-	void setIdleTimeout() {
-		this.serverProperties.getNetty().setIdleTimeout(Duration.ofSeconds(1));
-		NettyReactiveWebServerFactory factory = mock(NettyReactiveWebServerFactory.class);
-		this.customizer.customize(factory);
-		verifyIdleTimeout(factory, Duration.ofSeconds(1));
-	}
-
-	@Test
-	void setMaxKeepAliveRequests() {
-		this.serverProperties.getNetty().setMaxKeepAliveRequests(100);
-		NettyReactiveWebServerFactory factory = mock(NettyReactiveWebServerFactory.class);
-		this.customizer.customize(factory);
-		verifyMaxKeepAliveRequests(factory, 100);
 	}
 
 	@Test
@@ -132,7 +116,7 @@ class NettyWebServerFactoryCustomizerTests {
 		nettyProperties.setValidateHeaders(false);
 		nettyProperties.setInitialBufferSize(DataSize.ofBytes(512));
 		nettyProperties.setH2cMaxContentLength(DataSize.ofKilobytes(1));
-		setMaxChunkSize(nettyProperties);
+		nettyProperties.setMaxChunkSize(DataSize.ofKilobytes(16));
 		nettyProperties.setMaxInitialLineLength(DataSize.ofKilobytes(32));
 		NettyReactiveWebServerFactory factory = mock(NettyReactiveWebServerFactory.class);
 		this.customizer.customize(factory);
@@ -143,18 +127,8 @@ class NettyWebServerFactoryCustomizerTests {
 		assertThat(decoder.validateHeaders()).isFalse();
 		assertThat(decoder.initialBufferSize()).isEqualTo(nettyProperties.getInitialBufferSize().toBytes());
 		assertThat(decoder.h2cMaxContentLength()).isEqualTo(nettyProperties.getH2cMaxContentLength().toBytes());
-		assertMaxChunkSize(nettyProperties, decoder);
-		assertThat(decoder.maxInitialLineLength()).isEqualTo(nettyProperties.getMaxInitialLineLength().toBytes());
-	}
-
-	@SuppressWarnings("removal")
-	private void setMaxChunkSize(ServerProperties.Netty nettyProperties) {
-		nettyProperties.setMaxChunkSize(DataSize.ofKilobytes(16));
-	}
-
-	@SuppressWarnings({ "deprecation", "removal" })
-	private void assertMaxChunkSize(ServerProperties.Netty nettyProperties, HttpRequestDecoderSpec decoder) {
 		assertThat(decoder.maxChunkSize()).isEqualTo(nettyProperties.getMaxChunkSize().toBytes());
+		assertThat(decoder.maxInitialLineLength()).isEqualTo(nettyProperties.getMaxInitialLineLength().toBytes());
 	}
 
 	private void verifyConnectionTimeout(NettyReactiveWebServerFactory factory, Integer expected) {
@@ -169,24 +143,10 @@ class NettyWebServerFactoryCustomizerTests {
 		assertThat(options.get(ChannelOption.CONNECT_TIMEOUT_MILLIS)).isEqualTo(expected);
 	}
 
-	private void verifyIdleTimeout(NettyReactiveWebServerFactory factory, Duration expected) {
-		if (expected == null) {
-			then(factory).should(never()).addServerCustomizers(any(NettyServerCustomizer.class));
-			return;
-		}
-		then(factory).should(times(2)).addServerCustomizers(this.customizerCaptor.capture());
-		NettyServerCustomizer serverCustomizer = this.customizerCaptor.getAllValues().get(0);
-		HttpServer httpServer = serverCustomizer.apply(HttpServer.create());
-		Duration idleTimeout = httpServer.configuration().idleTimeout();
-		assertThat(idleTimeout).isEqualTo(expected);
-	}
-
-	private void verifyMaxKeepAliveRequests(NettyReactiveWebServerFactory factory, int expected) {
-		then(factory).should(times(2)).addServerCustomizers(this.customizerCaptor.capture());
-		NettyServerCustomizer serverCustomizer = this.customizerCaptor.getAllValues().get(0);
-		HttpServer httpServer = serverCustomizer.apply(HttpServer.create());
-		int maxKeepAliveRequests = httpServer.configuration().maxKeepAliveRequests();
-		assertThat(maxKeepAliveRequests).isEqualTo(expected);
+	private void setupConnectionTimeout(Duration connectionTimeout) {
+		this.serverProperties.setForwardHeadersStrategy(ForwardHeadersStrategy.NONE);
+		this.serverProperties.setMaxHttpHeaderSize(null);
+		this.serverProperties.getNetty().setConnectionTimeout(connectionTimeout);
 	}
 
 }

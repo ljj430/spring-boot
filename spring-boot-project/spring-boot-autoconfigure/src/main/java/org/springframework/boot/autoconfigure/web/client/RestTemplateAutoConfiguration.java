@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,10 @@
 
 package org.springframework.boot.autoconfigure.web.client;
 
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -32,6 +34,7 @@ import org.springframework.boot.web.client.RestTemplateCustomizer;
 import org.springframework.boot.web.client.RestTemplateRequestCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.web.client.RestTemplate;
 
@@ -42,7 +45,8 @@ import org.springframework.web.client.RestTemplate;
  * @author Phillip Webb
  * @since 1.4.0
  */
-@AutoConfiguration(after = HttpMessageConvertersAutoConfiguration.class)
+@Configuration(proxyBeanMethods = false)
+@AutoConfigureAfter(HttpMessageConvertersAutoConfiguration.class)
 @ConditionalOnClass(RestTemplate.class)
 @Conditional(NotReactiveWebApplicationCondition.class)
 public class RestTemplateAutoConfiguration {
@@ -56,8 +60,9 @@ public class RestTemplateAutoConfiguration {
 			ObjectProvider<RestTemplateRequestCustomizer<?>> restTemplateRequestCustomizers) {
 		RestTemplateBuilderConfigurer configurer = new RestTemplateBuilderConfigurer();
 		configurer.setHttpMessageConverters(messageConverters.getIfUnique());
-		configurer.setRestTemplateCustomizers(restTemplateCustomizers.orderedStream().toList());
-		configurer.setRestTemplateRequestCustomizers(restTemplateRequestCustomizers.orderedStream().toList());
+		configurer.setRestTemplateCustomizers(restTemplateCustomizers.orderedStream().collect(Collectors.toList()));
+		configurer.setRestTemplateRequestCustomizers(
+				restTemplateRequestCustomizers.orderedStream().collect(Collectors.toList()));
 		return configurer;
 	}
 

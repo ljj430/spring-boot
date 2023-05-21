@@ -16,9 +16,9 @@
 
 package org.springframework.boot.docs.howto.dataaccess.configurehibernatenamingstrategy.spring;
 
-import org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 
+import org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -26,8 +26,8 @@ import org.springframework.context.annotation.Configuration;
 public class MyHibernateConfiguration {
 
 	@Bean
-	public CamelCaseToUnderscoresNamingStrategy caseSensitivePhysicalNamingStrategy() {
-		return new CamelCaseToUnderscoresNamingStrategy() {
+	public SpringPhysicalNamingStrategy caseSensitivePhysicalNamingStrategy() {
+		return new SpringPhysicalNamingStrategy() {
 
 			@Override
 			protected boolean isCaseInsensitive(JdbcEnvironment jdbcEnvironment) {

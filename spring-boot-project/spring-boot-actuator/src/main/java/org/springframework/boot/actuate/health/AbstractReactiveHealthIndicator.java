@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,6 @@ import org.springframework.util.StringUtils;
  *
  * @author Stephane Nicoll
  * @author Nikolay Rybak
- * @author Moritz Halbritter
  * @since 2.0.0
  */
 public abstract class AbstractReactiveHealthIndicator implements ReactiveHealthIndicator {
@@ -77,24 +76,18 @@ public abstract class AbstractReactiveHealthIndicator implements ReactiveHealthI
 	@Override
 	public final Mono<Health> health() {
 		try {
-			Health.Builder builder = new Health.Builder();
-			Mono<Health> result = doHealthCheck(builder).onErrorResume(this::handleFailure);
-			return result.doOnNext((health) -> logExceptionIfPresent(builder.getException()));
+			return doHealthCheck(new Health.Builder()).onErrorResume(this::handleFailure);
 		}
 		catch (Exception ex) {
 			return handleFailure(ex);
 		}
 	}
 
-	private void logExceptionIfPresent(Throwable ex) {
-		if (ex != null && this.logger.isWarnEnabled()) {
-			String message = (ex instanceof Exception) ? this.healthCheckFailedMessage.apply(ex) : null;
+	private Mono<Health> handleFailure(Throwable ex) {
+		if (this.logger.isWarnEnabled()) {
+			String message = this.healthCheckFailedMessage.apply(ex);
 			this.logger.warn(StringUtils.hasText(message) ? message : DEFAULT_MESSAGE, ex);
 		}
-	}
-
-	private Mono<Health> handleFailure(Throwable ex) {
-		logExceptionIfPresent(ex);
 		return Mono.just(new Health.Builder().down(ex).build());
 	}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ package org.springframework.boot.devtools.autoconfigure;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
 
@@ -29,7 +31,7 @@ import org.apache.derby.jdbc.EmbeddedDriver;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinition;
-import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionMessage;
 import org.springframework.boot.autoconfigure.condition.ConditionOutcome;
@@ -44,6 +46,7 @@ import org.springframework.boot.devtools.autoconfigure.DevToolsDataSourceAutoCon
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ConditionContext;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ConfigurationCondition;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.type.AnnotatedTypeMetadata;
@@ -57,8 +60,9 @@ import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
  * @author Andy Wilkinson
  * @since 1.3.3
  */
+@AutoConfigureAfter(DataSourceAutoConfiguration.class)
 @Conditional({ OnEnabledDevToolsCondition.class, DevToolsDataSourceCondition.class })
-@AutoConfiguration(after = DataSourceAutoConfiguration.class)
+@Configuration(proxyBeanMethods = false)
 @Import(DatabaseShutdownExecutorEntityManagerFactoryDependsOnPostProcessor.class)
 public class DevToolsDataSourceAutoConfiguration {
 
@@ -69,8 +73,8 @@ public class DevToolsDataSourceAutoConfiguration {
 	}
 
 	/**
-	 * Post processor to ensure that {@link jakarta.persistence.EntityManagerFactory}
-	 * beans depend on the {@code inMemoryDatabaseShutdownExecutor} bean.
+	 * Post processor to ensure that {@link javax.persistence.EntityManagerFactory} beans
+	 * depend on the {@code inMemoryDatabaseShutdownExecutor} bean.
 	 */
 	@ConditionalOnClass(LocalContainerEntityManagerFactoryBean.class)
 	@ConditionalOnBean(AbstractEntityManagerFactoryBean.class)
@@ -106,13 +110,10 @@ public class DevToolsDataSourceAutoConfiguration {
 
 		private enum InMemoryDatabase {
 
-			DERBY(null, Set.of("org.apache.derby.jdbc.EmbeddedDriver"), (dataSource) -> {
-				String url;
-				try (Connection connection = dataSource.getConnection()) {
-					url = connection.getMetaData().getURL();
-				}
+			DERBY(null, new HashSet<>(Arrays.asList("org.apache.derby.jdbc.EmbeddedDriver")), (dataSource) -> {
+				String url = dataSource.getConnection().getMetaData().getURL();
 				try {
-					new EmbeddedDriver().connect(url + ";drop=true", new Properties()).close();
+					new EmbeddedDriver().connect(url + ";drop=true", new Properties());
 				}
 				catch (SQLException ex) {
 					if (!"08006".equals(ex.getSQLState())) {
@@ -121,10 +122,10 @@ public class DevToolsDataSourceAutoConfiguration {
 				}
 			}),
 
-			H2("jdbc:h2:mem:", Set.of("org.h2.Driver", "org.h2.jdbcx.JdbcDataSource")),
+			H2("jdbc:h2:mem:", new HashSet<>(Arrays.asList("org.h2.Driver", "org.h2.jdbcx.JdbcDataSource"))),
 
-			HSQLDB("jdbc:hsqldb:mem:", Set.of("org.hsqldb.jdbcDriver", "org.hsqldb.jdbc.JDBCDriver",
-					"org.hsqldb.jdbc.pool.JDBCXADataSource"));
+			HSQLDB("jdbc:hsqldb:mem:", new HashSet<>(Arrays.asList("org.hsqldb.jdbcDriver",
+					"org.hsqldb.jdbc.JDBCDriver", "org.hsqldb.jdbc.pool.JDBCXADataSource")));
 
 			private final String urlPrefix;
 
@@ -187,12 +188,11 @@ public class DevToolsDataSourceAutoConfiguration {
 				return ConditionOutcome.noMatch(message.didNotFind("a single DataSourceProperties bean").atAll());
 			}
 			BeanDefinition dataSourceDefinition = context.getRegistry().getBeanDefinition(dataSourceBeanNames[0]);
-			if (dataSourceDefinition instanceof AnnotatedBeanDefinition annotatedBeanDefinition
-					&& annotatedBeanDefinition.getFactoryMethodMetadata() != null
-					&& annotatedBeanDefinition.getFactoryMethodMetadata()
-						.getDeclaringClassName()
-						.startsWith(DataSourceAutoConfiguration.class.getPackage().getName()
-								+ ".DataSourceConfiguration$")) {
+			if (dataSourceDefinition instanceof AnnotatedBeanDefinition
+					&& ((AnnotatedBeanDefinition) dataSourceDefinition).getFactoryMethodMetadata() != null
+					&& ((AnnotatedBeanDefinition) dataSourceDefinition).getFactoryMethodMetadata()
+							.getDeclaringClassName().startsWith(DataSourceAutoConfiguration.class.getPackage().getName()
+									+ ".DataSourceConfiguration$")) {
 				return ConditionOutcome.match(message.foundExactly("auto-configured DataSource"));
 			}
 			return ConditionOutcome.noMatch(message.didNotFind("an auto-configured DataSource").atAll());

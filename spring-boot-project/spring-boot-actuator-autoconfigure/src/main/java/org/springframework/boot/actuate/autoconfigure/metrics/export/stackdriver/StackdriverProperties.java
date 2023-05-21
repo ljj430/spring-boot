@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 
 package org.springframework.boot.actuate.autoconfigure.metrics.export.stackdriver;
 
-import java.util.Map;
-
 import org.springframework.boot.actuate.autoconfigure.metrics.export.properties.StepRegistryProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -29,7 +27,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @author Stephane Nicoll
  * @since 2.3.0
  */
-@ConfigurationProperties(prefix = "management.stackdriver.metrics.export")
+@ConfigurationProperties(prefix = "management.metrics.export.stackdriver")
 public class StackdriverProperties extends StepRegistryProperties {
 
 	/**
@@ -41,18 +39,6 @@ public class StackdriverProperties extends StepRegistryProperties {
 	 * Monitored resource type.
 	 */
 	private String resourceType = "global";
-
-	/**
-	 * Monitored resource's labels.
-	 */
-	private Map<String, String> resourceLabels;
-
-	/**
-	 * Whether to use semantically correct metric types. When false, counter metrics are
-	 * published as the GAUGE MetricKind. When true, counter metrics are published as the
-	 * CUMULATIVE MetricKind.
-	 */
-	private boolean useSemanticMetricTypes = false;
 
 	public String getProjectId() {
 		return this.projectId;
@@ -68,22 +54,6 @@ public class StackdriverProperties extends StepRegistryProperties {
 
 	public void setResourceType(String resourceType) {
 		this.resourceType = resourceType;
-	}
-
-	public Map<String, String> getResourceLabels() {
-		return this.resourceLabels;
-	}
-
-	public void setResourceLabels(Map<String, String> resourceLabels) {
-		this.resourceLabels = resourceLabels;
-	}
-
-	public boolean isUseSemanticMetricTypes() {
-		return this.useSemanticMetricTypes;
-	}
-
-	public void setUseSemanticMetricTypes(boolean useSemanticMetricTypes) {
-		this.useSemanticMetricTypes = useSemanticMetricTypes;
 	}
 
 }

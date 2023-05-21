@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,8 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.boot.autoconfigure.template.TemplateAvailabilityProvider;
 import org.springframework.boot.autoconfigure.template.TemplateAvailabilityProviders;
@@ -66,13 +66,26 @@ public class DefaultErrorViewResolver implements ErrorViewResolver, Ordered {
 		SERIES_VIEWS = Collections.unmodifiableMap(views);
 	}
 
-	private final ApplicationContext applicationContext;
+	private ApplicationContext applicationContext;
 
 	private final Resources resources;
 
 	private final TemplateAvailabilityProviders templateAvailabilityProviders;
 
 	private int order = Ordered.LOWEST_PRECEDENCE;
+
+	/**
+	 * Create a new {@link DefaultErrorViewResolver} instance.
+	 * @param applicationContext the source application context
+	 * @param resourceProperties resource properties
+	 * @deprecated since 2.4.0 for removal in 2.6.0 in favor of
+	 * {@link #DefaultErrorViewResolver(ApplicationContext, Resources)}
+	 */
+	@Deprecated
+	public DefaultErrorViewResolver(ApplicationContext applicationContext,
+			org.springframework.boot.autoconfigure.web.ResourceProperties resourceProperties) {
+		this(applicationContext, (Resources) resourceProperties);
+	}
 
 	/**
 	 * Create a new {@link DefaultErrorViewResolver} instance.
@@ -145,7 +158,7 @@ public class DefaultErrorViewResolver implements ErrorViewResolver, Ordered {
 	 */
 	private static class HtmlResourceView implements View {
 
-		private final Resource resource;
+		private Resource resource;
 
 		HtmlResourceView(Resource resource) {
 			this.resource = resource;

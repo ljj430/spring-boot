@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package org.springframework.boot.web.servlet;
 
 import java.util.Map;
 
-import jakarta.servlet.annotation.WebListener;
+import javax.servlet.annotation.WebListener;
 
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
@@ -39,7 +39,7 @@ class WebListenerHandler extends ServletComponentHandler {
 	protected void doHandle(Map<String, Object> attributes, AnnotatedBeanDefinition beanDefinition,
 			BeanDefinitionRegistry registry) {
 		BeanDefinitionBuilder builder = BeanDefinitionBuilder
-			.rootBeanDefinition(ServletComponentWebListenerRegistrar.class);
+				.rootBeanDefinition(ServletComponentWebListenerRegistrar.class);
 		builder.addConstructorArgValue(beanDefinition.getBeanClassName());
 		registry.registerBeanDefinition(beanDefinition.getBeanClassName() + "Registrar", builder.getBeanDefinition());
 	}

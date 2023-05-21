@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.apache.commons.logging.Log;
 
@@ -84,7 +85,7 @@ class ConfigDataEnvironmentContributors implements Iterable<ConfigDataEnvironmen
 	 * {@link ConfigDataEnvironmentContributors} instance.
 	 * @param importer the importer used to import {@link ConfigData}
 	 * @param activationContext the current activation context or {@code null} if the
-	 * context has not yet been created
+	 * context has not get been created
 	 * @return a {@link ConfigDataEnvironmentContributors} instance with all relevant
 	 * imports have been processed
 	 */
@@ -129,7 +130,7 @@ class ConfigDataEnvironmentContributors implements Iterable<ConfigDataEnvironmen
 		}
 		StringBuilder message = new StringBuilder();
 		message.append("Imported " + results.size() + " resource" + ((results.size() != 1) ? "s " : " "));
-		message.append(results.stream().map(ConfigDataResolutionResult::getResource).toList());
+		message.append(results.stream().map(ConfigDataResolutionResult::getResource).collect(Collectors.toList()));
 		return message;
 	}
 
@@ -220,11 +221,8 @@ class ConfigDataEnvironmentContributors implements Iterable<ConfigDataEnvironmen
 	}
 
 	private Iterator<ConfigurationPropertySource> getBinderSources(Predicate<ConfigDataEnvironmentContributor> filter) {
-		return this.root.stream()
-			.filter(this::hasConfigurationPropertySource)
-			.filter(filter)
-			.map(ConfigDataEnvironmentContributor::getConfigurationPropertySource)
-			.iterator();
+		return this.root.stream().filter(this::hasConfigurationPropertySource).filter(filter)
+				.map(ConfigDataEnvironmentContributor::getConfigurationPropertySource).iterator();
 	}
 
 	private boolean hasConfigurationPropertySource(ConfigDataEnvironmentContributor contributor) {

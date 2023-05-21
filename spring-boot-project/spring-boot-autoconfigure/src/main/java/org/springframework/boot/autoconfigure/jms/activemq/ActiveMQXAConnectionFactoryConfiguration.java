@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,9 @@ package org.springframework.boot.autoconfigure.jms.activemq;
 
 import java.util.stream.Collectors;
 
-import jakarta.jms.ConnectionFactory;
-import jakarta.transaction.TransactionManager;
+import javax.jms.ConnectionFactory;
+import javax.transaction.TransactionManager;
+
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.activemq.ActiveMQXAConnectionFactory;
 
@@ -52,7 +53,7 @@ class ActiveMQXAConnectionFactoryConfiguration {
 			throws Exception {
 		ActiveMQXAConnectionFactory connectionFactory = new ActiveMQConnectionFactoryFactory(properties,
 				factoryCustomizers.orderedStream().collect(Collectors.toList()))
-			.createConnectionFactory(ActiveMQXAConnectionFactory.class);
+						.createConnectionFactory(ActiveMQXAConnectionFactory.class);
 		return wrapper.wrapConnectionFactory(connectionFactory);
 	}
 
@@ -63,7 +64,7 @@ class ActiveMQXAConnectionFactoryConfiguration {
 			ObjectProvider<ActiveMQConnectionFactoryCustomizer> factoryCustomizers) {
 		return new ActiveMQConnectionFactoryFactory(properties,
 				factoryCustomizers.orderedStream().collect(Collectors.toList()))
-			.createConnectionFactory(ActiveMQConnectionFactory.class);
+						.createConnectionFactory(ActiveMQConnectionFactory.class);
 	}
 
 }

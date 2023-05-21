@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -165,20 +165,7 @@ public final class TestPropertyValues {
 
 	/**
 	 * Add the properties to the {@link System#getProperties() system properties} for the
-	 * duration of the {@code action}, restoring previous values when it completes.
-	 * @param action the action to take
-	 * @since 3.0.0
-	 */
-	public void applyToSystemProperties(Runnable action) {
-		applyToSystemProperties(() -> {
-			action.run();
-			return null;
-		});
-	}
-
-	/**
-	 * Add the properties to the {@link System#getProperties() system properties} for the
-	 * duration of the {@code call}, restoring previous values when it completes.
+	 * duration of the {@code call}, restoring previous values when the call completes.
 	 * @param <T> the result type
 	 * @param call the call to make
 	 * @return the result of the call
@@ -317,13 +304,21 @@ public final class TestPropertyValues {
 	/**
 	 * A single name value pair.
 	 */
-	public static final class Pair {
+	public static class Pair {
 
-		private final String name;
+		private String name;
 
-		private final String value;
+		private String value;
 
-		private Pair(String name, String value) {
+		/**
+		 * Create a new {@link Pair} instance.
+		 * @param name the name
+		 * @param value the value
+		 * @deprecated since 2.4.0 for removal in 2.6.0 in favor of
+		 * {@link #of(String, String)}
+		 */
+		@Deprecated
+		public Pair(String name, String value) {
 			Assert.hasLength(name, "Name must not be empty");
 			this.name = name;
 			this.value = value;

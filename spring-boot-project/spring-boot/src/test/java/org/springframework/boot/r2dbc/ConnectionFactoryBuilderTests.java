@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.function.Function;
 
 import io.r2dbc.h2.H2ConnectionFactoryMetadata;
 import io.r2dbc.pool.ConnectionPool;
@@ -36,9 +35,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import org.springframework.boot.r2dbc.ConnectionFactoryBuilder.PoolingAwareOptionsCapableWrapper;
-import org.springframework.core.ResolvableType;
 import org.springframework.util.ReflectionUtils;
-import org.springframework.util.ReflectionUtils.FieldFilter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
@@ -66,7 +63,7 @@ class ConnectionFactoryBuilderTests {
 	@Test
 	void createWithEmbeddedConnectionNoneShouldFail() {
 		assertThatIllegalArgumentException()
-			.isThrownBy(() -> ConnectionFactoryBuilder.withUrl(EmbeddedDatabaseConnection.NONE.getUrl("test")));
+				.isThrownBy(() -> ConnectionFactoryBuilder.withUrl(EmbeddedDatabaseConnection.NONE.getUrl("test")));
 	}
 
 	@Test
@@ -80,8 +77,7 @@ class ConnectionFactoryBuilderTests {
 	@Test
 	void buildOptionsWithEmbeddedConnectionH2ShouldExposeOptions() {
 		ConnectionFactoryOptions options = ConnectionFactoryBuilder
-			.withUrl(EmbeddedDatabaseConnection.H2.getUrl("testdb"))
-			.buildOptions();
+				.withUrl(EmbeddedDatabaseConnection.H2.getUrl("testdb")).buildOptions();
 		assertThat(options.getRequiredValue(ConnectionFactoryOptions.DRIVER)).isEqualTo("h2");
 		assertThat(options.getRequiredValue(ConnectionFactoryOptions.PROTOCOL)).isEqualTo("mem");
 		assertThat(options.getRequiredValue(ConnectionFactoryOptions.DATABASE)).isEqualTo("testdb");
@@ -90,14 +86,13 @@ class ConnectionFactoryBuilderTests {
 		assertThat(options.hasOption(ConnectionFactoryOptions.USER)).isFalse();
 		assertThat(options.hasOption(ConnectionFactoryOptions.PASSWORD)).isFalse();
 		assertThat(options.getValue(Option.<String>valueOf("options")))
-			.isEqualTo("DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE");
+				.isEqualTo("DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE");
 	}
 
 	@Test
 	void buildOptionsWithCompleteUrlShouldExposeOptions() {
 		ConnectionFactoryOptions options = ConnectionFactoryBuilder
-			.withUrl("r2dbc:simple:proto://user:password@myhost:4711/mydatabase")
-			.buildOptions();
+				.withUrl("r2dbc:simple:proto://user:password@myhost:4711/mydatabase").buildOptions();
 		assertThat(options.getRequiredValue(ConnectionFactoryOptions.DRIVER)).isEqualTo("simple");
 		assertThat(options.getRequiredValue(ConnectionFactoryOptions.PROTOCOL)).isEqualTo("proto");
 		assertThat(options.getRequiredValue(ConnectionFactoryOptions.USER)).isEqualTo("user");
@@ -110,13 +105,9 @@ class ConnectionFactoryBuilderTests {
 	@Test
 	void buildOptionsWithSpecificSettingsShouldOverrideUrlOptions() {
 		ConnectionFactoryOptions options = ConnectionFactoryBuilder
-			.withUrl("r2dbc:simple://user:password@myhost/mydatabase")
-			.username("another-user")
-			.password("another-password")
-			.hostname("another-host")
-			.port(1234)
-			.database("another-database")
-			.buildOptions();
+				.withUrl("r2dbc:simple://user:password@myhost/mydatabase").username("another-user")
+				.password("another-password").hostname("another-host").port(1234).database("another-database")
+				.buildOptions();
 		assertThat(options.getRequiredValue(ConnectionFactoryOptions.USER)).isEqualTo("another-user");
 		assertThat(options.getRequiredValue(ConnectionFactoryOptions.PASSWORD)).isEqualTo("another-password");
 		assertThat(options.getRequiredValue(ConnectionFactoryOptions.HOST)).isEqualTo("another-host");
@@ -127,8 +118,9 @@ class ConnectionFactoryBuilderTests {
 	@Test
 	void buildOptionsWithDriverPropertiesShouldExposeOptions() {
 		ConnectionFactoryOptions options = ConnectionFactoryBuilder.withUrl("r2dbc:simple://user:password@myhost")
-			.configure((o) -> o.option(Option.valueOf("simpleOne"), "one").option(Option.valueOf("simpleTwo"), "two"))
-			.buildOptions();
+				.configure(
+						(o) -> o.option(Option.valueOf("simpleOne"), "one").option(Option.valueOf("simpleTwo"), "two"))
+				.buildOptions();
 		assertThat(options.getRequiredValue(Option.<String>valueOf("simpleOne"))).isEqualTo("one");
 		assertThat(options.getRequiredValue(Option.<String>valueOf("simpleTwo"))).isEqualTo("two");
 	}
@@ -137,8 +129,7 @@ class ConnectionFactoryBuilderTests {
 	void buildShouldExposeConnectionFactory() {
 		String databaseName = UUID.randomUUID().toString();
 		ConnectionFactory connectionFactory = ConnectionFactoryBuilder
-			.withUrl(EmbeddedDatabaseConnection.H2.getUrl(databaseName))
-			.build();
+				.withUrl(EmbeddedDatabaseConnection.H2.getUrl(databaseName)).build();
 		assertThat(connectionFactory).isNotNull();
 		assertThat(connectionFactory.getMetadata().getName()).isEqualTo(H2ConnectionFactoryMetadata.NAME);
 	}
@@ -147,13 +138,11 @@ class ConnectionFactoryBuilderTests {
 	void buildWhenDerivedWithNewDatabaseReturnsNewConnectionFactory() {
 		String initialDatabaseName = UUID.randomUUID().toString();
 		ConnectionFactory connectionFactory = ConnectionFactoryBuilder
-			.withUrl(EmbeddedDatabaseConnection.H2.getUrl(initialDatabaseName))
-			.build();
+				.withUrl(EmbeddedDatabaseConnection.H2.getUrl(initialDatabaseName)).build();
 		ConnectionFactoryOptions initialOptions = ((OptionsCapableConnectionFactory) connectionFactory).getOptions();
 		String derivedDatabaseName = UUID.randomUUID().toString();
 		ConnectionFactory derived = ConnectionFactoryBuilder.derivedFrom(connectionFactory)
-			.database(derivedDatabaseName)
-			.build();
+				.database(derivedDatabaseName).build();
 		ConnectionFactoryOptions derivedOptions = ((OptionsCapableConnectionFactory) derived).getOptions();
 		assertThat(derivedOptions.getRequiredValue(ConnectionFactoryOptions.DATABASE)).isEqualTo(derivedDatabaseName);
 		assertMatchingOptions(derivedOptions, initialOptions, ConnectionFactoryOptions.CONNECT_TIMEOUT,
@@ -165,13 +154,10 @@ class ConnectionFactoryBuilderTests {
 	@Test
 	void buildWhenDerivedWithNewCredentialsReturnsNewConnectionFactory() {
 		ConnectionFactory connectionFactory = ConnectionFactoryBuilder
-			.withUrl(EmbeddedDatabaseConnection.H2.getUrl(UUID.randomUUID().toString()))
-			.build();
+				.withUrl(EmbeddedDatabaseConnection.H2.getUrl(UUID.randomUUID().toString())).build();
 		ConnectionFactoryOptions initialOptions = ((OptionsCapableConnectionFactory) connectionFactory).getOptions();
-		ConnectionFactory derived = ConnectionFactoryBuilder.derivedFrom(connectionFactory)
-			.username("admin")
-			.password("secret")
-			.build();
+		ConnectionFactory derived = ConnectionFactoryBuilder.derivedFrom(connectionFactory).username("admin")
+				.password("secret").build();
 		ConnectionFactoryOptions derivedOptions = ((OptionsCapableConnectionFactory) derived).getOptions();
 		assertThat(derivedOptions.getRequiredValue(ConnectionFactoryOptions.USER)).isEqualTo("admin");
 		assertThat(derivedOptions.getRequiredValue(ConnectionFactoryOptions.PASSWORD)).isEqualTo("secret");
@@ -183,15 +169,12 @@ class ConnectionFactoryBuilderTests {
 	@Test
 	void buildWhenDerivedFromPoolReturnsNewNonPooledConnectionFactory() {
 		ConnectionFactory connectionFactory = ConnectionFactoryBuilder
-			.withUrl(EmbeddedDatabaseConnection.H2.getUrl(UUID.randomUUID().toString()))
-			.build();
+				.withUrl(EmbeddedDatabaseConnection.H2.getUrl(UUID.randomUUID().toString())).build();
 		ConnectionFactoryOptions initialOptions = ((OptionsCapableConnectionFactory) connectionFactory).getOptions();
 		ConnectionPoolConfiguration poolConfiguration = ConnectionPoolConfiguration.builder(connectionFactory).build();
 		ConnectionPool pool = new ConnectionPool(poolConfiguration);
-		ConnectionFactory derived = ConnectionFactoryBuilder.derivedFrom(pool)
-			.username("admin")
-			.password("secret")
-			.build();
+		ConnectionFactory derived = ConnectionFactoryBuilder.derivedFrom(pool).username("admin").password("secret")
+				.build();
 		assertThat(derived).isNotInstanceOf(ConnectionPool.class).isInstanceOf(OptionsCapableConnectionFactory.class);
 		ConnectionFactoryOptions derivedOptions = ((OptionsCapableConnectionFactory) derived).getOptions();
 		assertThat(derivedOptions.getRequiredValue(ConnectionFactoryOptions.USER)).isEqualTo("admin");
@@ -207,49 +190,34 @@ class ConnectionFactoryBuilderTests {
 	void optionIsMappedWhenCreatingPoolConfiguration(Option option) {
 		String url = "r2dbc:pool:h2:mem:///" + UUID.randomUUID();
 		ExpectedOption expectedOption = ExpectedOption.get(option);
-		ConnectionFactoryOptions options = ConnectionFactoryBuilder.withUrl(url)
-			.configure((builder) -> builder.option(PoolingConnectionFactoryProvider.POOL_NAME, "defaultName")
-				.option(option, expectedOption.value))
-			.buildOptions();
+		ConnectionFactoryOptions options = ConnectionFactoryBuilder.withUrl(url).configure((builder) -> builder
+				.option(PoolingConnectionFactoryProvider.POOL_NAME, "defaultName").option(option, expectedOption.value))
+				.buildOptions();
 		ConnectionPoolConfiguration configuration = new PoolingAwareOptionsCapableWrapper()
-			.connectionPoolConfiguration(options, mock(ConnectionFactory.class));
+				.connectionPoolConfiguration(options, mock(ConnectionFactory.class));
 		assertThat(configuration).extracting(expectedOption.property).isEqualTo(expectedOption.value);
-	}
-
-	private static Iterable<Arguments> poolingConnectionProviderOptions() {
-		return extractPoolingConnectionProviderOptions((field) -> Option.class.equals(field.getType()));
 	}
 
 	@ParameterizedTest
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	@MethodSource("primitivePoolingConnectionProviderOptions")
+	@MethodSource("poolingConnectionProviderOptions")
 	void stringlyTypedOptionIsMappedWhenCreatingPoolConfiguration(Option option) {
 		String url = "r2dbc:pool:h2:mem:///" + UUID.randomUUID();
 		ExpectedOption expectedOption = ExpectedOption.get(option);
 		ConnectionFactoryOptions options = ConnectionFactoryBuilder.withUrl(url)
-			.configure((builder) -> builder.option(PoolingConnectionFactoryProvider.POOL_NAME, "defaultName")
-				.option(option, expectedOption.value.toString()))
-			.buildOptions();
+				.configure((builder) -> builder.option(PoolingConnectionFactoryProvider.POOL_NAME, "defaultName")
+						.option(option, expectedOption.value.toString()))
+				.buildOptions();
 		ConnectionPoolConfiguration configuration = new PoolingAwareOptionsCapableWrapper()
-			.connectionPoolConfiguration(options, mock(ConnectionFactory.class));
+				.connectionPoolConfiguration(options, mock(ConnectionFactory.class));
 		assertThat(configuration).extracting(expectedOption.property).isEqualTo(expectedOption.value);
 	}
 
-	private static Iterable<Arguments> primitivePoolingConnectionProviderOptions() {
-		return extractPoolingConnectionProviderOptions((field) -> {
-			ResolvableType type = ResolvableType.forField(field);
-			if (!type.toClass().equals(Option.class)) {
-				return false;
-			}
-			Class<?> valueType = type.as(Option.class).getGenerics()[0].toClass();
-			return valueType.getPackage().getName().equals("java.lang");
-		});
-	}
-
-	private static Iterable<Arguments> extractPoolingConnectionProviderOptions(FieldFilter filter) {
+	private static Iterable<Arguments> poolingConnectionProviderOptions() {
 		List<Arguments> arguments = new ArrayList<>();
 		ReflectionUtils.doWithFields(PoolingConnectionFactoryProvider.class,
-				(field) -> arguments.add(Arguments.of(ReflectionUtils.getField(field, null))), filter);
+				(field) -> arguments.add(Arguments.of(ReflectionUtils.getField(field, null))),
+				(field) -> Option.class.equals(field.getType()));
 		return arguments;
 	}
 
@@ -280,16 +248,7 @@ class ConnectionFactoryBuilderTests {
 		MAX_CREATE_CONNECTION_TIME(PoolingConnectionFactoryProvider.MAX_CREATE_CONNECTION_TIME, Duration.ofSeconds(10),
 				"maxCreateConnectionTime"),
 
-		MAX_VALIDATION_TIME(PoolingConnectionFactoryProvider.MAX_VALIDATION_TIME, Duration.ofMinutes(4),
-				"maxValidationTime"),
-
-		MIN_IDLE(PoolingConnectionFactoryProvider.MIN_IDLE, 5, "minIdle"),
-
 		POOL_NAME(PoolingConnectionFactoryProvider.POOL_NAME, "testPool", "name"),
-
-		POST_ALLOCATE(PoolingConnectionFactoryProvider.POST_ALLOCATE, mock(Function.class), "postAllocate"),
-
-		PRE_RELEASE(PoolingConnectionFactoryProvider.PRE_RELEASE, mock(Function.class), "preRelease"),
 
 		REGISTER_JMX(PoolingConnectionFactoryProvider.REGISTER_JMX, true, "registerJmx"),
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,14 @@
 
 package org.springframework.boot.configurationprocessor;
 
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.Modifier;
 import javax.lang.model.element.NestingKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
@@ -59,22 +58,23 @@ class PropertyDescriptorResolver {
 		if (factoryMethod != null) {
 			return resolveJavaBeanProperties(type, factoryMethod, members);
 		}
-		return resolve(ConfigurationPropertiesTypeElement.of(type, this.environment), members);
+		return resolve(ConfigurationPropertiesTypeElement.of(type, this.environment), factoryMethod, members);
 	}
 
-	private Stream<PropertyDescriptor<?>> resolve(ConfigurationPropertiesTypeElement type, TypeElementMembers members) {
+	private Stream<PropertyDescriptor<?>> resolve(ConfigurationPropertiesTypeElement type,
+			ExecutableElement factoryMethod, TypeElementMembers members) {
 		if (type.isConstructorBindingEnabled()) {
 			ExecutableElement constructor = type.getBindConstructor();
 			if (constructor != null) {
-				return resolveConstructorProperties(type.getType(), members, constructor);
+				return resolveConstructorProperties(type.getType(), factoryMethod, members, constructor);
 			}
 			return Stream.empty();
 		}
-		return resolveJavaBeanProperties(type.getType(), null, members);
+		return resolveJavaBeanProperties(type.getType(), factoryMethod, members);
 	}
 
-	Stream<PropertyDescriptor<?>> resolveConstructorProperties(TypeElement type, TypeElementMembers members,
-			ExecutableElement constructor) {
+	Stream<PropertyDescriptor<?>> resolveConstructorProperties(TypeElement type, ExecutableElement factoryMethod,
+			TypeElementMembers members, ExecutableElement constructor) {
 		Map<String, PropertyDescriptor<?>> candidates = new LinkedHashMap<>();
 		constructor.getParameters().forEach((parameter) -> {
 			String name = getParameterName(parameter);
@@ -82,8 +82,8 @@ class PropertyDescriptorResolver {
 			ExecutableElement getter = members.getPublicGetter(name, propertyType);
 			ExecutableElement setter = members.getPublicSetter(name, propertyType);
 			VariableElement field = members.getFields().get(name);
-			register(candidates, new ConstructorParameterPropertyDescriptor(type, null, parameter, name, propertyType,
-					field, getter, setter));
+			register(candidates, new ConstructorParameterPropertyDescriptor(type, factoryMethod, parameter, name,
+					propertyType, field, getter, setter));
 		});
 		return candidates.values().stream();
 	}
@@ -143,13 +143,16 @@ class PropertyDescriptorResolver {
 
 		private final TypeElement type;
 
+		private final boolean constructorBoundType;
+
 		private final List<ExecutableElement> constructors;
 
 		private final List<ExecutableElement> boundConstructors;
 
-		ConfigurationPropertiesTypeElement(TypeElement type, List<ExecutableElement> constructors,
-				List<ExecutableElement> boundConstructors) {
+		ConfigurationPropertiesTypeElement(TypeElement type, boolean constructorBoundType,
+				List<ExecutableElement> constructors, List<ExecutableElement> boundConstructors) {
 			this.type = type;
+			this.constructorBoundType = constructorBoundType;
 			this.constructors = constructors;
 			this.boundConstructors = boundConstructors;
 		}
@@ -159,11 +162,11 @@ class PropertyDescriptorResolver {
 		}
 
 		boolean isConstructorBindingEnabled() {
-			return !this.boundConstructors.isEmpty();
+			return this.constructorBoundType || !this.boundConstructors.isEmpty();
 		}
 
 		ExecutableElement getBindConstructor() {
-			if (this.boundConstructors.isEmpty()) {
+			if (this.constructorBoundType && this.boundConstructors.isEmpty()) {
 				return findBoundConstructor();
 			}
 			if (this.boundConstructors.size() == 1) {
@@ -186,33 +189,21 @@ class PropertyDescriptorResolver {
 		}
 
 		static ConfigurationPropertiesTypeElement of(TypeElement type, MetadataGenerationEnvironment env) {
+			boolean constructorBoundType = isConstructorBoundType(type, env);
 			List<ExecutableElement> constructors = ElementFilter.constructorsIn(type.getEnclosedElements());
-			List<ExecutableElement> boundConstructors = getBoundConstructors(type, env, constructors);
-			return new ConfigurationPropertiesTypeElement(type, constructors, boundConstructors);
+			List<ExecutableElement> boundConstructors = constructors.stream()
+					.filter(env::hasConstructorBindingAnnotation).collect(Collectors.toList());
+			return new ConfigurationPropertiesTypeElement(type, constructorBoundType, constructors, boundConstructors);
 		}
 
-		private static List<ExecutableElement> getBoundConstructors(TypeElement type, MetadataGenerationEnvironment env,
-				List<ExecutableElement> constructors) {
-			ExecutableElement bindConstructor = deduceBindConstructor(type, constructors, env);
-			if (bindConstructor != null) {
-				return Collections.singletonList(bindConstructor);
+		private static boolean isConstructorBoundType(TypeElement type, MetadataGenerationEnvironment env) {
+			if (env.hasConstructorBindingAnnotation(type)) {
+				return true;
 			}
-			return constructors.stream().filter(env::hasConstructorBindingAnnotation).toList();
-		}
-
-		private static ExecutableElement deduceBindConstructor(TypeElement type, List<ExecutableElement> constructors,
-				MetadataGenerationEnvironment env) {
-			if (constructors.size() == 1) {
-				ExecutableElement candidate = constructors.get(0);
-				if (candidate.getParameters().size() > 0 && !env.hasAutowiredAnnotation(candidate)) {
-					if (type.getNestingKind() == NestingKind.MEMBER
-							&& candidate.getModifiers().contains(Modifier.PRIVATE)) {
-						return null;
-					}
-					return candidate;
-				}
+			if (type.getNestingKind() == NestingKind.MEMBER) {
+				return isConstructorBoundType((TypeElement) type.getEnclosingElement(), env);
 			}
-			return null;
+			return false;
 		}
 
 	}

@@ -15,6 +15,8 @@
 						<publishRegistry>
 							<username>user</username>
 							<password>secret</password>
+							<url>https://docker.example.com/v1/</url>
+							<email>user@example.com</email>
 						</publishRegistry>
 					</docker>
 				</configuration>

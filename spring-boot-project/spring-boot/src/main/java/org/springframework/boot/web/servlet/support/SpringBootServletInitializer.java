@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,12 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Collections;
 
-import jakarta.servlet.Filter;
-import jakarta.servlet.Servlet;
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.ServletContextEvent;
-import jakarta.servlet.ServletException;
+import javax.servlet.Filter;
+import javax.servlet.Servlet;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletException;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -80,7 +81,7 @@ public abstract class SpringBootServletInitializer implements WebApplicationInit
 
 	/**
 	 * Set if the {@link ErrorPageFilter} should be registered. Set to {@code false} if
-	 * error page mappings should be handled through the server and not Spring Boot.
+	 * error page mappings should be handled via the server and not Spring Boot.
 	 * @param registerErrorPageFilter if the {@link ErrorPageFilter} should be registered.
 	 */
 	protected final void setRegisterErrorPageFilter(boolean registerErrorPageFilter) {
@@ -176,8 +177,8 @@ public abstract class SpringBootServletInitializer implements WebApplicationInit
 
 	private ApplicationContext getExistingRootWebApplicationContext(ServletContext servletContext) {
 		Object context = servletContext.getAttribute(WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE);
-		if (context instanceof ApplicationContext applicationContext) {
-			return applicationContext;
+		if (context instanceof ApplicationContext) {
+			return (ApplicationContext) context;
 		}
 		return null;
 	}
@@ -197,7 +198,7 @@ public abstract class SpringBootServletInitializer implements WebApplicationInit
 
 	/**
 	 * {@link ApplicationListener} to trigger
-	 * {@link ConfigurableWebEnvironment#initPropertySources(ServletContext, jakarta.servlet.ServletConfig)}.
+	 * {@link ConfigurableWebEnvironment#initPropertySources(ServletContext, javax.servlet.ServletConfig)}.
 	 */
 	private static final class WebEnvironmentPropertySourceInitializer
 			implements ApplicationListener<ApplicationEnvironmentPreparedEvent>, Ordered {
@@ -211,8 +212,8 @@ public abstract class SpringBootServletInitializer implements WebApplicationInit
 		@Override
 		public void onApplicationEvent(ApplicationEnvironmentPreparedEvent event) {
 			ConfigurableEnvironment environment = event.getEnvironment();
-			if (environment instanceof ConfigurableWebEnvironment configurableWebEnvironment) {
-				configurableWebEnvironment.initPropertySources(this.servletContext, null);
+			if (environment instanceof ConfigurableWebEnvironment) {
+				((ConfigurableWebEnvironment) environment).initPropertySources(this.servletContext, null);
 			}
 		}
 

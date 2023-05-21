@@ -16,11 +16,12 @@
 
 package org.springframework.boot.web.servlet.context;
 
-import jakarta.servlet.GenericServlet;
-import jakarta.servlet.Servlet;
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
+import javax.servlet.GenericServlet;
+import javax.servlet.Servlet;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -118,7 +119,7 @@ class AnnotationConfigServletWebServerApplicationContextTests {
 				ServletContextAwareEmbeddedConfiguration.class);
 		verifyContext();
 		// You can't initialize the application context and inject the servlet context
-		// because of a cycle - we'd like this to be not null, but it never will be
+		// because of a cycle - we'd like this to be not null but it never will be
 		assertThat(this.context.getBean(ServletContextAwareEmbeddedConfiguration.class).getServletContext()).isNull();
 	}
 

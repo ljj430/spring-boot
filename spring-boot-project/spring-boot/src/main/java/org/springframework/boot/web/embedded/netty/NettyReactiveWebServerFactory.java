@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@ import reactor.netty.resources.LoopResources;
 import org.springframework.boot.web.reactive.server.AbstractReactiveWebServerFactory;
 import org.springframework.boot.web.reactive.server.ReactiveWebServerFactory;
 import org.springframework.boot.web.server.Shutdown;
-import org.springframework.boot.web.server.Ssl;
 import org.springframework.boot.web.server.WebServer;
 import org.springframework.http.client.reactive.ReactorResourceFactory;
 import org.springframework.http.server.reactive.HttpHandler;
@@ -49,7 +48,7 @@ public class NettyReactiveWebServerFactory extends AbstractReactiveWebServerFact
 
 	private Set<NettyServerCustomizer> serverCustomizers = new LinkedHashSet<>();
 
-	private final List<NettyRouteProvider> routeProviders = new ArrayList<>();
+	private List<NettyRouteProvider> routeProviders = new ArrayList<>();
 
 	private Duration lifecycleTimeout;
 
@@ -101,8 +100,7 @@ public class NettyReactiveWebServerFactory extends AbstractReactiveWebServerFact
 	}
 
 	/**
-	 * Add {@link NettyServerCustomizer}s that should be applied while building the
-	 * server.
+	 * Add {@link NettyServerCustomizer}s that should applied while building the server.
 	 * @param serverCustomizers the customizers to add
 	 */
 	public void addServerCustomizers(NettyServerCustomizer... serverCustomizers) {
@@ -167,7 +165,7 @@ public class NettyReactiveWebServerFactory extends AbstractReactiveWebServerFact
 		else {
 			server = server.bindAddress(this::getListenAddress);
 		}
-		if (Ssl.isEnabled(getSsl())) {
+		if (getSsl() != null && getSsl().isEnabled()) {
 			server = customizeSslConfiguration(server);
 		}
 		if (getCompression() != null && getCompression().getEnabled()) {
@@ -178,8 +176,10 @@ public class NettyReactiveWebServerFactory extends AbstractReactiveWebServerFact
 		return applyCustomizers(server);
 	}
 
+	@SuppressWarnings("deprecation")
 	private HttpServer customizeSslConfiguration(HttpServer httpServer) {
-		return new SslServerCustomizer(getHttp2(), getSsl().getClientAuth(), getSslBundle()).apply(httpServer);
+		SslServerCustomizer sslServerCustomizer = new SslServerCustomizer(getSsl(), getHttp2(), getSslStoreProvider());
+		return sslServerCustomizer.apply(httpServer);
 	}
 
 	private HttpProtocol[] listProtocols() {

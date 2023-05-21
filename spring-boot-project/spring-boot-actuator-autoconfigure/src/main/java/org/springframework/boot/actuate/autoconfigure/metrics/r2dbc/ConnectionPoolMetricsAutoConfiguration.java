@@ -28,11 +28,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.autoconfigure.metrics.MetricsAutoConfiguration;
 import org.springframework.boot.actuate.autoconfigure.metrics.export.simple.SimpleMetricsExportAutoConfiguration;
 import org.springframework.boot.actuate.metrics.r2dbc.ConnectionPoolMetrics;
-import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.r2dbc.R2dbcAutoConfiguration;
+import org.springframework.context.annotation.Configuration;
 
 /**
  * {@link EnableAutoConfiguration Auto-configuration} for metrics on all available
@@ -42,7 +43,8 @@ import org.springframework.boot.autoconfigure.r2dbc.R2dbcAutoConfiguration;
  * @author Stephane Nicoll
  * @since 2.3.0
  */
-@AutoConfiguration(after = { MetricsAutoConfiguration.class, SimpleMetricsExportAutoConfiguration.class,
+@Configuration(proxyBeanMethods = false)
+@AutoConfigureAfter({ MetricsAutoConfiguration.class, SimpleMetricsExportAutoConfiguration.class,
 		R2dbcAutoConfiguration.class })
 @ConditionalOnClass({ ConnectionPool.class, MeterRegistry.class })
 @ConditionalOnBean({ ConnectionFactory.class, MeterRegistry.class })
@@ -60,8 +62,8 @@ public class ConnectionPoolMetricsAutoConfiguration {
 	}
 
 	private ConnectionPool extractPool(Object candidate) {
-		if (candidate instanceof ConnectionPool connectionPool) {
-			return connectionPool;
+		if (candidate instanceof ConnectionPool) {
+			return (ConnectionPool) candidate;
 		}
 		if (candidate instanceof Wrapped) {
 			return extractPool(((Wrapped<?>) candidate).unwrap());

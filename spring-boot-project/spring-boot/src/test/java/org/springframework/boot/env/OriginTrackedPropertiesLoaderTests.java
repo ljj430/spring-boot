@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,10 +56,8 @@ class OriginTrackedPropertiesLoaderTests {
 	void compareToJavaProperties() throws Exception {
 		Properties java = PropertiesLoaderUtils.loadProperties(this.resource);
 		Properties ours = new Properties();
-		new OriginTrackedPropertiesLoader(this.resource).load(false)
-			.get(0)
-			.asMap()
-			.forEach((k, v) -> ours.put(k, v.getValue()));
+		new OriginTrackedPropertiesLoader(this.resource).load(false).get(0).asMap()
+				.forEach((k, v) -> ours.put(k, v.getValue()));
 		assertThat(ours).isEqualTo(java);
 	}
 
@@ -96,7 +94,7 @@ class OriginTrackedPropertiesLoaderTests {
 		// gh-12716
 		ClassPathResource resource = new ClassPathResource("test-properties-malformed-unicode.properties", getClass());
 		assertThatIllegalStateException().isThrownBy(() -> new OriginTrackedPropertiesLoader(resource).load())
-			.withMessageContaining("Malformed \\uxxxx encoding");
+				.withMessageContaining("Malformed \\uxxxx encoding");
 	}
 
 	@Test
@@ -185,68 +183,31 @@ class OriginTrackedPropertiesLoaderTests {
 	}
 
 	@Test
-	void loadWhenMultiDocumentWithPoundPrefixAndWithoutWhitespaceLoadsMultiDoc() throws IOException {
+	void loadWhenMultiDocumentWithoutWhitespaceLoadsMultiDoc() throws IOException {
 		String content = "a=a\n#---\nb=b";
 		List<Document> loaded = new OriginTrackedPropertiesLoader(new ByteArrayResource(content.getBytes())).load();
 		assertThat(loaded).hasSize(2);
 	}
 
 	@Test
-	void loadWhenMultiDocumentWithExclamationPrefixAndWithoutWhitespaceLoadsMultiDoc() throws IOException {
-		String content = "a=a\n!---\nb=b";
-		List<Document> loaded = new OriginTrackedPropertiesLoader(new ByteArrayResource(content.getBytes())).load();
-		assertThat(loaded).hasSize(2);
-	}
-
-	@Test
-	void loadWhenMultiDocumentWithPoundPrefixAndLeadingWhitespaceLoadsSingleDoc() throws IOException {
+	void loadWhenMultiDocumentWithLeadingWhitespaceLoadsSingleDoc() throws IOException {
 		String content = "a=a\n \t#---\nb=b";
 		List<Document> loaded = new OriginTrackedPropertiesLoader(new ByteArrayResource(content.getBytes())).load();
 		assertThat(loaded).hasSize(1);
 	}
 
 	@Test
-	void loadWhenMultiDocumentWithExclamationPrefixAndLeadingWhitespaceLoadsSingleDoc() throws IOException {
-		String content = "a=a\n \t!---\nb=b";
-		List<Document> loaded = new OriginTrackedPropertiesLoader(new ByteArrayResource(content.getBytes())).load();
-		assertThat(loaded).hasSize(1);
-	}
-
-	@Test
-	void loadWhenMultiDocumentWithPoundPrefixAndTrailingWhitespaceLoadsMultiDoc() throws IOException {
+	void loadWhenMultiDocumentWithTrailingWhitespaceLoadsMultiDoc() throws IOException {
 		String content = "a=a\n#--- \t \nb=b";
 		List<Document> loaded = new OriginTrackedPropertiesLoader(new ByteArrayResource(content.getBytes())).load();
 		assertThat(loaded).hasSize(2);
 	}
 
 	@Test
-	void loadWhenMultiDocumentWithExclamationPrefixAndTrailingWhitespaceLoadsMultiDoc() throws IOException {
-		String content = "a=a\n!--- \t \nb=b";
-		List<Document> loaded = new OriginTrackedPropertiesLoader(new ByteArrayResource(content.getBytes())).load();
-		assertThat(loaded).hasSize(2);
-	}
-
-	@Test
-	void loadWhenMultiDocumentWithPoundPrefixAndTrailingCharsLoadsSingleDoc() throws IOException {
+	void loadWhenMultiDocumentWithTrailingCharsLoadsSingleDoc() throws IOException {
 		String content = "a=a\n#--- \tcomment\nb=b";
 		List<Document> loaded = new OriginTrackedPropertiesLoader(new ByteArrayResource(content.getBytes())).load();
 		assertThat(loaded).hasSize(1);
-	}
-
-	@Test
-	void loadWhenMultiDocumentWithExclamationPrefixAndTrailingCharsLoadsSingleDoc() throws IOException {
-		String content = "a=a\n!--- \tcomment\nb=b";
-		List<Document> loaded = new OriginTrackedPropertiesLoader(new ByteArrayResource(content.getBytes())).load();
-		assertThat(loaded).hasSize(1);
-	}
-
-	@Test
-	void loadWhenMultiDocumentSeparatorPrefixDifferentFromCommentPrefixLoadsMultiDoc() throws IOException {
-		String[] contents = new String[] { "a=a\n# comment\n!---\nb=b", "a=a\n! comment\n#---\nb=b" };
-		for (String content : contents) {
-			List<Document> loaded = new OriginTrackedPropertiesLoader(new ByteArrayResource(content.getBytes())).load();
-			assertThat(loaded).hasSize(2);
-		}
 	}
 
 	@Test
@@ -329,7 +290,7 @@ class OriginTrackedPropertiesLoaderTests {
 	void existingCommentsAreNotTreatedAsMultiDoc() throws Exception {
 		this.resource = new ClassPathResource("existing-non-multi-document.properties", getClass());
 		this.documents = new OriginTrackedPropertiesLoader(this.resource).load();
-		assertThat(this.documents).hasSize(1);
+		assertThat(this.documents.size()).isEqualTo(1);
 	}
 
 	@Test

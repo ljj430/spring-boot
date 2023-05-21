@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,9 +70,8 @@ class ReactiveCloudFoundrySecurityServiceTests {
 		String responseBody = "{\"read_sensitive_data\": true,\"read_basic_data\": true}";
 		prepareResponse((response) -> response.setBody(responseBody).setHeader("Content-Type", "application/json"));
 		StepVerifier.create(this.securityService.getAccessLevel("my-access-token", "my-app-id"))
-			.consumeNextWith((accessLevel) -> assertThat(accessLevel).isEqualTo(AccessLevel.FULL))
-			.expectComplete()
-			.verify();
+				.consumeNextWith((accessLevel) -> assertThat(accessLevel).isEqualTo(AccessLevel.FULL)).expectComplete()
+				.verify();
 		expectRequest((request) -> {
 			assertThat(request.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("bearer my-access-token");
 			assertThat(request.getPath()).isEqualTo(CLOUD_CONTROLLER_PERMISSIONS);
@@ -84,9 +83,8 @@ class ReactiveCloudFoundrySecurityServiceTests {
 		String responseBody = "{\"read_sensitive_data\": false,\"read_basic_data\": true}";
 		prepareResponse((response) -> response.setBody(responseBody).setHeader("Content-Type", "application/json"));
 		StepVerifier.create(this.securityService.getAccessLevel("my-access-token", "my-app-id"))
-			.consumeNextWith((accessLevel) -> assertThat(accessLevel).isEqualTo(AccessLevel.RESTRICTED))
-			.expectComplete()
-			.verify();
+				.consumeNextWith((accessLevel) -> assertThat(accessLevel).isEqualTo(AccessLevel.RESTRICTED))
+				.expectComplete().verify();
 		expectRequest((request) -> {
 			assertThat(request.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("bearer my-access-token");
 			assertThat(request.getPath()).isEqualTo(CLOUD_CONTROLLER_PERMISSIONS);
@@ -97,12 +95,11 @@ class ReactiveCloudFoundrySecurityServiceTests {
 	void getAccessLevelWhenTokenIsNotValidShouldThrowException() throws Exception {
 		prepareResponse((response) -> response.setResponseCode(401));
 		StepVerifier.create(this.securityService.getAccessLevel("my-access-token", "my-app-id"))
-			.consumeErrorWith((throwable) -> {
-				assertThat(throwable).isInstanceOf(CloudFoundryAuthorizationException.class);
-				assertThat(((CloudFoundryAuthorizationException) throwable).getReason())
-					.isEqualTo(Reason.INVALID_TOKEN);
-			})
-			.verify();
+				.consumeErrorWith((throwable) -> {
+					assertThat(throwable).isInstanceOf(CloudFoundryAuthorizationException.class);
+					assertThat(((CloudFoundryAuthorizationException) throwable).getReason())
+							.isEqualTo(Reason.INVALID_TOKEN);
+				}).verify();
 		expectRequest((request) -> {
 			assertThat(request.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("bearer my-access-token");
 			assertThat(request.getPath()).isEqualTo(CLOUD_CONTROLLER_PERMISSIONS);
@@ -113,12 +110,11 @@ class ReactiveCloudFoundrySecurityServiceTests {
 	void getAccessLevelWhenForbiddenShouldThrowException() throws Exception {
 		prepareResponse((response) -> response.setResponseCode(403));
 		StepVerifier.create(this.securityService.getAccessLevel("my-access-token", "my-app-id"))
-			.consumeErrorWith((throwable) -> {
-				assertThat(throwable).isInstanceOf(CloudFoundryAuthorizationException.class);
-				assertThat(((CloudFoundryAuthorizationException) throwable).getReason())
-					.isEqualTo(Reason.ACCESS_DENIED);
-			})
-			.verify();
+				.consumeErrorWith((throwable) -> {
+					assertThat(throwable).isInstanceOf(CloudFoundryAuthorizationException.class);
+					assertThat(((CloudFoundryAuthorizationException) throwable).getReason())
+							.isEqualTo(Reason.ACCESS_DENIED);
+				}).verify();
 		expectRequest((request) -> {
 			assertThat(request.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("bearer my-access-token");
 			assertThat(request.getPath()).isEqualTo(CLOUD_CONTROLLER_PERMISSIONS);
@@ -129,12 +125,11 @@ class ReactiveCloudFoundrySecurityServiceTests {
 	void getAccessLevelWhenCloudControllerIsNotReachableThrowsException() throws Exception {
 		prepareResponse((response) -> response.setResponseCode(500));
 		StepVerifier.create(this.securityService.getAccessLevel("my-access-token", "my-app-id"))
-			.consumeErrorWith((throwable) -> {
-				assertThat(throwable).isInstanceOf(CloudFoundryAuthorizationException.class);
-				assertThat(((CloudFoundryAuthorizationException) throwable).getReason())
-					.isEqualTo(Reason.SERVICE_UNAVAILABLE);
-			})
-			.verify();
+				.consumeErrorWith((throwable) -> {
+					assertThat(throwable).isInstanceOf(CloudFoundryAuthorizationException.class);
+					assertThat(((CloudFoundryAuthorizationException) throwable).getReason())
+							.isEqualTo(Reason.SERVICE_UNAVAILABLE);
+				}).verify();
 		expectRequest((request) -> {
 			assertThat(request.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("bearer my-access-token");
 			assertThat(request.getPath()).isEqualTo(CLOUD_CONTROLLER_PERMISSIONS);
@@ -143,16 +138,14 @@ class ReactiveCloudFoundrySecurityServiceTests {
 
 	@Test
 	void fetchTokenKeysWhenSuccessfulShouldReturnListOfKeysFromUAA() throws Exception {
-		String tokenKeyValue = """
-				-----BEGIN PUBLIC KEY-----
-				MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0m59l2u9iDnMbrXHfqkO
-				rn2dVQ3vfBJqcDuFUK03d+1PZGbVlNCqnkpIJ8syFppW8ljnWweP7+LiWpRoz0I7
-				fYb3d8TjhV86Y997Fl4DBrxgM6KTJOuE/uxnoDhZQ14LgOU2ckXjOzOdTsnGMKQB
-				LCl0vpcXBtFLMaSbpv1ozi8h7DJyVZ6EnFQZUWGdgTMhDrmqevfx95U/16c5WBDO
-				kqwIn7Glry9n9Suxygbf8g5AzpWcusZgDLIIZ7JTUldBb8qU2a0Dl4mvLZOn4wPo
-				jfj9Cw2QICsc5+Pwf21fP+hzf+1WSRHbnYv8uanRO0gZ8ekGaghM/2H6gqJbo2nI
-				JwIDAQAB
-				-----END PUBLIC KEY-----""";
+		String tokenKeyValue = "-----BEGIN PUBLIC KEY-----\n"
+				+ "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0m59l2u9iDnMbrXHfqkO\n"
+				+ "rn2dVQ3vfBJqcDuFUK03d+1PZGbVlNCqnkpIJ8syFppW8ljnWweP7+LiWpRoz0I7\n"
+				+ "fYb3d8TjhV86Y997Fl4DBrxgM6KTJOuE/uxnoDhZQ14LgOU2ckXjOzOdTsnGMKQB\n"
+				+ "LCl0vpcXBtFLMaSbpv1ozi8h7DJyVZ6EnFQZUWGdgTMhDrmqevfx95U/16c5WBDO\n"
+				+ "kqwIn7Glry9n9Suxygbf8g5AzpWcusZgDLIIZ7JTUldBb8qU2a0Dl4mvLZOn4wPo\n"
+				+ "jfj9Cw2QICsc5+Pwf21fP+hzf+1WSRHbnYv8uanRO0gZ8ekGaghM/2H6gqJbo2nI\n"
+				+ "JwIDAQAB\n-----END PUBLIC KEY-----";
 		prepareResponse((response) -> {
 			response.setBody("{\"token_endpoint\":\"/my-uaa.com\"}");
 			response.setHeader("Content-Type", "application/json");
@@ -164,9 +157,8 @@ class ReactiveCloudFoundrySecurityServiceTests {
 			response.setHeader("Content-Type", "application/json");
 		});
 		StepVerifier.create(this.securityService.fetchTokenKeys())
-			.consumeNextWith((tokenKeys) -> assertThat(tokenKeys.get("test-key")).isEqualTo(tokenKeyValue))
-			.expectComplete()
-			.verify();
+				.consumeNextWith((tokenKeys) -> assertThat(tokenKeys.get("test-key")).isEqualTo(tokenKeyValue))
+				.expectComplete().verify();
 		expectRequest((request) -> assertThat(request.getPath()).isEqualTo("/my-cloud-controller.com/info"));
 		expectRequest((request) -> assertThat(request.getPath()).isEqualTo("/my-uaa.com/token_keys"));
 	}
@@ -183,9 +175,7 @@ class ReactiveCloudFoundrySecurityServiceTests {
 			response.setHeader("Content-Type", "application/json");
 		});
 		StepVerifier.create(this.securityService.fetchTokenKeys())
-			.consumeNextWith((tokenKeys) -> assertThat(tokenKeys).hasSize(0))
-			.expectComplete()
-			.verify();
+				.consumeNextWith((tokenKeys) -> assertThat(tokenKeys).hasSize(0)).expectComplete().verify();
 		expectRequest((request) -> assertThat(request.getPath()).isEqualTo("/my-cloud-controller.com/info"));
 		expectRequest((request) -> assertThat(request.getPath()).isEqualTo("/my-uaa.com/token_keys"));
 	}
@@ -198,9 +188,10 @@ class ReactiveCloudFoundrySecurityServiceTests {
 		});
 		prepareResponse((response) -> response.setResponseCode(500));
 		StepVerifier.create(this.securityService.fetchTokenKeys())
-			.consumeErrorWith((throwable) -> assertThat(((CloudFoundryAuthorizationException) throwable).getReason())
-				.isEqualTo(Reason.SERVICE_UNAVAILABLE))
-			.verify();
+				.consumeErrorWith(
+						(throwable) -> assertThat(((CloudFoundryAuthorizationException) throwable).getReason())
+								.isEqualTo(Reason.SERVICE_UNAVAILABLE))
+				.verify();
 		expectRequest((request) -> assertThat(request.getPath()).isEqualTo("/my-cloud-controller.com/info"));
 		expectRequest((request) -> assertThat(request.getPath()).isEqualTo("/my-uaa.com/token_keys"));
 	}
@@ -212,9 +203,7 @@ class ReactiveCloudFoundrySecurityServiceTests {
 			response.setHeader("Content-Type", "application/json");
 		});
 		StepVerifier.create(this.securityService.getUaaUrl())
-			.consumeNextWith((uaaUrl) -> assertThat(uaaUrl).isEqualTo(UAA_URL))
-			.expectComplete()
-			.verify();
+				.consumeNextWith((uaaUrl) -> assertThat(uaaUrl).isEqualTo(UAA_URL)).expectComplete().verify();
 		expectRequest((request) -> assertThat(request.getPath()).isEqualTo(CLOUD_CONTROLLER + "/info"));
 		expectRequestCount(1);
 	}
@@ -225,7 +214,7 @@ class ReactiveCloudFoundrySecurityServiceTests {
 		StepVerifier.create(this.securityService.getUaaUrl()).consumeErrorWith((throwable) -> {
 			assertThat(throwable).isInstanceOf(CloudFoundryAuthorizationException.class);
 			assertThat(((CloudFoundryAuthorizationException) throwable).getReason())
-				.isEqualTo(Reason.SERVICE_UNAVAILABLE);
+					.isEqualTo(Reason.SERVICE_UNAVAILABLE);
 		}).verify();
 		expectRequest((request) -> assertThat(request.getPath()).isEqualTo(CLOUD_CONTROLLER + "/info"));
 	}

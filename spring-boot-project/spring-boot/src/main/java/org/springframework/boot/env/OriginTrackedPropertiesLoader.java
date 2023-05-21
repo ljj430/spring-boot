@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,6 @@ import org.springframework.util.Assert;
  * @author Madhura Bhave
  * @author Phillip Webb
  * @author Thiago Hirata
- * @author Guirong Hu
  */
 class OriginTrackedPropertiesLoader {
 
@@ -79,8 +78,7 @@ class OriginTrackedPropertiesLoader {
 		StringBuilder buffer = new StringBuilder();
 		try (CharacterReader reader = new CharacterReader(this.resource)) {
 			while (reader.read()) {
-				if (reader.isCommentPrefixCharacter()) {
-					char commentPrefixCharacter = reader.getCharacter();
+				if (reader.isPoundCharacter()) {
 					if (isNewDocument(reader)) {
 						if (!document.isEmpty()) {
 							documents.add(document);
@@ -91,12 +89,12 @@ class OriginTrackedPropertiesLoader {
 						if (document.isEmpty() && !documents.isEmpty()) {
 							document = documents.remove(documents.size() - 1);
 						}
-						reader.setLastLineCommentPrefixCharacter(commentPrefixCharacter);
+						reader.setLastLineComment(true);
 						reader.skipComment();
 					}
 				}
 				else {
-					reader.setLastLineCommentPrefixCharacter(-1);
+					reader.setLastLineComment(false);
 					loadKeyAndValue(expandLists, document, reader, buffer);
 				}
 			}
@@ -163,10 +161,10 @@ class OriginTrackedPropertiesLoader {
 	}
 
 	private boolean isNewDocument(CharacterReader reader) throws IOException {
-		if (reader.isSameLastLineCommentPrefix()) {
+		if (reader.isLastLineComment()) {
 			return false;
 		}
-		boolean result = reader.getLocation().getColumn() == 0;
+		boolean result = reader.getLocation().getColumn() == 0 && reader.isPoundCharacter();
 		result = result && readAndExpect(reader, reader::isHyphenCharacter);
 		result = result && readAndExpect(reader, reader::isHyphenCharacter);
 		result = result && readAndExpect(reader, reader::isHyphenCharacter);
@@ -198,7 +196,7 @@ class OriginTrackedPropertiesLoader {
 
 		private int character;
 
-		private int lastLineCommentPrefixCharacter;
+		private boolean lastLineComment;
 
 		CharacterReader(Resource resource) throws IOException {
 			this.reader = new LineNumberReader(
@@ -211,11 +209,20 @@ class OriginTrackedPropertiesLoader {
 		}
 
 		boolean read() throws IOException {
+			return read(false);
+		}
+
+		boolean read(boolean wrappedLine) throws IOException {
 			this.escaped = false;
 			this.character = this.reader.read();
 			this.columnNumber++;
 			if (this.columnNumber == 0) {
 				skipWhitespace();
+				if (!wrappedLine) {
+					if (this.character == '!') {
+						skipComment();
+					}
+				}
 			}
 			if (this.character == '\\') {
 				this.escaped = true;
@@ -234,8 +241,12 @@ class OriginTrackedPropertiesLoader {
 			}
 		}
 
-		private void setLastLineCommentPrefixCharacter(int lastLineCommentPrefixCharacter) {
-			this.lastLineCommentPrefixCharacter = lastLineCommentPrefixCharacter;
+		private void setLastLineComment(boolean lastLineComment) {
+			this.lastLineComment = lastLineComment;
+		}
+
+		private boolean isLastLineComment() {
+			return this.lastLineComment;
 		}
 
 		private void skipComment() throws IOException {
@@ -253,7 +264,7 @@ class OriginTrackedPropertiesLoader {
 			}
 			else if (this.character == '\n') {
 				this.columnNumber = -1;
-				read();
+				read(true);
 			}
 			else if (this.character == 'u') {
 				readUnicode();
@@ -307,12 +318,8 @@ class OriginTrackedPropertiesLoader {
 			return new Location(this.reader.getLineNumber(), this.columnNumber);
 		}
 
-		boolean isSameLastLineCommentPrefix() {
-			return this.lastLineCommentPrefixCharacter == this.character;
-		}
-
-		boolean isCommentPrefixCharacter() {
-			return this.character == '#' || this.character == '!';
+		boolean isPoundCharacter() {
+			return this.character == '#';
 		}
 
 		boolean isHyphenCharacter() {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,13 +22,13 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.junit.jupiter.api.Test;
 import org.thymeleaf.dialect.IDialect;
 
-import org.springframework.boot.autoconfigure.web.servlet.WebMvcRegistrations;
 import org.springframework.context.annotation.ComponentScan.Filter;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.core.type.classreading.MetadataReader;
 import org.springframework.core.type.classreading.MetadataReaderFactory;
 import org.springframework.core.type.classreading.SimpleMetadataReaderFactory;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.stereotype.Controller;
 import org.springframework.stereotype.Repository;
@@ -43,11 +43,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Tests for {@link WebMvcTypeExcludeFilter}.
  *
  * @author Phillip Webb
- * @author Yanming Zhou
  */
 class WebMvcTypeExcludeFilterTests {
 
-	private final MetadataReaderFactory metadataReaderFactory = new SimpleMetadataReaderFactory();
+	private MetadataReaderFactory metadataReaderFactory = new SimpleMetadataReaderFactory();
 
 	@Test
 	void matchWhenHasNoControllers() throws Exception {
@@ -56,10 +55,10 @@ class WebMvcTypeExcludeFilterTests {
 		assertThat(excludes(filter, Controller2.class)).isFalse();
 		assertThat(excludes(filter, ExampleControllerAdvice.class)).isFalse();
 		assertThat(excludes(filter, ExampleWeb.class)).isFalse();
-		assertThat(excludes(filter, ExampleWebMvcRegistrations.class)).isFalse();
 		assertThat(excludes(filter, ExampleMessageConverter.class)).isFalse();
 		assertThat(excludes(filter, ExampleService.class)).isTrue();
 		assertThat(excludes(filter, ExampleRepository.class)).isTrue();
+		assertThat(excludes(filter, ExampleWebSecurityConfigurer.class)).isFalse();
 		assertThat(excludes(filter, SecurityFilterChain.class)).isFalse();
 		assertThat(excludes(filter, ExampleHandlerInterceptor.class)).isFalse();
 		assertThat(excludes(filter, ExampleModule.class)).isFalse();
@@ -73,10 +72,10 @@ class WebMvcTypeExcludeFilterTests {
 		assertThat(excludes(filter, Controller2.class)).isTrue();
 		assertThat(excludes(filter, ExampleControllerAdvice.class)).isFalse();
 		assertThat(excludes(filter, ExampleWeb.class)).isFalse();
-		assertThat(excludes(filter, ExampleWebMvcRegistrations.class)).isFalse();
 		assertThat(excludes(filter, ExampleMessageConverter.class)).isFalse();
 		assertThat(excludes(filter, ExampleService.class)).isTrue();
 		assertThat(excludes(filter, ExampleRepository.class)).isTrue();
+		assertThat(excludes(filter, ExampleWebSecurityConfigurer.class)).isFalse();
 		assertThat(excludes(filter, SecurityFilterChain.class)).isFalse();
 		assertThat(excludes(filter, ExampleHandlerInterceptor.class)).isFalse();
 		assertThat(excludes(filter, ExampleModule.class)).isFalse();
@@ -90,10 +89,10 @@ class WebMvcTypeExcludeFilterTests {
 		assertThat(excludes(filter, Controller2.class)).isTrue();
 		assertThat(excludes(filter, ExampleControllerAdvice.class)).isTrue();
 		assertThat(excludes(filter, ExampleWeb.class)).isTrue();
-		assertThat(excludes(filter, ExampleWebMvcRegistrations.class)).isTrue();
 		assertThat(excludes(filter, ExampleMessageConverter.class)).isTrue();
 		assertThat(excludes(filter, ExampleService.class)).isTrue();
 		assertThat(excludes(filter, ExampleRepository.class)).isTrue();
+		assertThat(excludes(filter, ExampleWebSecurityConfigurer.class)).isTrue();
 		assertThat(excludes(filter, SecurityFilterChain.class)).isTrue();
 		assertThat(excludes(filter, ExampleHandlerInterceptor.class)).isTrue();
 		assertThat(excludes(filter, ExampleModule.class)).isTrue();
@@ -107,7 +106,6 @@ class WebMvcTypeExcludeFilterTests {
 		assertThat(excludes(filter, Controller2.class)).isFalse();
 		assertThat(excludes(filter, ExampleControllerAdvice.class)).isFalse();
 		assertThat(excludes(filter, ExampleWeb.class)).isFalse();
-		assertThat(excludes(filter, ExampleWebMvcRegistrations.class)).isFalse();
 		assertThat(excludes(filter, ExampleMessageConverter.class)).isFalse();
 		assertThat(excludes(filter, ExampleService.class)).isTrue();
 		assertThat(excludes(filter, ExampleRepository.class)).isFalse();
@@ -123,10 +121,10 @@ class WebMvcTypeExcludeFilterTests {
 		assertThat(excludes(filter, Controller2.class)).isFalse();
 		assertThat(excludes(filter, ExampleControllerAdvice.class)).isFalse();
 		assertThat(excludes(filter, ExampleWeb.class)).isFalse();
-		assertThat(excludes(filter, ExampleWebMvcRegistrations.class)).isFalse();
 		assertThat(excludes(filter, ExampleMessageConverter.class)).isFalse();
 		assertThat(excludes(filter, ExampleService.class)).isTrue();
 		assertThat(excludes(filter, ExampleRepository.class)).isTrue();
+		assertThat(excludes(filter, ExampleWebSecurityConfigurer.class)).isFalse();
 		assertThat(excludes(filter, SecurityFilterChain.class)).isFalse();
 		assertThat(excludes(filter, ExampleHandlerInterceptor.class)).isFalse();
 		assertThat(excludes(filter, ExampleModule.class)).isFalse();
@@ -182,10 +180,6 @@ class WebMvcTypeExcludeFilterTests {
 
 	}
 
-	static class ExampleWebMvcRegistrations implements WebMvcRegistrations {
-
-	}
-
 	static class ExampleMessageConverter extends MappingJackson2HttpMessageConverter {
 
 	}
@@ -197,6 +191,10 @@ class WebMvcTypeExcludeFilterTests {
 
 	@Repository
 	static class ExampleRepository {
+
+	}
+
+	static class ExampleWebSecurityConfigurer extends WebSecurityConfigurerAdapter {
 
 	}
 

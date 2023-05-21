@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,12 @@ package org.springframework.boot.devtools.autoconfigure;
 
 import java.util.Collection;
 
-import jakarta.servlet.Filter;
+import javax.servlet.Filter;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -59,10 +60,11 @@ import org.springframework.http.server.ServerHttpRequest;
  * @author Madhura Bhave
  * @since 1.3.0
  */
-@AutoConfiguration(after = SecurityAutoConfiguration.class)
+@Configuration(proxyBeanMethods = false)
 @Conditional(OnEnabledDevToolsCondition.class)
 @ConditionalOnProperty(prefix = "spring.devtools.remote", name = "secret")
 @ConditionalOnClass({ Filter.class, ServerHttpRequest.class })
+@AutoConfigureAfter(SecurityAutoConfiguration.class)
 @Import(RemoteDevtoolsSecurityConfiguration.class)
 @EnableConfigurationProperties({ ServerProperties.class, DevToolsProperties.class })
 public class RemoteDevToolsAutoConfiguration {

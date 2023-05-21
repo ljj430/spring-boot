@@ -45,7 +45,7 @@ At this point, `cf` starts uploading your application, producing output similar 
 	Preparing to start acloudyspringtime... *OK*
 	-----> Downloaded app package (*8.9M*)
 	-----> Java Buildpack Version: v3.12 (offline) | https://github.com/cloudfoundry/java-buildpack.git#6f25b7e
-	-----> Downloading Open Jdk JRE
+	-----> Downloading Open Jdk JRE 1.8.0_121 from https://java-buildpack.cloudfoundry.org/openjdk/trusty/x86_64/openjdk-1.8.0_121.tar.gz (found in cache)
 	       Expanding Open Jdk JRE to .java-buildpack/open_jdk_jre (1.6s)
 	-----> Downloading Open JDK Like Memory Calculator 2.0.2_RELEASE from https://java-buildpack.cloudfoundry.org/memory-calculator/trusty/x86_64/memory-calculator-2.0.2_RELEASE.tar.gz (found in cache)
 	       Memory Settings: -Xss349K -Xmx681574K -XX:MaxMetaspaceSize=104857K -Xms681574K -XX:MetaspaceSize=104857K
@@ -93,11 +93,14 @@ Process-scoped environment variables are language agnostic.
 
 Environment variables do not always make for the easiest API, so Spring Boot automatically extracts them and flattens the data into properties that can be accessed through Spring's `Environment` abstraction, as shown in the following example:
 
-include::code:MyBean[]
+[source,java,indent=0,subs="verbatim"]
+----
+include::{docs-java}/deployment/cloud/cloudfoundry/bindingtoservices/MyBean.java[]
+----
 
 All Cloud Foundry properties are prefixed with `vcap`.
 You can use `vcap` properties to access application information (such as the public URL of the application) and service information (such as database credentials).
-See the {spring-boot-module-api}/cloud/CloudFoundryVcapEnvironmentPostProcessor.html[`CloudFoundryVcapEnvironmentPostProcessor`] Javadoc for complete details.
+See the {spring-boot-module-api}/cloud/CloudFoundryVcapEnvironmentPostProcessor.html['`CloudFoundryVcapEnvironmentPostProcessor`'] Javadoc for complete details.
 
 TIP: The https://github.com/pivotal-cf/java-cfenv/[Java CFEnv] project is a better fit for tasks such as configuring a DataSource.
 
@@ -119,25 +122,25 @@ Because this shutdown processing happens in parallel (and due to the nature of d
 
 You can configure a sleep execution in a preStop handler to avoid requests being routed to a pod that has already begun shutting down.
 This sleep should be long enough for new requests to stop being routed to the pod and its duration will vary from deployment to deployment.
-The preStop handler can be configured by using the PodSpec in the pod's configuration file as follows:
+The preStop handler can be configured via the PodSpec in the pod's configuration file as follows:
 
-[source,yaml,indent=0,subs="verbatim"]
+[source,yml,indent=0,subs="verbatim"]
 ----
 	spec:
 	  containers:
-	  - name: "example-container"
-	    image: "example-image"
+	  - name: example-container
+	    image: example-image
 	    lifecycle:
 	      preStop:
 	        exec:
 	          command: ["sh", "-c", "sleep 10"]
 ----
 
-Once the pre-stop hook has completed, SIGTERM will be sent to the container and <<web#web.graceful-shutdown,graceful shutdown>> will begin, allowing any remaining in-flight requests to complete.
+Once the pre-stop hook has completed, SIGTERM will be sent to the container and <<features#features.graceful-shutdown,graceful shutdown>> will begin, allowing any remaining in-flight requests to complete.
 
 NOTE: When Kubernetes sends a SIGTERM signal to the pod, it waits for a specified time called the termination grace period (the default for which is 30 seconds).
 If the containers are still running after the grace period, they are sent the SIGKILL signal and forcibly removed.
-If the pod takes longer than 30 seconds to shut down, which could be because you have increased configprop:spring.lifecycle.timeout-per-shutdown-phase[], make sure to increase the termination grace period by setting the `terminationGracePeriodSeconds` option in the Pod YAML.
+If the pod takes longer than 30 seconds to shut down, which could be because you've increased configprop:spring.lifecycle.timeout-per-shutdown-phase[], make sure to increase the termination grace period by setting the `terminationGracePeriodSeconds` option in the Pod YAML.
 
 
 
@@ -179,8 +182,8 @@ Which will result in the following:
 	Total 95 (delta 31), reused 0 (delta 0)
 
 	-----> Java app detected
-	-----> Installing OpenJDK... *done*
-	-----> Installing Maven... *done*
+	-----> Installing OpenJDK 1.8... *done*
+	-----> Installing Maven 3.3.1... *done*
 	-----> Installing settings.xml... *done*
 	-----> Executing: mvn -B -DskipTests=true clean install
 
@@ -211,7 +214,7 @@ Which will result in the following:
 ----
 
 Your application should now be up and running on Heroku.
-For more details, see https://devcenter.heroku.com/articles/deploying-spring-boot-apps-to-heroku[Deploying Spring Boot Applications to Heroku].
+For more details, refer to https://devcenter.heroku.com/articles/deploying-spring-boot-apps-to-heroku[Deploying Spring Boot Applications to Heroku].
 
 
 
@@ -376,26 +379,26 @@ Normally, you put this file in `src/main/appengine`, and it should resemble the 
 
 [source,yaml,indent=0,subs="verbatim"]
 ----
-	service: "default"
+	service: default
 
-	runtime: "java"
-	env: "flex"
+	runtime: java
+	env: flex
 
 	runtime_config:
-	  jdk: "openjdk8"
+	  jdk: openjdk8
 
 	handlers:
-	- url: "/.*"
-	  script: "this field is required, but ignored"
+	- url: /.*
+	  script: this field is required, but ignored
 
 	manual_scaling:
 	  instances: 1
 
 	health_check:
-	  enable_health_check: false
+	  enable_health_check: False
 
 	env_variables:
-	  ENCRYPT_KEY: "your_encryption_key_here"
+	  ENCRYPT_KEY: your_encryption_key_here
 ----
 
 You can deploy the app (for example, with a Maven plugin) by adding the project ID to the build configuration, as shown in the following example:
@@ -412,4 +415,4 @@ You can deploy the app (for example, with a Maven plugin) by adding the project 
 	</plugin>
 ----
 
-Then deploy with `mvn appengine:deploy` (you need to authenticate first, otherwise the build fails).
+Then deploy with `mvn appengine:deploy` (if you need to authenticate first, the build fails).

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import io.micrometer.core.instrument.Tag;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
@@ -44,8 +43,6 @@ import static org.mockito.Mockito.mock;
  * @author Madhura Bhave
  * @author Stephane Nicoll
  */
-@SuppressWarnings("removal")
-@Deprecated(since = "3.0.0", forRemoval = true)
 class WebFluxTagsTests {
 
 	private MockServerWebExchange exchange;
@@ -59,8 +56,8 @@ class WebFluxTagsTests {
 
 	@Test
 	void uriTagValueIsBestMatchingPatternWhenAvailable() {
-		this.exchange.getAttributes()
-			.put(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE, this.parser.parse("/spring/"));
+		this.exchange.getAttributes().put(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE,
+				this.parser.parse("/spring/"));
 		this.exchange.getResponse().setStatusCode(HttpStatus.MOVED_PERMANENTLY);
 		Tag tag = WebFluxTags.uri(this.exchange);
 		assertThat(tag.getValue()).isEqualTo("/spring/");
@@ -76,8 +73,8 @@ class WebFluxTagsTests {
 
 	@Test
 	void uriTagValueWithBestMatchingPatternAndIgnoreTrailingSlashRemoveTrailingSlash() {
-		this.exchange.getAttributes()
-			.put(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE, this.parser.parse("/spring/"));
+		this.exchange.getAttributes().put(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE,
+				this.parser.parse("/spring/"));
 		Tag tag = WebFluxTags.uri(this.exchange, true);
 		assertThat(tag.getValue()).isEqualTo("/spring");
 	}
@@ -137,7 +134,7 @@ class WebFluxTagsTests {
 		ServerWebExchange exchange = mock(ServerWebExchange.class);
 		ServerHttpRequest request = mock(ServerHttpRequest.class);
 		given(exchange.getRequest()).willReturn(request);
-		given(request.getMethod()).willReturn(HttpMethod.valueOf("CUSTOM"));
+		given(request.getMethodValue()).willReturn("CUSTOM");
 		Tag tag = WebFluxTags.method(exchange);
 		assertThat(tag.getValue()).isEqualTo("CUSTOM");
 	}
@@ -155,7 +152,7 @@ class WebFluxTagsTests {
 		ServerHttpRequest request = mock(ServerHttpRequest.class);
 		ServerHttpResponse response = mock(ServerHttpResponse.class);
 		given(response.getStatusCode()).willReturn(HttpStatus.OK);
-		given(response.getStatusCode().value()).willReturn(null);
+		given(response.getRawStatusCode()).willReturn(null);
 		given(exchange.getRequest()).willReturn(request);
 		given(exchange.getResponse()).willReturn(response);
 		Tag tag = WebFluxTags.outcome(exchange, null);
@@ -214,6 +211,12 @@ class WebFluxTagsTests {
 	@Test
 	void outcomeTagIsUnknownWhenExceptionIsDisconnectedClient() {
 		Tag tag = WebFluxTags.outcome(this.exchange, new EOFException("broken pipe"));
+		assertThat(tag.getValue()).isEqualTo("UNKNOWN");
+	}
+
+	@Test
+	void outcomeTagIsUnknownWhenExceptionIsCancelledExchange() {
+		Tag tag = WebFluxTags.outcome(this.exchange, new CancelledServerWebExchangeException());
 		assertThat(tag.getValue()).isEqualTo("UNKNOWN");
 	}
 

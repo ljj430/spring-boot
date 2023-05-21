@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +19,14 @@ package org.springframework.boot.autoconfigure.groovy.template;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
 
+import javax.servlet.Servlet;
+
 import groovy.text.markup.MarkupTemplateEngine;
-import jakarta.servlet.Servlet;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -38,7 +39,6 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.ImportRuntimeHints;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.core.log.LogMessage;
 import org.springframework.web.servlet.view.UrlBasedViewResolver;
@@ -57,10 +57,10 @@ import org.springframework.web.servlet.view.groovy.GroovyMarkupViewResolver;
  * @author Brian Clozel
  * @since 1.1.0
  */
-@AutoConfiguration(after = WebMvcAutoConfiguration.class)
+@Configuration(proxyBeanMethods = false)
 @ConditionalOnClass(MarkupTemplateEngine.class)
+@AutoConfigureAfter(WebMvcAutoConfiguration.class)
 @EnableConfigurationProperties(GroovyTemplateProperties.class)
-@ImportRuntimeHints(GroovyTemplateRuntimeHints.class)
 public class GroovyTemplateAutoConfiguration {
 
 	private static final Log logger = LogFactory.getLog(GroovyTemplateAutoConfiguration.class);

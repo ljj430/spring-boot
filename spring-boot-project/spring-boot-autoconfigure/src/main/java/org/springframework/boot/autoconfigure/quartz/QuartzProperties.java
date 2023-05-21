@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.sql.init.DatabaseInitializationMode;
+import org.springframework.boot.jdbc.DataSourceInitializationMode;
 
 /**
  * Configuration properties for the Quartz Scheduler integration.
@@ -150,7 +150,7 @@ public class QuartzProperties {
 		/**
 		 * Database schema initialization mode.
 		 */
-		private DatabaseInitializationMode initializeSchema = DatabaseInitializationMode.EMBEDDED;
+		private DataSourceInitializationMode initializeSchema = DataSourceInitializationMode.EMBEDDED;
 
 		/**
 		 * Prefixes for single-line comments in SQL initialization scripts.
@@ -173,11 +173,11 @@ public class QuartzProperties {
 			this.platform = platform;
 		}
 
-		public DatabaseInitializationMode getInitializeSchema() {
+		public DataSourceInitializationMode getInitializeSchema() {
 			return this.initializeSchema;
 		}
 
-		public void setInitializeSchema(DatabaseInitializationMode initializeSchema) {
+		public void setInitializeSchema(DataSourceInitializationMode initializeSchema) {
 			this.initializeSchema = initializeSchema;
 		}
 

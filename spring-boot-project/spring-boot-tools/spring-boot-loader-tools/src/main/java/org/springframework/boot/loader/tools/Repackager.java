@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,18 @@ public class Repackager extends Packager {
 	 */
 	public Repackager(File source) {
 		super(source);
+	}
+
+	/**
+	 * Create a new {@link Repackager} instance.
+	 * @param source the source archive file to package
+	 * @param layoutFactory the layout factory to use or {@code null}
+	 * @deprecated since 2.3.10 for removal in 2.5 in favor of {@link #Repackager(File)}
+	 * and {@link #setLayoutFactory(LayoutFactory)}
+	 */
+	@Deprecated
+	public Repackager(File source, LayoutFactory layoutFactory) {
+		super(source, layoutFactory);
 	}
 
 	/**
@@ -101,7 +113,7 @@ public class Repackager extends Packager {
 	public void repackage(File destination, Libraries libraries, LaunchScript launchScript, FileTime lastModifiedTime)
 			throws IOException {
 		Assert.isTrue(destination != null && !destination.isDirectory(), "Invalid destination");
-		getLayout(); // get layout early
+		Layout layout = getLayout(); // get layout early
 		destination = destination.getAbsoluteFile();
 		File source = getSource();
 		if (isAlreadyPackaged() && source.equals(destination)) {
@@ -129,7 +141,7 @@ public class Repackager extends Packager {
 	private void repackage(JarFile sourceJar, File destination, Libraries libraries, LaunchScript launchScript,
 			FileTime lastModifiedTime) throws IOException {
 		try (JarWriter writer = new JarWriter(destination, launchScript, lastModifiedTime)) {
-			write(sourceJar, libraries, writer, lastModifiedTime != null);
+			write(sourceJar, libraries, writer);
 		}
 		if (lastModifiedTime != null) {
 			destination.setLastModified(lastModifiedTime.toMillis());

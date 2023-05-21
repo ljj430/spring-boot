@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,9 +33,7 @@ import org.springframework.boot.actuate.endpoint.InvocationContext;
 import org.springframework.boot.actuate.endpoint.OperationArgumentResolver;
 import org.springframework.boot.actuate.endpoint.SecurityContext;
 import org.springframework.boot.actuate.endpoint.invoke.OperationInvoker;
-import org.springframework.boot.actuate.endpoint.web.WebServerNamespace;
 
-import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.mockito.BDDMockito.given;
@@ -57,8 +55,8 @@ class CachingOperationInvokerTests {
 	@Test
 	void createInstanceWithTtlSetToZero() {
 		assertThatIllegalArgumentException()
-			.isThrownBy(() -> new CachingOperationInvoker(mock(OperationInvoker.class), 0))
-			.withMessageContaining("TimeToLive");
+				.isThrownBy(() -> new CachingOperationInvoker(mock(OperationInvoker.class), 0))
+				.withMessageContaining("TimeToLive");
 	}
 
 	@Test
@@ -116,7 +114,8 @@ class CachingOperationInvokerTests {
 			Thread.sleep(10);
 		}
 		invokeWithUniquePrincipal(invoker);
-		assertThat(invoker).extracting("cachedResponses", as(InstanceOfAssertFactories.MAP)).hasSizeLessThan(count);
+		assertThat(invoker).extracting("cachedResponses").asInstanceOf(InstanceOfAssertFactories.MAP)
+				.hasSizeLessThan(count);
 	}
 
 	private void invokeWithUniquePrincipal(CachingOperationInvoker invoker) {
@@ -233,32 +232,12 @@ class CachingOperationInvokerTests {
 		given(target.invoke(contextV2)).willReturn(expectedV2);
 		given(target.invoke(contextV3)).willReturn(expectedV3);
 		CachingOperationInvoker invoker = new CachingOperationInvoker(target, CACHE_TTL);
-		Object responseV2 = invoker.invoke(contextV2);
-		assertThat(responseV2).isSameAs(expectedV2);
+		Object response = invoker.invoke(contextV2);
+		assertThat(response).isSameAs(expectedV2);
 		then(target).should().invoke(contextV2);
-		Object responseV3 = invoker.invoke(contextV3);
-		assertThat(responseV3).isNotSameAs(responseV2);
+		Object cachedResponse = invoker.invoke(contextV3);
+		assertThat(cachedResponse).isNotSameAs(response);
 		then(target).should().invoke(contextV3);
-	}
-
-	@Test
-	void targetInvokedWithDifferentWebServerNamespace() {
-		OperationInvoker target = mock(OperationInvoker.class);
-		Object expectedServer = new Object();
-		Object expectedManagement = new Object();
-		InvocationContext contextServer = new InvocationContext(mock(SecurityContext.class), Collections.emptyMap(),
-				new WebServerNamespaceArgumentResolver(WebServerNamespace.SERVER));
-		InvocationContext contextManagement = new InvocationContext(mock(SecurityContext.class), Collections.emptyMap(),
-				new WebServerNamespaceArgumentResolver(WebServerNamespace.MANAGEMENT));
-		given(target.invoke(contextServer)).willReturn(expectedServer);
-		given(target.invoke(contextManagement)).willReturn(expectedManagement);
-		CachingOperationInvoker invoker = new CachingOperationInvoker(target, CACHE_TTL);
-		Object responseServer = invoker.invoke(contextServer);
-		assertThat(responseServer).isSameAs(expectedServer);
-		then(target).should(times(1)).invoke(contextServer);
-		Object responseManagement = invoker.invoke(contextManagement);
-		assertThat(responseManagement).isNotSameAs(responseServer);
-		then(target).should(times(1)).invoke(contextManagement);
 	}
 
 	private static class MonoOperationInvoker implements OperationInvoker {
@@ -303,27 +282,6 @@ class CachingOperationInvokerTests {
 		@Override
 		public boolean canResolve(Class<?> type) {
 			return ApiVersion.class.equals(type);
-		}
-
-	}
-
-	private static final class WebServerNamespaceArgumentResolver implements OperationArgumentResolver {
-
-		private final WebServerNamespace webServerNamespace;
-
-		private WebServerNamespaceArgumentResolver(WebServerNamespace webServerNamespace) {
-			this.webServerNamespace = webServerNamespace;
-		}
-
-		@SuppressWarnings("unchecked")
-		@Override
-		public <T> T resolve(Class<T> type) {
-			return (T) this.webServerNamespace;
-		}
-
-		@Override
-		public boolean canResolve(Class<?> type) {
-			return WebServerNamespace.class.equals(type);
 		}
 
 	}

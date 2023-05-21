@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package org.springframework.boot.actuate.autoconfigure.availability;
 
 import org.springframework.boot.actuate.availability.LivenessStateHealthIndicator;
 import org.springframework.boot.actuate.availability.ReadinessStateHealthIndicator;
-import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.availability.ApplicationAvailabilityAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionMessage;
@@ -30,6 +30,7 @@ import org.springframework.boot.cloud.CloudPlatform;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ConditionContext;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.core.type.AnnotatedTypeMetadata;
 
@@ -40,9 +41,10 @@ import org.springframework.core.type.AnnotatedTypeMetadata;
  * @author Phillip Webb
  * @since 2.3.0
  */
-@AutoConfiguration(after = { AvailabilityHealthContributorAutoConfiguration.class,
-		ApplicationAvailabilityAutoConfiguration.class })
+@Configuration(proxyBeanMethods = false)
 @Conditional(AvailabilityProbesAutoConfiguration.ProbesCondition.class)
+@AutoConfigureAfter({ AvailabilityHealthContributorAutoConfiguration.class,
+		ApplicationAvailabilityAutoConfiguration.class })
 public class AvailabilityProbesAutoConfiguration {
 
 	@Bean
@@ -59,9 +61,8 @@ public class AvailabilityProbesAutoConfiguration {
 	}
 
 	@Bean
-	public AvailabilityProbesHealthEndpointGroupsPostProcessor availabilityProbesHealthEndpointGroupsPostProcessor(
-			Environment environment) {
-		return new AvailabilityProbesHealthEndpointGroupsPostProcessor(environment);
+	public AvailabilityProbesHealthEndpointGroupsPostProcessor availabilityProbesHealthEndpointGroupsPostProcessor() {
+		return new AvailabilityProbesHealthEndpointGroupsPostProcessor();
 	}
 
 	/**

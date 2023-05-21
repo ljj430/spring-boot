@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@
 package org.springframework.boot.autoconfigure.batch;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.sql.init.DatabaseInitializationMode;
-import org.springframework.transaction.annotation.Isolation;
+import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
+import org.springframework.boot.jdbc.DataSourceInitializationMode;
 
 /**
  * Configuration properties for Spring Batch.
@@ -36,6 +36,56 @@ public class BatchProperties {
 
 	private final Jdbc jdbc = new Jdbc();
 
+	/**
+	 * Return the datasource schema.
+	 * @return the schema
+	 * @deprecated since 2.5.0 for removal in 2.7.0 in favor of {@link Jdbc#getSchema()}
+	 */
+	@Deprecated
+	@DeprecatedConfigurationProperty(replacement = "spring.batch.jdbc.schema")
+	public String getSchema() {
+		return this.jdbc.getSchema();
+	}
+
+	@Deprecated
+	public void setSchema(String schema) {
+		this.jdbc.setSchema(schema);
+	}
+
+	/**
+	 * Return the table prefix.
+	 * @return the table prefix
+	 * @deprecated since 2.5.0 for removal in 2.7.0 in favor of
+	 * {@link Jdbc#getTablePrefix()}
+	 */
+	@Deprecated
+	@DeprecatedConfigurationProperty(replacement = "spring.batch.jdbc.table-prefix")
+	public String getTablePrefix() {
+		return this.jdbc.getTablePrefix();
+	}
+
+	@Deprecated
+	public void setTablePrefix(String tablePrefix) {
+		this.jdbc.setTablePrefix(tablePrefix);
+	}
+
+	/**
+	 * Return whether the schema should be initialized.
+	 * @return the initialization mode
+	 * @deprecated since 2.5.0 for removal in 2.7.0 in favor of
+	 * {@link Jdbc#getInitializeSchema()}
+	 */
+	@Deprecated
+	@DeprecatedConfigurationProperty(replacement = "spring.batch.jdbc.initialize-schema")
+	public DataSourceInitializationMode getInitializeSchema() {
+		return this.jdbc.getInitializeSchema();
+	}
+
+	@Deprecated
+	public void setInitializeSchema(DataSourceInitializationMode initializeSchema) {
+		this.jdbc.setInitializeSchema(initializeSchema);
+	}
+
 	public Job getJob() {
 		return this.job;
 	}
@@ -47,17 +97,17 @@ public class BatchProperties {
 	public static class Job {
 
 		/**
-		 * Job name to execute on startup. Must be specified if multiple Jobs are found in
-		 * the context.
+		 * Comma-separated list of job names to execute on startup (for instance,
+		 * 'job1,job2'). By default, all Jobs found in the context are executed.
 		 */
-		private String name = "";
+		private String names = "";
 
-		public String getName() {
-			return this.name;
+		public String getNames() {
+			return this.names;
 		}
 
-		public void setName(String name) {
-			this.name = name;
+		public void setNames(String names) {
+			this.names = names;
 		}
 
 	}
@@ -66,11 +116,6 @@ public class BatchProperties {
 
 		private static final String DEFAULT_SCHEMA_LOCATION = "classpath:org/springframework/"
 				+ "batch/core/schema-@@platform@@.sql";
-
-		/**
-		 * Transaction isolation level to use when creating job meta-data for new jobs.
-		 */
-		private Isolation isolationLevelForCreate;
 
 		/**
 		 * Path to the SQL file to use to initialize the database schema.
@@ -91,15 +136,7 @@ public class BatchProperties {
 		/**
 		 * Database schema initialization mode.
 		 */
-		private DatabaseInitializationMode initializeSchema = DatabaseInitializationMode.EMBEDDED;
-
-		public Isolation getIsolationLevelForCreate() {
-			return this.isolationLevelForCreate;
-		}
-
-		public void setIsolationLevelForCreate(Isolation isolationLevelForCreate) {
-			this.isolationLevelForCreate = isolationLevelForCreate;
-		}
+		private DataSourceInitializationMode initializeSchema = DataSourceInitializationMode.EMBEDDED;
 
 		public String getSchema() {
 			return this.schema;
@@ -125,11 +162,11 @@ public class BatchProperties {
 			this.tablePrefix = tablePrefix;
 		}
 
-		public DatabaseInitializationMode getInitializeSchema() {
+		public DataSourceInitializationMode getInitializeSchema() {
 			return this.initializeSchema;
 		}
 
-		public void setInitializeSchema(DatabaseInitializationMode initializeSchema) {
+		public void setInitializeSchema(DataSourceInitializationMode initializeSchema) {
 			this.initializeSchema = initializeSchema;
 		}
 

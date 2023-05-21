@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.LoaderOptions;
@@ -67,20 +68,19 @@ class OriginTrackedYamlLoader extends YamlProcessor {
 		loaderOptions.setAllowDuplicateKeys(false);
 		loaderOptions.setMaxAliasesForCollections(Integer.MAX_VALUE);
 		loaderOptions.setAllowRecursiveKeys(true);
-		loaderOptions.setCodePointLimit(Integer.MAX_VALUE);
 		return createYaml(loaderOptions);
 	}
 
 	private Yaml createYaml(LoaderOptions loaderOptions) {
 		BaseConstructor constructor = new OriginTrackingConstructor(loaderOptions);
+		Representer representer = new Representer();
 		DumperOptions dumperOptions = new DumperOptions();
-		Representer representer = new Representer(dumperOptions);
-		NoTimestampResolver resolver = new NoTimestampResolver();
+		LimitedResolver resolver = new LimitedResolver();
 		return new Yaml(constructor, representer, dumperOptions, loaderOptions, resolver);
 	}
 
 	List<Map<String, Object>> load() {
-		List<Map<String, Object>> result = new ArrayList<>();
+		final List<Map<String, Object>> result = new ArrayList<>();
 		process((properties, map) -> result.add(getFlattenedMap(map)));
 		return result;
 	}
@@ -97,7 +97,7 @@ class OriginTrackedYamlLoader extends YamlProcessor {
 		@Override
 		public Object getData() throws NoSuchElementException {
 			Object data = super.getData();
-			if (data instanceof CharSequence charSequence && charSequence.isEmpty()) {
+			if (data instanceof CharSequence && ((CharSequence) data).length() == 0) {
 				return null;
 			}
 			return data;
@@ -113,16 +113,14 @@ class OriginTrackedYamlLoader extends YamlProcessor {
 					return constructTrackedObject(node, super.constructObject(node));
 				}
 			}
-			if (node instanceof MappingNode mappingNode) {
-				replaceMappingNodeKeys(mappingNode);
+			if (node instanceof MappingNode) {
+				replaceMappingNodeKeys((MappingNode) node);
 			}
 			return super.constructObject(node);
 		}
 
 		private void replaceMappingNodeKeys(MappingNode node) {
-			List<NodeTuple> newValue = new ArrayList<>();
-			node.getValue().stream().map(KeyScalarNode::get).forEach(newValue::add);
-			node.setValue(newValue);
+			node.setValue(node.getValue().stream().map(KeyScalarNode::get).collect(Collectors.toList()));
 		}
 
 		private Object constructTrackedObject(Node node, Object value) {
@@ -158,8 +156,8 @@ class OriginTrackedYamlLoader extends YamlProcessor {
 		}
 
 		private static Node get(Node node) {
-			if (node instanceof ScalarNode scalarNode) {
-				return new KeyScalarNode(scalarNode);
+			if (node instanceof ScalarNode) {
+				return new KeyScalarNode((ScalarNode) node);
 			}
 			return node;
 		}
@@ -169,14 +167,14 @@ class OriginTrackedYamlLoader extends YamlProcessor {
 	/**
 	 * {@link Resolver} that limits {@link Tag#TIMESTAMP} tags.
 	 */
-	private static class NoTimestampResolver extends Resolver {
+	private static class LimitedResolver extends Resolver {
 
 		@Override
-		public void addImplicitResolver(Tag tag, Pattern regexp, String first, int limit) {
+		public void addImplicitResolver(Tag tag, Pattern regexp, String first) {
 			if (tag == Tag.TIMESTAMP) {
 				return;
 			}
-			super.addImplicitResolver(tag, regexp, first, limit);
+			super.addImplicitResolver(tag, regexp, first);
 		}
 
 	}

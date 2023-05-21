@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2002-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,10 @@
  */
 package org.springframework.boot
 
-import org.assertj.core.api.Assertions.assertThat
+import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.jupiter.api.Test
 
 import org.springframework.beans.factory.getBean
@@ -34,7 +37,7 @@ class SpringApplicationExtensionsTests {
 	@Test
 	fun `Kotlin runApplication() top level function`() {
 		val context = runApplication<ExampleWebConfig>()
-		assertThat(context).isNotNull
+		assertNotNull(context)
 	}
 
 	@Test
@@ -43,16 +46,16 @@ class SpringApplicationExtensionsTests {
 		val context = runApplication<ExampleWebConfig> {
 			setEnvironment(environment)
 		}
-		assertThat(context).isNotNull
-		assertThat(environment).isEqualTo(context.environment)
+		assertNotNull(context)
+		assertEquals(environment, context.environment)
 	}
 
 	@Test
 	fun `Kotlin runApplication(arg1, arg2) top level function`() {
 		val context = runApplication<ExampleWebConfig>("--debug", "spring", "boot")
 		val args = context.getBean<ApplicationArguments>()
-		assertThat(args.nonOptionArgs.toTypedArray()).containsExactly("spring", "boot")
-		assertThat(args.containsOption("debug")).isEqualTo(true)
+		assertArrayEquals(arrayOf("spring", "boot"), args.nonOptionArgs.toTypedArray())
+		assertTrue(args.containsOption("debug"))
 	}
 
 	@Test
@@ -62,9 +65,9 @@ class SpringApplicationExtensionsTests {
 			setEnvironment(environment)
 		}
 		val args = context.getBean<ApplicationArguments>()
-		assertThat(args.nonOptionArgs.toTypedArray()).containsExactly("spring", "boot")
-		assertThat(args.containsOption("debug")).isEqualTo(true)
-		assertThat(environment).isEqualTo(context.environment)
+		assertArrayEquals(arrayOf("spring", "boot"), args.nonOptionArgs.toTypedArray())
+		assertTrue(args.containsOption("debug"))
+		assertEquals(environment, context.environment)
 	}
 
 	@Configuration(proxyBeanMethods = false)

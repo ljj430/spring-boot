@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,43 +53,39 @@ class SocketTargetServerConnectionTests {
 	void readData() throws Exception {
 		this.server.willSend("hello".getBytes());
 		this.server.start();
-		try (ByteChannel channel = this.connection.open(DEFAULT_TIMEOUT)) {
-			ByteBuffer buffer = ByteBuffer.allocate(5);
-			channel.read(buffer);
-			assertThat(buffer.array()).isEqualTo("hello".getBytes());
-		}
+		ByteChannel channel = this.connection.open(DEFAULT_TIMEOUT);
+		ByteBuffer buffer = ByteBuffer.allocate(5);
+		channel.read(buffer);
+		assertThat(buffer.array()).isEqualTo("hello".getBytes());
 	}
 
 	@Test
 	void writeData() throws Exception {
 		this.server.expect("hello".getBytes());
 		this.server.start();
-		try (ByteChannel channel = this.connection.open(DEFAULT_TIMEOUT)) {
-			ByteBuffer buffer = ByteBuffer.wrap("hello".getBytes());
-			channel.write(buffer);
-			this.server.closeAndVerify();
-		}
+		ByteChannel channel = this.connection.open(DEFAULT_TIMEOUT);
+		ByteBuffer buffer = ByteBuffer.wrap("hello".getBytes());
+		channel.write(buffer);
+		this.server.closeAndVerify();
 	}
 
 	@Test
 	void timeout() throws Exception {
 		this.server.delay(1000);
 		this.server.start();
-		try (ByteChannel channel = this.connection.open(10)) {
-			long startTime = System.currentTimeMillis();
-			assertThatExceptionOfType(SocketTimeoutException.class)
-				.isThrownBy(() -> channel.read(ByteBuffer.allocate(5)))
+		ByteChannel channel = this.connection.open(10);
+		long startTime = System.currentTimeMillis();
+		assertThatExceptionOfType(SocketTimeoutException.class).isThrownBy(() -> channel.read(ByteBuffer.allocate(5)))
 				.satisfies((ex) -> {
 					long runTime = System.currentTimeMillis() - startTime;
 					assertThat(runTime).isGreaterThanOrEqualTo(10L);
 					assertThat(runTime).isLessThan(10000L);
 				});
-		}
 	}
 
 	static class MockServer {
 
-		private final ServerSocketChannel serverSocket;
+		private ServerSocketChannel serverSocket;
 
 		private byte[] send;
 

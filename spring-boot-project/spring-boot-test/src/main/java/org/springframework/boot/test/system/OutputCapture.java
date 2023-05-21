@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -49,12 +48,6 @@ class OutputCapture implements CapturedOutput {
 
 	private AnsiOutputState ansiOutputState;
 
-	private final AtomicReference<String> out = new AtomicReference<>(null);
-
-	private final AtomicReference<String> err = new AtomicReference<>(null);
-
-	private final AtomicReference<String> all = new AtomicReference<>(null);
-
 	/**
 	 * Push a new system capture session onto the stack.
 	 */
@@ -62,15 +55,13 @@ class OutputCapture implements CapturedOutput {
 		if (this.systemCaptures.isEmpty()) {
 			this.ansiOutputState = AnsiOutputState.saveAndDisable();
 		}
-		clearExisting();
-		this.systemCaptures.addLast(new SystemCapture(this::clearExisting));
+		this.systemCaptures.addLast(new SystemCapture());
 	}
 
 	/**
 	 * Pop the last system capture session from the stack.
 	 */
 	final void pop() {
-		clearExisting();
 		this.systemCaptures.removeLast().release();
 		if (this.systemCaptures.isEmpty() && this.ansiOutputState != null) {
 			this.ansiOutputState.restore();
@@ -83,7 +74,7 @@ class OutputCapture implements CapturedOutput {
 		if (obj == this) {
 			return true;
 		}
-		if (obj instanceof CharSequence) {
+		if (obj instanceof CapturedOutput || obj instanceof CharSequence) {
 			return getAll().equals(obj.toString());
 		}
 		return false;
@@ -106,7 +97,7 @@ class OutputCapture implements CapturedOutput {
 	 */
 	@Override
 	public String getAll() {
-		return get(this.all, (type) -> true);
+		return get((type) -> true);
 	}
 
 	/**
@@ -115,7 +106,7 @@ class OutputCapture implements CapturedOutput {
 	 */
 	@Override
 	public String getOut() {
-		return get(this.out, Type.OUT::equals);
+		return get(Type.OUT::equals);
 	}
 
 	/**
@@ -124,35 +115,19 @@ class OutputCapture implements CapturedOutput {
 	 */
 	@Override
 	public String getErr() {
-		return get(this.err, Type.ERR::equals);
+		return get(Type.ERR::equals);
 	}
 
 	/**
 	 * Resets the current capture session, clearing its captured output.
 	 */
 	void reset() {
-		clearExisting();
 		this.systemCaptures.peek().reset();
 	}
 
-	void clearExisting() {
-		this.out.set(null);
-		this.err.set(null);
-		this.all.set(null);
-	}
-
-	private String get(AtomicReference<String> existing, Predicate<Type> filter) {
+	private String get(Predicate<Type> filter) {
 		Assert.state(!this.systemCaptures.isEmpty(),
 				"No system captures found. Please check your output capture registration.");
-		String result = existing.get();
-		if (result == null) {
-			result = build(filter);
-			existing.compareAndSet(null, result);
-		}
-		return result;
-	}
-
-	String build(Predicate<Type> filter) {
 		StringBuilder builder = new StringBuilder();
 		for (SystemCapture systemCapture : this.systemCaptures) {
 			systemCapture.append(builder, filter);
@@ -166,8 +141,6 @@ class OutputCapture implements CapturedOutput {
 	 */
 	private static class SystemCapture {
 
-		private final Runnable onCapture;
-
 		private final Object monitor = new Object();
 
 		private final PrintStreamCapture out;
@@ -176,8 +149,7 @@ class OutputCapture implements CapturedOutput {
 
 		private final List<CapturedString> capturedStrings = new ArrayList<>();
 
-		SystemCapture(Runnable onCapture) {
-			this.onCapture = onCapture;
+		SystemCapture() {
 			this.out = new PrintStreamCapture(System.out, this::captureOut);
 			this.err = new PrintStreamCapture(System.err, this::captureErr);
 			System.setOut(this.out);
@@ -190,17 +162,14 @@ class OutputCapture implements CapturedOutput {
 		}
 
 		private void captureOut(String string) {
-			capture(new CapturedString(Type.OUT, string));
+			synchronized (this.monitor) {
+				this.capturedStrings.add(new CapturedString(Type.OUT, string));
+			}
 		}
 
 		private void captureErr(String string) {
-			capture(new CapturedString(Type.ERR, string));
-		}
-
-		private void capture(CapturedString e) {
 			synchronized (this.monitor) {
-				this.onCapture.run();
-				this.capturedStrings.add(e);
+				this.capturedStrings.add(new CapturedString(Type.ERR, string));
 			}
 		}
 
@@ -239,8 +208,8 @@ class OutputCapture implements CapturedOutput {
 		}
 
 		private static PrintStream getSystemStream(PrintStream printStream) {
-			while (printStream instanceof PrintStreamCapture printStreamCapture) {
-				printStream = printStreamCapture.getParent();
+			while (printStream instanceof PrintStreamCapture) {
+				printStream = ((PrintStreamCapture) printStream).getParent();
 			}
 			return printStream;
 		}
@@ -307,7 +276,7 @@ class OutputCapture implements CapturedOutput {
 	/**
 	 * Types of content that can be captured.
 	 */
-	enum Type {
+	private enum Type {
 
 		OUT, ERR
 
@@ -318,7 +287,7 @@ class OutputCapture implements CapturedOutput {
 	 */
 	private static class AnsiOutputState {
 
-		private final Enabled saved;
+		private Enabled saved;
 
 		AnsiOutputState() {
 			this.saved = AnsiOutput.getEnabled();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package org.springframework.boot.web.embedded.netty;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiPredicate;
+import java.util.stream.Collectors;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaders;
@@ -66,7 +67,8 @@ final class CompressionCustomizer implements NettyServerCustomizer {
 		if (ObjectUtils.isEmpty(mimeTypeValues)) {
 			return ALWAYS_COMPRESS;
 		}
-		List<MimeType> mimeTypes = Arrays.stream(mimeTypeValues).map(MimeTypeUtils::parseMimeType).toList();
+		List<MimeType> mimeTypes = Arrays.stream(mimeTypeValues).map(MimeTypeUtils::parseMimeType)
+				.collect(Collectors.toList());
 		return (request, response) -> {
 			String contentType = response.responseHeaders().get(HttpHeaderNames.CONTENT_TYPE);
 			if (!StringUtils.hasLength(contentType)) {
@@ -89,7 +91,7 @@ final class CompressionCustomizer implements NettyServerCustomizer {
 		return (request, response) -> {
 			HttpHeaders headers = request.requestHeaders();
 			return Arrays.stream(excludedUserAgents)
-				.noneMatch((candidate) -> headers.contains(HttpHeaderNames.USER_AGENT, candidate, true));
+					.noneMatch((candidate) -> headers.contains(HttpHeaderNames.USER_AGENT, candidate, true));
 		};
 	}
 

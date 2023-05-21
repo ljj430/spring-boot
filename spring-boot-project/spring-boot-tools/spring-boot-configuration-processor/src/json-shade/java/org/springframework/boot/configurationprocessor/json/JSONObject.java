@@ -311,7 +311,8 @@ public class JSONObject {
 			JSON.checkDouble(((Number) value).doubleValue());
 		}
 
-		if (current instanceof JSONArray array) {
+		if (current instanceof JSONArray) {
+			JSONArray array = (JSONArray) current;
 			array.put(value);
 		}
 		else {
@@ -506,7 +507,7 @@ public class JSONObject {
 	/**
 	 * Returns the value mapped by {@code name} if it exists and is a long or can be
 	 * coerced to a long. Note that JSON represents numbers as doubles, so this is
-	 * <a href="#lossy">lossy</a>; use strings to transfer numbers over JSON.
+	 * <a href="#lossy">lossy</a>; use strings to transfer numbers via JSON.
 	 * @param name the name of the property
 	 * @return the value
 	 * @throws JSONException if the mapping doesn't exist or cannot be coerced to a long.
@@ -536,7 +537,7 @@ public class JSONObject {
 	 * Returns the value mapped by {@code name} if it exists and is a long or can be
 	 * coerced to a long. Returns {@code fallback} otherwise. Note that JSON represents
 	 * numbers as doubles, so this is <a href="#lossy">lossy</a>; use strings to transfer
-	 * numbers over JSON.
+	 * numbers via JSON.
 	 * @param name the name of the property
 	 * @param fallback a fallback value
 	 * @return the value or {@code fallback}
@@ -707,7 +708,7 @@ public class JSONObject {
 	}
 
 	/**
-	 * Encodes this object as a human-readable JSON string for debugging, such as: <pre>
+	 * Encodes this object as a human readable JSON string for debugging, such as: <pre>
 	 * {
 	 *     "query": "Pizza",
 	 *     "locations": [

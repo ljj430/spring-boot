@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,16 @@
 
 package org.springframework.boot.web.servlet;
 
-import jakarta.servlet.Filter;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.FilterConfig;
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpSessionIdListener;
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpSessionIdListener;
+
 import org.junit.jupiter.api.Test;
 
 import org.springframework.context.ConfigurableApplicationContext;
@@ -48,7 +49,7 @@ class ServletContextInitializerBeansTests {
 		load(ServletConfiguration.class);
 		ServletContextInitializerBeans initializerBeans = new ServletContextInitializerBeans(
 				this.context.getBeanFactory());
-		assertThat(initializerBeans).hasSize(1);
+		assertThat(initializerBeans.size()).isEqualTo(1);
 		assertThat(initializerBeans.iterator()).toIterable().hasOnlyElementsOfType(TestServlet.class);
 	}
 
@@ -57,7 +58,7 @@ class ServletContextInitializerBeansTests {
 		load(FilterConfiguration.class);
 		ServletContextInitializerBeans initializerBeans = new ServletContextInitializerBeans(
 				this.context.getBeanFactory());
-		assertThat(initializerBeans).hasSize(1);
+		assertThat(initializerBeans.size()).isEqualTo(1);
 		assertThat(initializerBeans.iterator()).toIterable().hasOnlyElementsOfType(TestFilter.class);
 	}
 
@@ -66,7 +67,7 @@ class ServletContextInitializerBeansTests {
 		load(TestConfiguration.class);
 		ServletContextInitializerBeans initializerBeans = new ServletContextInitializerBeans(
 				this.context.getBeanFactory(), TestServletContextInitializer.class);
-		assertThat(initializerBeans).hasSize(1);
+		assertThat(initializerBeans.size()).isEqualTo(1);
 		assertThat(initializerBeans.iterator()).toIterable().hasOnlyElementsOfType(TestServletContextInitializer.class);
 	}
 
@@ -76,10 +77,9 @@ class ServletContextInitializerBeansTests {
 		ServletContextInitializerBeans initializerBeans = new ServletContextInitializerBeans(
 				this.context.getBeanFactory());
 		assertThat(initializerBeans).hasSize(1);
-		assertThat(initializerBeans).first()
-			.isInstanceOf(ServletListenerRegistrationBean.class)
-			.extracting((initializer) -> ((ServletListenerRegistrationBean<?>) initializer).getListener())
-			.isInstanceOf(HttpSessionIdListener.class);
+		assertThat(initializerBeans).first().isInstanceOf(ServletListenerRegistrationBean.class)
+				.extracting((initializer) -> ((ServletListenerRegistrationBean<?>) initializer).getListener())
+				.isInstanceOf(HttpSessionIdListener.class);
 	}
 
 	private void load(Class<?>... configuration) {

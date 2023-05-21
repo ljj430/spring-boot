@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,8 +64,8 @@ class BindValidationFailureAnalyzer extends AbstractFailureAnalyzer<Throwable> {
 		StringBuilder description = new StringBuilder(
 				String.format("Binding to target %s failed:%n", details.getTarget()));
 		for (ObjectError error : details.getErrors()) {
-			if (error instanceof FieldError fieldError) {
-				appendFieldError(description, fieldError);
+			if (error instanceof FieldError) {
+				appendFieldError(description, (FieldError) error);
 			}
 			description.append(String.format("%n    Reason: %s%n", error.getDefaultMessage()));
 		}
@@ -75,7 +75,7 @@ class BindValidationFailureAnalyzer extends AbstractFailureAnalyzer<Throwable> {
 	private void appendFieldError(StringBuilder description, FieldError error) {
 		Origin origin = Origin.from(error);
 		description.append(String.format("%n    Property: %s", error.getObjectName() + "." + error.getField()));
-		description.append(String.format("%n    Value: \"%s\"", error.getRejectedValue()));
+		description.append(String.format("%n    Value: %s", error.getRejectedValue()));
 		if (origin != null) {
 			description.append(String.format("%n    Origin: %s", origin));
 		}
@@ -87,11 +87,11 @@ class BindValidationFailureAnalyzer extends AbstractFailureAnalyzer<Throwable> {
 
 	private static class ExceptionDetails {
 
-		private final List<ObjectError> errors;
+		private List<ObjectError> errors;
 
-		private final Object target;
+		private Object target;
 
-		private final Throwable cause;
+		private Throwable cause;
 
 		ExceptionDetails(List<ObjectError> errors, Object target, Throwable cause) {
 			this.errors = errors;

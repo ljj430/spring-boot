@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 
@@ -48,9 +49,9 @@ import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.TaskOutcome;
 import org.junit.jupiter.api.TestTemplate;
 
+import org.springframework.boot.gradle.testkit.GradleBuild;
 import org.springframework.boot.loader.tools.FileUtils;
 import org.springframework.boot.loader.tools.JarModeLibrary;
-import org.springframework.boot.testsupport.gradle.testkit.GradleBuild;
 import org.springframework.util.FileSystemUtils;
 import org.springframework.util.StringUtils;
 
@@ -85,18 +86,25 @@ abstract class AbstractBootArchiveIntegrationTests {
 	@TestTemplate
 	void basicBuild() {
 		assertThat(this.gradleBuild.build(this.taskName).task(":" + this.taskName).getOutcome())
-			.isEqualTo(TaskOutcome.SUCCESS);
+				.isEqualTo(TaskOutcome.SUCCESS);
+	}
+
+	@Deprecated
+	@TestTemplate
+	void basicBuildUsingDeprecatedMainClassName() {
+		assertThat(this.gradleBuild.build(this.taskName).task(":" + this.taskName).getOutcome())
+				.isEqualTo(TaskOutcome.SUCCESS);
 	}
 
 	@TestTemplate
 	void reproducibleArchive() throws IOException, InterruptedException {
 		assertThat(this.gradleBuild.build(this.taskName).task(":" + this.taskName).getOutcome())
-			.isEqualTo(TaskOutcome.SUCCESS);
+				.isEqualTo(TaskOutcome.SUCCESS);
 		File jar = new File(this.gradleBuild.getProjectDir(), "build/libs").listFiles()[0];
 		String firstHash = FileUtils.sha1Hash(jar);
 		Thread.sleep(1500);
 		assertThat(this.gradleBuild.build("clean", this.taskName).task(":" + this.taskName).getOutcome())
-			.isEqualTo(TaskOutcome.SUCCESS);
+				.isEqualTo(TaskOutcome.SUCCESS);
 		String secondHash = FileUtils.sha1Hash(jar);
 		assertThat(firstHash).isEqualTo(secondHash);
 	}
@@ -104,81 +112,67 @@ abstract class AbstractBootArchiveIntegrationTests {
 	@TestTemplate
 	void upToDateWhenBuiltTwice() {
 		assertThat(this.gradleBuild.build(this.taskName).task(":" + this.taskName).getOutcome())
-			.isEqualTo(TaskOutcome.SUCCESS);
+				.isEqualTo(TaskOutcome.SUCCESS);
 		assertThat(this.gradleBuild.build(this.taskName).task(":" + this.taskName).getOutcome())
-			.isEqualTo(TaskOutcome.UP_TO_DATE);
+				.isEqualTo(TaskOutcome.UP_TO_DATE);
 	}
 
 	@TestTemplate
 	void upToDateWhenBuiltTwiceWithLaunchScriptIncluded() {
-		assertThat(this.gradleBuild.build("-PincludeLaunchScript=true", this.taskName)
-			.task(":" + this.taskName)
-			.getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
-		assertThat(this.gradleBuild.build("-PincludeLaunchScript=true", this.taskName)
-			.task(":" + this.taskName)
-			.getOutcome()).isEqualTo(TaskOutcome.UP_TO_DATE);
+		assertThat(this.gradleBuild.build("-PincludeLaunchScript=true", this.taskName).task(":" + this.taskName)
+				.getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
+		assertThat(this.gradleBuild.build("-PincludeLaunchScript=true", this.taskName).task(":" + this.taskName)
+				.getOutcome()).isEqualTo(TaskOutcome.UP_TO_DATE);
 	}
 
 	@TestTemplate
 	void notUpToDateWhenLaunchScriptWasNotIncludedAndThenIsIncluded() {
-		assertThat(this.gradleBuild.scriptProperty("launchScript", "")
-			.build(this.taskName)
-			.task(":" + this.taskName)
-			.getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
-		assertThat(this.gradleBuild.scriptProperty("launchScript", "launchScript()")
-			.build(this.taskName)
-			.task(":" + this.taskName)
-			.getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
+		assertThat(this.gradleBuild.scriptProperty("launchScript", "").build(this.taskName).task(":" + this.taskName)
+				.getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
+		assertThat(this.gradleBuild.scriptProperty("launchScript", "launchScript()").build(this.taskName)
+				.task(":" + this.taskName).getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
 	}
 
 	@TestTemplate
 	void notUpToDateWhenLaunchScriptWasIncludedAndThenIsNotIncluded() {
-		assertThat(this.gradleBuild.scriptProperty("launchScript", "launchScript()")
-			.build(this.taskName)
-			.task(":" + this.taskName)
-			.getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
-		assertThat(this.gradleBuild.scriptProperty("launchScript", "")
-			.build(this.taskName)
-			.task(":" + this.taskName)
-			.getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
+		assertThat(this.gradleBuild.scriptProperty("launchScript", "launchScript()").build(this.taskName)
+				.task(":" + this.taskName).getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
+		assertThat(this.gradleBuild.scriptProperty("launchScript", "").build(this.taskName).task(":" + this.taskName)
+				.getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
 	}
 
 	@TestTemplate
 	void notUpToDateWhenLaunchScriptPropertyChanges() {
-		assertThat(this.gradleBuild.scriptProperty("launchScriptProperty", "alpha")
-			.build(this.taskName)
-			.task(":" + this.taskName)
-			.getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
-		assertThat(this.gradleBuild.scriptProperty("launchScriptProperty", "bravo")
-			.build(this.taskName)
-			.task(":" + this.taskName)
-			.getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
+		assertThat(this.gradleBuild.scriptProperty("launchScriptProperty", "alpha").build(this.taskName)
+				.task(":" + this.taskName).getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
+		assertThat(this.gradleBuild.scriptProperty("launchScriptProperty", "bravo").build(this.taskName)
+				.task(":" + this.taskName).getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
 	}
 
 	@TestTemplate
 	void applicationPluginMainClassNameIsUsed() throws IOException {
 		assertThat(this.gradleBuild.build(this.taskName).task(":" + this.taskName).getOutcome())
-			.isEqualTo(TaskOutcome.SUCCESS);
+				.isEqualTo(TaskOutcome.SUCCESS);
 		try (JarFile jarFile = new JarFile(new File(this.gradleBuild.getProjectDir(), "build/libs").listFiles()[0])) {
 			assertThat(jarFile.getManifest().getMainAttributes().getValue("Start-Class"))
-				.isEqualTo("com.example.CustomMain");
+					.isEqualTo("com.example.CustomMain");
 		}
 	}
 
 	@TestTemplate
 	void springBootExtensionMainClassNameIsUsed() throws IOException {
 		assertThat(this.gradleBuild.build(this.taskName).task(":" + this.taskName).getOutcome())
-			.isEqualTo(TaskOutcome.SUCCESS);
+				.isEqualTo(TaskOutcome.SUCCESS);
 		try (JarFile jarFile = new JarFile(new File(this.gradleBuild.getProjectDir(), "build/libs").listFiles()[0])) {
 			assertThat(jarFile.getManifest().getMainAttributes().getValue("Start-Class"))
-				.isEqualTo("com.example.CustomMain");
+					.isEqualTo("com.example.CustomMain");
 		}
 	}
 
 	@TestTemplate
 	void duplicatesAreHandledGracefully() {
 		assertThat(this.gradleBuild.build(this.taskName).task(":" + this.taskName).getOutcome())
-			.isEqualTo(TaskOutcome.SUCCESS);
+				.isEqualTo(TaskOutcome.SUCCESS);
 	}
 
 	@TestTemplate
@@ -187,17 +181,13 @@ abstract class AbstractBootArchiveIntegrationTests {
 		srcMainResources.mkdirs();
 		new File(srcMainResources, "resource").createNewFile();
 		assertThat(this.gradleBuild.build(this.taskName).task(":" + this.taskName).getOutcome())
-			.isEqualTo(TaskOutcome.SUCCESS);
+				.isEqualTo(TaskOutcome.SUCCESS);
 		try (JarFile jarFile = new JarFile(new File(this.gradleBuild.getProjectDir(), "build/libs").listFiles()[0])) {
-			Stream<String> libEntryNames = jarFile.stream()
-				.filter((entry) -> !entry.isDirectory())
-				.map(JarEntry::getName)
-				.filter((name) -> name.startsWith(this.libPath));
+			Stream<String> libEntryNames = jarFile.stream().filter((entry) -> !entry.isDirectory())
+					.map(JarEntry::getName).filter((name) -> name.startsWith(this.libPath));
 			assertThat(libEntryNames).containsExactly(this.libPath + "commons-io-2.6.jar");
-			Stream<String> classesEntryNames = jarFile.stream()
-				.filter((entry) -> !entry.isDirectory())
-				.map(JarEntry::getName)
-				.filter((name) -> name.startsWith(this.classesPath));
+			Stream<String> classesEntryNames = jarFile.stream().filter((entry) -> !entry.isDirectory())
+					.map(JarEntry::getName).filter((name) -> name.startsWith(this.classesPath));
 			assertThat(classesEntryNames).containsExactly(this.classesPath + "resource");
 		}
 	}
@@ -205,12 +195,10 @@ abstract class AbstractBootArchiveIntegrationTests {
 	@TestTemplate
 	void developmentOnlyDependenciesCanBeIncludedInTheArchive() throws IOException {
 		assertThat(this.gradleBuild.build(this.taskName).task(":" + this.taskName).getOutcome())
-			.isEqualTo(TaskOutcome.SUCCESS);
+				.isEqualTo(TaskOutcome.SUCCESS);
 		try (JarFile jarFile = new JarFile(new File(this.gradleBuild.getProjectDir(), "build/libs").listFiles()[0])) {
-			Stream<String> libEntryNames = jarFile.stream()
-				.filter((entry) -> !entry.isDirectory())
-				.map(JarEntry::getName)
-				.filter((name) -> name.startsWith(this.libPath));
+			Stream<String> libEntryNames = jarFile.stream().filter((entry) -> !entry.isDirectory())
+					.map(JarEntry::getName).filter((name) -> name.startsWith(this.libPath));
 			assertThat(libEntryNames).containsExactly(this.libPath + "commons-io-2.6.jar",
 					this.libPath + "commons-lang3-3.9.jar");
 		}
@@ -222,12 +210,10 @@ abstract class AbstractBootArchiveIntegrationTests {
 		createDependenciesStarterJar(new File(flatDirRepository, "starter.jar"));
 		createStandardJar(new File(flatDirRepository, "standard.jar"));
 		assertThat(this.gradleBuild.build(this.taskName).task(":" + this.taskName).getOutcome())
-			.isEqualTo(TaskOutcome.SUCCESS);
+				.isEqualTo(TaskOutcome.SUCCESS);
 		try (JarFile jarFile = new JarFile(new File(this.gradleBuild.getProjectDir(), "build/libs").listFiles()[0])) {
-			Stream<String> libEntryNames = jarFile.stream()
-				.filter((entry) -> !entry.isDirectory())
-				.map(JarEntry::getName)
-				.filter((name) -> name.startsWith(this.libPath));
+			Stream<String> libEntryNames = jarFile.stream().filter((entry) -> !entry.isDirectory())
+					.map(JarEntry::getName).filter((name) -> name.startsWith(this.libPath));
 			assertThat(libEntryNames).containsExactly(this.libPath + "standard.jar");
 		}
 	}
@@ -236,56 +222,44 @@ abstract class AbstractBootArchiveIntegrationTests {
 	void startClassIsSetByResolvingTheMainClass() throws IOException {
 		copyMainClassApplication();
 		assertThat(this.gradleBuild.build(this.taskName).task(":" + this.taskName).getOutcome())
-			.isEqualTo(TaskOutcome.SUCCESS);
+				.isEqualTo(TaskOutcome.SUCCESS);
 		try (JarFile jarFile = new JarFile(new File(this.gradleBuild.getProjectDir(), "build/libs").listFiles()[0])) {
 			Attributes mainAttributes = jarFile.getManifest().getMainAttributes();
 			assertThat(mainAttributes.getValue("Start-Class"))
-				.isEqualTo("com.example." + this.taskName.toLowerCase(Locale.ENGLISH) + ".main.CustomMainClass");
+					.isEqualTo("com.example." + this.taskName.toLowerCase(Locale.ENGLISH) + ".main.CustomMainClass");
 		}
 		assertThat(this.gradleBuild.build(this.taskName).task(":" + this.taskName).getOutcome())
-			.isEqualTo(TaskOutcome.UP_TO_DATE);
+				.isEqualTo(TaskOutcome.UP_TO_DATE);
 	}
 
 	@TestTemplate
 	void upToDateWhenBuiltWithDefaultLayeredAndThenWithExplicitLayered() {
-		assertThat(this.gradleBuild.scriptProperty("layered", "")
-			.build("" + this.taskName)
-			.task(":" + this.taskName)
-			.getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
-		assertThat(this.gradleBuild.scriptProperty("layered", "layered {}")
-			.build("" + this.taskName)
-			.task(":" + this.taskName)
-			.getOutcome()).isEqualTo(TaskOutcome.UP_TO_DATE);
+		assertThat(this.gradleBuild.scriptProperty("layered", "").build("" + this.taskName).task(":" + this.taskName)
+				.getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
+		assertThat(this.gradleBuild.scriptProperty("layered", "layered {}").build("" + this.taskName)
+				.task(":" + this.taskName).getOutcome()).isEqualTo(TaskOutcome.UP_TO_DATE);
 	}
 
 	@TestTemplate
 	void notUpToDateWhenBuiltWithoutLayersAndThenWithLayers() {
-		assertThat(this.gradleBuild.scriptProperty("layerEnablement", "enabled = false")
-			.build(this.taskName)
-			.task(":" + this.taskName)
-			.getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
-		assertThat(this.gradleBuild.scriptProperty("layerEnablement", "enabled = true")
-			.build(this.taskName)
-			.task(":" + this.taskName)
-			.getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
+		assertThat(this.gradleBuild.scriptProperty("layerEnablement", "enabled = false").build(this.taskName)
+				.task(":" + this.taskName).getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
+		assertThat(this.gradleBuild.scriptProperty("layerEnablement", "enabled = true").build(this.taskName)
+				.task(":" + this.taskName).getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
 	}
 
 	@TestTemplate
 	void notUpToDateWhenBuiltWithLayerToolsAndThenWithoutLayerTools() {
-		assertThat(this.gradleBuild.scriptProperty("layerTools", "")
-			.build(this.taskName)
-			.task(":" + this.taskName)
-			.getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
-		assertThat(this.gradleBuild.scriptProperty("layerTools", "includeLayerTools = false")
-			.build(this.taskName)
-			.task(":" + this.taskName)
-			.getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
+		assertThat(this.gradleBuild.scriptProperty("layerTools", "").build(this.taskName).task(":" + this.taskName)
+				.getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
+		assertThat(this.gradleBuild.scriptProperty("layerTools", "includeLayerTools = false").build(this.taskName)
+				.task(":" + this.taskName).getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
 	}
 
 	@TestTemplate
 	void layersWithCustomSourceSet() {
 		assertThat(this.gradleBuild.build(this.taskName).task(":" + this.taskName).getOutcome())
-			.isEqualTo(TaskOutcome.SUCCESS);
+				.isEqualTo(TaskOutcome.SUCCESS);
 	}
 
 	@TestTemplate
@@ -293,7 +267,7 @@ abstract class AbstractBootArchiveIntegrationTests {
 		writeMainClass();
 		writeResource();
 		assertThat(this.gradleBuild.build(this.taskName).task(":" + this.taskName).getOutcome())
-			.isEqualTo(TaskOutcome.SUCCESS);
+				.isEqualTo(TaskOutcome.SUCCESS);
 		Map<String, List<String>> indexedLayers;
 		String layerToolsJar = this.libPath + JarModeLibrary.LAYER_TOOLS.getName();
 		try (JarFile jarFile = new JarFile(new File(this.gradleBuild.getProjectDir(), "build/libs").listFiles()[0])) {
@@ -327,7 +301,7 @@ abstract class AbstractBootArchiveIntegrationTests {
 		assertThat(indexedLayers.get("spring-boot-loader")).containsExactly("org/");
 		assertThat(indexedLayers.get("snapshot-dependencies")).containsExactlyElementsOf(expectedSnapshotDependencies);
 		assertThat(indexedLayers.get("application"))
-			.containsExactly(getExpectedApplicationLayerContents(this.classesPath));
+				.containsExactly(getExpectedApplicationLayerContents(this.classesPath));
 		BuildResult listLayers = this.gradleBuild.build("listLayers");
 		assertThat(listLayers.task(":listLayers").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
 		String listLayersOutput = listLayers.getOutput();
@@ -345,7 +319,7 @@ abstract class AbstractBootArchiveIntegrationTests {
 		writeMainClass();
 		writeResource();
 		assertThat(this.gradleBuild.build(this.taskName).task(":" + this.taskName).getOutcome())
-			.isEqualTo(TaskOutcome.SUCCESS);
+				.isEqualTo(TaskOutcome.SUCCESS);
 		Map<String, List<String>> indexedLayers;
 		String layerToolsJar = this.libPath + JarModeLibrary.LAYER_TOOLS.getName();
 		try (JarFile jarFile = new JarFile(new File(this.gradleBuild.getProjectDir(), "build/libs").listFiles()[0])) {
@@ -375,8 +349,8 @@ abstract class AbstractBootArchiveIntegrationTests {
 		assertThat(indexedLayers.get("spring-boot-loader")).containsExactly("org/");
 		assertThat(indexedLayers.get("snapshot-dependencies")).containsExactlyElementsOf(expectedSnapshotDependencies);
 		assertThat(indexedLayers.get("application"))
-			.containsExactly(getExpectedApplicationLayerContents(this.classesPath, this.libPath + "alpha-1.2.3.jar",
-					this.libPath + "bravo-1.2.3.jar", this.libPath + "charlie-1.2.3.jar"));
+				.containsExactly(getExpectedApplicationLayerContents(this.classesPath, this.libPath + "alpha-1.2.3.jar",
+						this.libPath + "bravo-1.2.3.jar", this.libPath + "charlie-1.2.3.jar"));
 		BuildResult listLayers = this.gradleBuild.build("listLayers");
 		assertThat(listLayers.task(":listLayers").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
 		String listLayersOutput = listLayers.getOutput();
@@ -469,7 +443,7 @@ abstract class AbstractBootArchiveIntegrationTests {
 		expectedSnapshotDependencies.add(this.libPath + "library-1.0-SNAPSHOT.jar");
 		(layerToolsJar.contains("SNAPSHOT") ? expectedSnapshotDependencies : expectedDependencies).add(layerToolsJar);
 		assertThat(indexedLayers.get("subproject-dependencies"))
-			.containsExactlyElementsOf(expectedSubprojectDependencies);
+				.containsExactlyElementsOf(expectedSubprojectDependencies);
 		assertThat(indexedLayers.get("dependencies")).containsExactlyElementsOf(expectedDependencies);
 		assertThat(indexedLayers.get("commons-dependencies")).containsExactly(this.libPath + "commons-lang3-3.9.jar");
 		assertThat(indexedLayers.get("snapshot-dependencies")).containsExactlyElementsOf(expectedSnapshotDependencies);
@@ -505,21 +479,10 @@ abstract class AbstractBootArchiveIntegrationTests {
 		BuildResult build = this.gradleBuild.build(this.taskName);
 		assertThat(build.task(":" + this.taskName).getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
 		try (JarFile jarFile = new JarFile(new File(this.gradleBuild.getProjectDir(), "build/libs").listFiles()[0])) {
-			Stream<String> classesEntryNames = jarFile.stream()
-				.filter((entry) -> !entry.isDirectory())
-				.map(JarEntry::getName)
-				.filter((name) -> name.startsWith(this.classesPath));
+			Stream<String> classesEntryNames = jarFile.stream().filter((entry) -> !entry.isDirectory())
+					.map(JarEntry::getName).filter((name) -> name.startsWith(this.classesPath));
 			assertThat(classesEntryNames).containsExactly(this.classesPath + "example/Main.class",
 					this.classesPath + "example/Secondary.class");
-		}
-	}
-
-	@TestTemplate
-	void javaVersionIsSetInManifest() throws IOException {
-		BuildResult result = this.gradleBuild.build(this.taskName);
-		assertThat(result.task(":" + this.taskName).getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
-		try (JarFile jarFile = new JarFile(new File(this.gradleBuild.getProjectDir(), "build/libs").listFiles()[0])) {
-			assertThat(jarFile.getManifest().getMainAttributes().getValue("Build-Jdk-Spec")).isNotEmpty();
 		}
 	}
 
@@ -587,9 +550,8 @@ abstract class AbstractBootArchiveIntegrationTests {
 
 	private void writeResource() {
 		try {
-			Path path = this.gradleBuild.getProjectDir()
-				.toPath()
-				.resolve(Paths.get("src", "main", "resources", "static", "file.txt"));
+			Path path = this.gradleBuild.getProjectDir().toPath()
+					.resolve(Paths.get("src", "main", "resources", "static", "file.txt"));
 			Files.createDirectories(path.getParent());
 			Files.createFile(path);
 		}
@@ -622,15 +584,9 @@ abstract class AbstractBootArchiveIntegrationTests {
 		for (String layerName : layerNames) {
 			File layer = new File(root, layerName);
 			assertThat(layer).isDirectory();
-			List<String> files;
-			try (Stream<Path> pathStream = Files.walk(layer.toPath())) {
-				files = pathStream.filter((path) -> path.toFile().isFile())
-					.map(layer.toPath()::relativize)
-					.map(Path::toString)
-					.map(StringUtils::cleanPath)
-					.toList();
-			}
-			extractedLayers.put(layerName, files);
+			extractedLayers.put(layerName,
+					Files.walk(layer.toPath()).filter((path) -> path.toFile().isFile()).map(layer.toPath()::relativize)
+							.map(Path::toString).map(StringUtils::cleanPath).collect(Collectors.toList()));
 		}
 		return extractedLayers;
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,8 @@
 
 package org.springframework.boot.autoconfigure.security.servlet;
 
-import jakarta.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequest;
+
 import org.assertj.core.api.AssertDelegateTarget;
 import org.junit.jupiter.api.Test;
 
@@ -38,7 +39,7 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
  */
 class StaticResourceRequestTests {
 
-	private final StaticResourceRequest resourceRequest = StaticResourceRequest.INSTANCE;
+	private StaticResourceRequest resourceRequest = StaticResourceRequest.INSTANCE;
 
 	@Test
 	void atCommonLocationsShouldMatchCommonLocations() {
@@ -87,13 +88,13 @@ class StaticResourceRequestTests {
 	@Test
 	void atLocationsFromSetWhenSetIsNullShouldThrowException() {
 		assertThatIllegalArgumentException().isThrownBy(() -> this.resourceRequest.at(null))
-			.withMessageContaining("Locations must not be null");
+				.withMessageContaining("Locations must not be null");
 	}
 
 	@Test
 	void excludeFromSetWhenSetIsNullShouldThrowException() {
 		assertThatIllegalArgumentException().isThrownBy(() -> this.resourceRequest.atCommonLocations().excluding(null))
-			.withMessageContaining("Locations must not be null");
+				.withMessageContaining("Locations must not be null");
 	}
 
 	private RequestMatcherAssert assertMatcher(RequestMatcher matcher) {

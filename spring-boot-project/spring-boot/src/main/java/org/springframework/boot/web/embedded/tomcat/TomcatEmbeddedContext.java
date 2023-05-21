@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,21 +17,21 @@
 package org.springframework.boot.web.embedded.tomcat;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 
-import jakarta.servlet.ServletException;
+import javax.servlet.ServletException;
+
 import org.apache.catalina.Container;
+import org.apache.catalina.LifecycleException;
 import org.apache.catalina.Manager;
 import org.apache.catalina.Wrapper;
 import org.apache.catalina.core.StandardContext;
 import org.apache.catalina.core.StandardWrapper;
 import org.apache.catalina.session.ManagerBase;
 
-import org.springframework.boot.web.server.MimeMappings;
 import org.springframework.boot.web.server.WebServerException;
 import org.springframework.util.ClassUtils;
 
@@ -45,8 +45,6 @@ import org.springframework.util.ClassUtils;
 class TomcatEmbeddedContext extends StandardContext {
 
 	private TomcatStarter starter;
-
-	private MimeMappings mimeMappings;
 
 	@Override
 	public boolean loadOnStartup(Container[] children) {
@@ -62,7 +60,7 @@ class TomcatEmbeddedContext extends StandardContext {
 		super.setManager(manager);
 	}
 
-	void deferredLoadOnStartup() {
+	void deferredLoadOnStartup() throws LifecycleException {
 		doWithThreadContextClassLoader(getLoader().getClassLoader(),
 				() -> getLoadOnStartupWrappers(findChildren()).forEach(this::load));
 	}
@@ -96,7 +94,7 @@ class TomcatEmbeddedContext extends StandardContext {
 	 * Some older Servlet frameworks (e.g. Struts, BIRT) use the Thread context class
 	 * loader to create servlet instances in this phase. If they do that and then try to
 	 * initialize them later the class loader may have changed, so wrap the call to
-	 * loadOnStartup in what we think is going to be the main webapp classloader at
+	 * loadOnStartup in what we think its going to be the main webapp classloader at
 	 * runtime.
 	 * @param classLoader the class loader to use
 	 * @param code the code to run
@@ -120,29 +118,6 @@ class TomcatEmbeddedContext extends StandardContext {
 
 	TomcatStarter getStarter() {
 		return this.starter;
-	}
-
-	void setMimeMappings(MimeMappings mimeMappings) {
-		this.mimeMappings = mimeMappings;
-	}
-
-	@Override
-	public String[] findMimeMappings() {
-		List<String> mappings = new ArrayList<>();
-		mappings.addAll(Arrays.asList(super.findMimeMappings()));
-		if (this.mimeMappings != null) {
-			this.mimeMappings.forEach((mapping) -> mappings.add(mapping.getExtension()));
-		}
-		return mappings.toArray(String[]::new);
-	}
-
-	@Override
-	public String findMimeMapping(String extension) {
-		String mimeMapping = super.findMimeMapping(extension);
-		if (mimeMapping != null) {
-			return mimeMapping;
-		}
-		return (this.mimeMappings != null) ? this.mimeMappings.get(extension) : null;
 	}
 
 }

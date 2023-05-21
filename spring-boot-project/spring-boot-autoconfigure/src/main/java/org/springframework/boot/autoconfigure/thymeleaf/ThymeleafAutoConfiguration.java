@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,20 +18,22 @@ package org.springframework.boot.autoconfigure.thymeleaf;
 
 import java.util.LinkedHashMap;
 
+import javax.servlet.DispatcherType;
+
 import com.github.mxab.thymeleaf.extras.dataattribute.dialect.DataAttributeDialect;
-import jakarta.servlet.DispatcherType;
-import nz.net.ultraq.thymeleaf.layoutdialect.LayoutDialect;
+import nz.net.ultraq.thymeleaf.LayoutDialect;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.thymeleaf.extras.springsecurity6.dialect.SpringSecurityDialect;
-import org.thymeleaf.spring6.ISpringWebFluxTemplateEngine;
-import org.thymeleaf.spring6.SpringTemplateEngine;
-import org.thymeleaf.spring6.templateresolver.SpringResourceTemplateResolver;
-import org.thymeleaf.spring6.view.ThymeleafViewResolver;
-import org.thymeleaf.spring6.view.reactive.ThymeleafReactiveViewResolver;
+import org.thymeleaf.extras.java8time.dialect.Java8TimeDialect;
+import org.thymeleaf.extras.springsecurity5.dialect.SpringSecurityDialect;
+import org.thymeleaf.spring5.ISpringWebFluxTemplateEngine;
+import org.thymeleaf.spring5.SpringTemplateEngine;
+import org.thymeleaf.spring5.templateresolver.SpringResourceTemplateResolver;
+import org.thymeleaf.spring5.view.ThymeleafViewResolver;
+import org.thymeleaf.spring5.view.reactive.ThymeleafReactiveViewResolver;
 import org.thymeleaf.templatemode.TemplateMode;
 
-import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -70,9 +72,10 @@ import org.springframework.web.servlet.resource.ResourceUrlEncodingFilter;
  * @author Artsiom Yudovin
  * @since 1.0.0
  */
-@AutoConfiguration(after = { WebMvcAutoConfiguration.class, WebFluxAutoConfiguration.class })
+@Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(ThymeleafProperties.class)
 @ConditionalOnClass({ TemplateMode.class, SpringTemplateEngine.class })
+@AutoConfigureAfter({ WebMvcAutoConfiguration.class, WebFluxAutoConfiguration.class })
 @Import({ TemplateEngineConfigurations.ReactiveTemplateEngineConfiguration.class,
 		TemplateEngineConfigurations.DefaultTemplateEngineConfiguration.class })
 public class ThymeleafAutoConfiguration {
@@ -98,9 +101,8 @@ public class ThymeleafAutoConfiguration {
 			if (checkTemplateLocation) {
 				TemplateLocation location = new TemplateLocation(this.properties.getPrefix());
 				if (!location.exists(this.applicationContext)) {
-					logger.warn("Cannot find template location: " + location
-							+ " (please add some templates, check your Thymeleaf configuration, or set spring.thymeleaf."
-							+ "check-template-location=false)");
+					logger.warn("Cannot find template location: " + location + " (please add some templates or check "
+							+ "your Thymeleaf configuration)");
 				}
 			}
 		}
@@ -207,10 +209,8 @@ public class ThymeleafAutoConfiguration {
 		private void mapReactiveProperties(Reactive properties, ThymeleafReactiveViewResolver resolver) {
 			PropertyMapper map = PropertyMapper.get();
 			map.from(properties::getMediaTypes).whenNonNull().to(resolver::setSupportedMediaTypes);
-			map.from(properties::getMaxChunkSize)
-				.asInt(DataSize::toBytes)
-				.when((size) -> size > 0)
-				.to(resolver::setResponseMaxChunkSizeBytes);
+			map.from(properties::getMaxChunkSize).asInt(DataSize::toBytes).when((size) -> size > 0)
+					.to(resolver::setResponseMaxChunkSizeBytes);
 			map.from(properties::getFullModeViewNames).to(resolver::setFullModeViewNames);
 			map.from(properties::getChunkedModeViewNames).to(resolver::setChunkedModeViewNames);
 		}
@@ -249,6 +249,18 @@ public class ThymeleafAutoConfiguration {
 		@ConditionalOnMissingBean
 		SpringSecurityDialect securityDialect() {
 			return new SpringSecurityDialect();
+		}
+
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	@ConditionalOnClass(Java8TimeDialect.class)
+	static class ThymeleafJava8TimeDialect {
+
+		@Bean
+		@ConditionalOnMissingBean
+		Java8TimeDialect java8TimeDialect() {
+			return new Java8TimeDialect();
 		}
 
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package org.springframework.boot.test.web.client;
 
-import org.springframework.aot.AotDetector;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
@@ -53,11 +52,8 @@ class TestRestTemplateContextCustomizer implements ContextCustomizer {
 	@Override
 	public void customizeContext(ConfigurableApplicationContext context,
 			MergedContextConfiguration mergedContextConfiguration) {
-		if (AotDetector.useGeneratedArtifacts()) {
-			return;
-		}
 		SpringBootTest springBootTest = TestContextAnnotationUtils
-			.findMergedAnnotation(mergedContextConfiguration.getTestClass(), SpringBootTest.class);
+				.findMergedAnnotation(mergedContextConfiguration.getTestClass(), SpringBootTest.class);
 		if (springBootTest.webEnvironment().isEmbedded()) {
 			registerTestRestTemplate(context);
 		}
@@ -65,8 +61,8 @@ class TestRestTemplateContextCustomizer implements ContextCustomizer {
 
 	private void registerTestRestTemplate(ConfigurableApplicationContext context) {
 		ConfigurableListableBeanFactory beanFactory = context.getBeanFactory();
-		if (beanFactory instanceof BeanDefinitionRegistry registry) {
-			registerTestRestTemplate(registry);
+		if (beanFactory instanceof BeanDefinitionRegistry) {
+			registerTestRestTemplate((BeanDefinitionRegistry) beanFactory);
 		}
 	}
 
@@ -91,7 +87,8 @@ class TestRestTemplateContextCustomizer implements ContextCustomizer {
 	 * {@link ConfigurationClassPostProcessor} and add a {@link TestRestTemplateFactory}
 	 * bean definition when a {@link TestRestTemplate} hasn't already been registered.
 	 */
-	static class TestRestTemplateRegistrar implements BeanDefinitionRegistryPostProcessor, Ordered, BeanFactoryAware {
+	private static class TestRestTemplateRegistrar
+			implements BeanDefinitionRegistryPostProcessor, Ordered, BeanFactoryAware {
 
 		private BeanFactory beanFactory;
 
@@ -107,9 +104,6 @@ class TestRestTemplateContextCustomizer implements ContextCustomizer {
 
 		@Override
 		public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) throws BeansException {
-			if (AotDetector.useGeneratedArtifacts()) {
-				return;
-			}
 			if (BeanFactoryUtils.beanNamesForTypeIncludingAncestors((ListableBeanFactory) this.beanFactory,
 					TestRestTemplate.class, false, false).length == 0) {
 				registry.registerBeanDefinition(TestRestTemplate.class.getName(),
@@ -150,7 +144,7 @@ class TestRestTemplateContextCustomizer implements ContextCustomizer {
 		private boolean isSslEnabled(ApplicationContext context) {
 			try {
 				AbstractServletWebServerFactory webServerFactory = context
-					.getBean(AbstractServletWebServerFactory.class);
+						.getBean(AbstractServletWebServerFactory.class);
 				return webServerFactory.getSsl() != null && webServerFactory.getSsl().isEnabled();
 			}
 			catch (NoSuchBeanDefinitionException ex) {

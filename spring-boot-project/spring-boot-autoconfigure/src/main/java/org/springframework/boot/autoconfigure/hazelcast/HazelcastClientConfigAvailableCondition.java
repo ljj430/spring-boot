@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,22 +39,21 @@ class HazelcastClientConfigAvailableCondition extends HazelcastConfigResourceCon
 
 	HazelcastClientConfigAvailableCondition() {
 		super(HazelcastClientConfiguration.CONFIG_SYSTEM_PROPERTY, "file:./hazelcast-client.xml",
-				"classpath:/hazelcast-client.xml", "file:./hazelcast-client.yaml", "classpath:/hazelcast-client.yaml",
-				"file:./hazelcast-client.yml", "classpath:/hazelcast-client.yml");
+				"classpath:/hazelcast-client.xml", "file:./hazelcast-client.yaml", "classpath:/hazelcast-client.yaml");
 	}
 
 	@Override
 	public ConditionOutcome getMatchOutcome(ConditionContext context, AnnotatedTypeMetadata metadata) {
 		if (context.getEnvironment().containsProperty(HAZELCAST_CONFIG_PROPERTY)) {
-			ConditionOutcome configValidationOutcome = HazelcastClientValidation.clientConfigOutcome(context,
+			ConditionOutcome configValidationOutcome = Hazelcast4ClientValidation.clientConfigOutcome(context,
 					HAZELCAST_CONFIG_PROPERTY, startConditionMessage());
 			return (configValidationOutcome != null) ? configValidationOutcome : ConditionOutcome
-				.match(startConditionMessage().foundExactly("property " + HAZELCAST_CONFIG_PROPERTY));
+					.match(startConditionMessage().foundExactly("property " + HAZELCAST_CONFIG_PROPERTY));
 		}
 		return getResourceOutcome(context, metadata);
 	}
 
-	static class HazelcastClientValidation {
+	static class Hazelcast4ClientValidation {
 
 		static ConditionOutcome clientConfigOutcome(ConditionContext context, String propertyName, Builder builder) {
 			String resourcePath = context.getEnvironment().getProperty(propertyName);
@@ -66,7 +65,7 @@ class HazelcastClientConfigAvailableCondition extends HazelcastConfigResourceCon
 				boolean clientConfig = new ClientConfigRecognizer().isRecognized(new ConfigStream(in));
 				return new ConditionOutcome(clientConfig, existingConfigurationOutcome(resource, clientConfig));
 			}
-			catch (Throwable ex) {
+			catch (Throwable ex) { // Hazelcast 4 specific API
 				return null;
 			}
 		}

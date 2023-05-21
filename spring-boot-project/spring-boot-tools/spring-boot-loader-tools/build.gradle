@@ -41,7 +41,6 @@ task reproducibleLoaderJar(type: Jar) {
 		zipTree(configurations.loader.incoming.files.singleFile).matching {
 			exclude "META-INF/LICENSE.txt"
 			exclude "META-INF/NOTICE.txt"
-			exclude "META-INF/spring-boot.properties"
 		}
 	}
 	reproducibleFileOrder = true
@@ -50,18 +49,23 @@ task reproducibleLoaderJar(type: Jar) {
 	destinationDirectory = file("${generatedResources}/META-INF/loader")
 }
 
-task layerToolsJar(type: Sync) {
+task reproducibleJarModeLayerToolsJar(type: Jar) {
 	dependsOn configurations.jarmode
 	from {
-		file(configurations.jarmode.incoming.files.singleFile)
+		zipTree(configurations.jarmode.incoming.files.singleFile).matching {
+			exclude "META-INF/LICENSE.txt"
+			exclude "META-INF/NOTICE.txt"
+		}
 	}
-	rename({ "spring-boot-jarmode-layertools.jar" })
-	into(file("${generatedResources}/META-INF/jarmode"))
+	reproducibleFileOrder = true
+	preserveFileTimestamps = false
+	archiveFileName = "spring-boot-jarmode-layertools.jar"
+	destinationDirectory = file("${generatedResources}/META-INF/jarmode")
 }
 
 sourceSets {
 	main {
-		output.dir(generatedResources, builtBy: [layerToolsJar, reproducibleLoaderJar])
+		output.dir(generatedResources, builtBy: [reproducibleJarModeLayerToolsJar, reproducibleLoaderJar])
 	}
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -123,7 +123,7 @@ public interface BootstrapRegistry {
 		default InstanceSupplier<T> withScope(Scope scope) {
 			Assert.notNull(scope, "Scope must not be null");
 			InstanceSupplier<T> parent = this;
-			return new InstanceSupplier<>() {
+			return new InstanceSupplier<T>() {
 
 				@Override
 				public T get(BootstrapContext context) {
@@ -163,8 +163,7 @@ public interface BootstrapRegistry {
 	}
 
 	/**
-	 * The scope of an instance.
-	 *
+	 * The scope of a instance.
 	 * @since 2.4.2
 	 */
 	enum Scope {
@@ -176,7 +175,7 @@ public interface BootstrapRegistry {
 		SINGLETON,
 
 		/**
-		 * A prototype instance. The {@link InstanceSupplier} will be called whenever an
+		 * A prototype instance. The {@link InstanceSupplier} will be called whenver an
 		 * instance is needed.
 		 */
 		PROTOTYPE

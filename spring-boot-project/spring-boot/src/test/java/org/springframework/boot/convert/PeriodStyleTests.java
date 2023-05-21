@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,19 +29,17 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
  *
  * @author Eddú Meléndez
  * @author Edson Chávez
- * @author Valentine Wu
  */
 class PeriodStyleTests {
 
 	@Test
 	void detectAndParseWhenValueIsNullShouldThrowException() {
 		assertThatIllegalArgumentException().isThrownBy(() -> PeriodStyle.detectAndParse(null))
-			.withMessageContaining("Value must not be null");
+				.withMessageContaining("Value must not be null");
 	}
 
 	@Test
 	void detectAndParseWhenIso8601ShouldReturnPeriod() {
-		assertThat(PeriodStyle.detectAndParse("p15m")).isEqualTo(Period.parse("p15m"));
 		assertThat(PeriodStyle.detectAndParse("P15M")).isEqualTo(Period.parse("P15M"));
 		assertThat(PeriodStyle.detectAndParse("-P15M")).isEqualTo(Period.parse("P-15M"));
 		assertThat(PeriodStyle.detectAndParse("+P15M")).isEqualTo(Period.parse("P15M"));
@@ -109,7 +107,7 @@ class PeriodStyleTests {
 	@Test
 	void detectAndParseWhenBadFormatShouldThrowException() {
 		assertThatIllegalArgumentException().isThrownBy(() -> PeriodStyle.detectAndParse("10foo"))
-			.withMessageContaining("'10foo' is not a valid period");
+				.withMessageContaining("'10foo' is not a valid period");
 	}
 
 	@Test
@@ -125,7 +123,6 @@ class PeriodStyleTests {
 
 	@Test
 	void detectWhenIso8601ShouldReturnIso8601() {
-		assertThat(PeriodStyle.detect("p20")).isEqualTo(PeriodStyle.ISO8601);
 		assertThat(PeriodStyle.detect("P20")).isEqualTo(PeriodStyle.ISO8601);
 		assertThat(PeriodStyle.detect("-P15M")).isEqualTo(PeriodStyle.ISO8601);
 		assertThat(PeriodStyle.detect("+P15M")).isEqualTo(PeriodStyle.ISO8601);
@@ -138,12 +135,11 @@ class PeriodStyleTests {
 	@Test
 	void detectWhenUnknownShouldThrowException() {
 		assertThatIllegalArgumentException().isThrownBy(() -> PeriodStyle.detect("bad"))
-			.withMessageContaining("'bad' is not a valid period");
+				.withMessageContaining("'bad' is not a valid period");
 	}
 
 	@Test
 	void parseIso8601ShouldParse() {
-		assertThat(PeriodStyle.ISO8601.parse("p20d")).isEqualTo(Period.parse("p20d"));
 		assertThat(PeriodStyle.ISO8601.parse("P20D")).isEqualTo(Period.parse("P20D"));
 		assertThat(PeriodStyle.ISO8601.parse("P15M")).isEqualTo(Period.parse("P15M"));
 		assertThat(PeriodStyle.ISO8601.parse("+P15M")).isEqualTo(Period.parse("P15M"));
@@ -155,7 +151,6 @@ class PeriodStyleTests {
 
 	@Test
 	void parseIso8601WithUnitShouldIgnoreUnit() {
-		assertThat(PeriodStyle.ISO8601.parse("p20d", ChronoUnit.SECONDS)).isEqualTo(Period.parse("p20d"));
 		assertThat(PeriodStyle.ISO8601.parse("P20D", ChronoUnit.SECONDS)).isEqualTo(Period.parse("P20D"));
 		assertThat(PeriodStyle.ISO8601.parse("P15M", ChronoUnit.SECONDS)).isEqualTo(Period.parse("P15M"));
 		assertThat(PeriodStyle.ISO8601.parse("+P15M", ChronoUnit.SECONDS)).isEqualTo(Period.parse("P15M"));
@@ -168,7 +163,7 @@ class PeriodStyleTests {
 	@Test
 	void parseIso8601WhenSimpleShouldThrowException() {
 		assertThatIllegalArgumentException().isThrownBy(() -> PeriodStyle.ISO8601.parse("10d"))
-			.withMessageContaining("'10d' is not a valid ISO-8601 period");
+				.withMessageContaining("'10d' is not a valid ISO-8601 period");
 	}
 
 	@Test
@@ -184,15 +179,14 @@ class PeriodStyleTests {
 
 	@Test
 	void parseSimpleWhenUnknownUnitShouldThrowException() {
-		assertThatIllegalArgumentException().isThrownBy(() -> PeriodStyle.SIMPLE.parse("10x"))
-			.satisfies(
-					(ex) -> assertThat(ex.getCause().getMessage()).isEqualTo("Does not match simple period pattern"));
+		assertThatIllegalArgumentException().isThrownBy(() -> PeriodStyle.SIMPLE.parse("10x")).satisfies(
+				(ex) -> assertThat(ex.getCause().getMessage()).isEqualTo("Does not match simple period pattern"));
 	}
 
 	@Test
 	void parseSimpleWhenIso8601ShouldThrowException() {
 		assertThatIllegalArgumentException().isThrownBy(() -> PeriodStyle.SIMPLE.parse("PT10H"))
-			.withMessageContaining("'PT10H' is not a valid simple period");
+				.withMessageContaining("'PT10H' is not a valid simple period");
 	}
 
 	@Test

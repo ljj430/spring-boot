@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,11 +36,12 @@ class TotalProgressBarTests {
 		TotalProgressBar bar = new TotalProgressBar("prefix:", '#', true, out);
 		assertThat(out).hasToString("prefix: [ ");
 		bar.accept(new TotalProgressEvent(10));
-		assertThat(out).hasToString("prefix: [ #####");
+		assertThat(out.toString()).isEqualTo("prefix: [ #####");
 		bar.accept(new TotalProgressEvent(50));
-		assertThat(out).hasToString("prefix: [ #########################");
+		assertThat(out.toString()).isEqualTo("prefix: [ #########################");
 		bar.accept(new TotalProgressEvent(100));
-		assertThat(out).hasToString(String.format("prefix: [ ################################################## ]%n"));
+		assertThat(out.toString())
+				.isEqualTo(String.format("prefix: [ ################################################## ]%n"));
 	}
 
 	@Test
@@ -49,11 +50,11 @@ class TotalProgressBarTests {
 		TotalProgressBar bar = new TotalProgressBar(null, '#', true, out);
 		assertThat(out).hasToString("[ ");
 		bar.accept(new TotalProgressEvent(10));
-		assertThat(out).hasToString("[ #####");
+		assertThat(out.toString()).isEqualTo("[ #####");
 		bar.accept(new TotalProgressEvent(50));
-		assertThat(out).hasToString("[ #########################");
+		assertThat(out.toString()).isEqualTo("[ #########################");
 		bar.accept(new TotalProgressEvent(100));
-		assertThat(out).hasToString(String.format("[ ################################################## ]%n"));
+		assertThat(out.toString()).isEqualTo(String.format("[ ################################################## ]%n"));
 	}
 
 	@Test
@@ -62,11 +63,11 @@ class TotalProgressBarTests {
 		TotalProgressBar bar = new TotalProgressBar("", '.', false, out);
 		assertThat(out).hasToString("");
 		bar.accept(new TotalProgressEvent(10));
-		assertThat(out).hasToString(".....");
+		assertThat(out.toString()).isEqualTo(".....");
 		bar.accept(new TotalProgressEvent(50));
-		assertThat(out).hasToString(".........................");
+		assertThat(out.toString()).isEqualTo(".........................");
 		bar.accept(new TotalProgressEvent(100));
-		assertThat(out).hasToString(String.format("..................................................%n"));
+		assertThat(out.toString()).isEqualTo(String.format("..................................................%n"));
 	}
 
 	static class TestPrintStream extends PrintStream {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,15 +79,15 @@ class PropertySourcesDeducerTests {
 		Environment environment = mock(Environment.class);
 		given(applicationContext.getEnvironment()).willReturn(environment);
 		PropertySourcesDeducer deducer = new PropertySourcesDeducer(applicationContext);
-		assertThatIllegalStateException().isThrownBy(() -> deducer.getPropertySources())
-			.withMessage("Unable to obtain PropertySources from PropertySourcesPlaceholderConfigurer or Environment");
+		assertThatIllegalStateException().isThrownBy(() -> deducer.getPropertySources()).withMessage(
+				"Unable to obtain PropertySources from PropertySourcesPlaceholderConfigurer or Environment");
 	}
 
 	@Configuration(proxyBeanMethods = false)
 	static class PropertySourcesPlaceholderConfigurerConfiguration {
 
 		@Bean
-		static PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer() {
+		PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer() {
 			PropertySourcesPlaceholderConfigurer configurer = new PropertySourcesPlaceholderConfigurer();
 			MutablePropertySources propertySources = new MutablePropertySources();
 			propertySources.addFirst(new TestPropertySource());
@@ -106,12 +106,12 @@ class PropertySourcesDeducerTests {
 	static class MultiplePropertySourcesPlaceholderConfigurerConfiguration {
 
 		@Bean
-		static PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer1() {
+		PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer1() {
 			return new PropertySourcesPlaceholderConfigurer();
 		}
 
 		@Bean
-		static PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer2() {
+		PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer2() {
 			return new PropertySourcesPlaceholderConfigurer();
 		}
 

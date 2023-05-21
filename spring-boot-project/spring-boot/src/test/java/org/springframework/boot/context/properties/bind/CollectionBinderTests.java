@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 
@@ -87,7 +88,7 @@ class CollectionBinderTests {
 		source.put("foo[1][1]", "4");
 		this.sources.add(source);
 		Bindable<List<List<Integer>>> target = Bindable
-			.of(ResolvableType.forClassWithGenerics(List.class, INTEGER_LIST.getType()));
+				.of(ResolvableType.forClassWithGenerics(List.class, INTEGER_LIST.getType()));
 		List<List<Integer>> result = this.binder.bind("foo", target).get();
 		assertThat(result).hasSize(2);
 		assertThat(result.get(0)).containsExactly(1, 2);
@@ -113,14 +114,14 @@ class CollectionBinderTests {
 		source.put("foo[3]", "3");
 		this.sources.add(source);
 		assertThatExceptionOfType(BindException.class).isThrownBy(() -> this.binder.bind("foo", INTEGER_LIST))
-			.satisfies((ex) -> {
-				Set<ConfigurationProperty> unbound = ((UnboundConfigurationPropertiesException) ex.getCause())
-					.getUnboundProperties();
-				assertThat(unbound).hasSize(1);
-				ConfigurationProperty property = unbound.iterator().next();
-				assertThat(property.getName()).hasToString("foo[3]");
-				assertThat(property.getValue()).isEqualTo("3");
-			});
+				.satisfies((ex) -> {
+					Set<ConfigurationProperty> unbound = ((UnboundConfigurationPropertiesException) ex.getCause())
+							.getUnboundProperties();
+					assertThat(unbound).hasSize(1);
+					ConfigurationProperty property = unbound.iterator().next();
+					assertThat(property.getName().toString()).isEqualTo("foo[3]");
+					assertThat(property.getValue()).isEqualTo("3");
+				});
 	}
 
 	@Test
@@ -132,14 +133,14 @@ class CollectionBinderTests {
 		this.sources.add(source);
 		Bindable<List<JavaBean>> target = Bindable.listOf(JavaBean.class);
 		assertThatExceptionOfType(BindException.class).isThrownBy(() -> this.binder.bind("foo", target))
-			.satisfies((ex) -> {
-				Set<ConfigurationProperty> unbound = ((UnboundConfigurationPropertiesException) ex.getCause())
-					.getUnboundProperties();
-				assertThat(unbound).hasSize(1);
-				ConfigurationProperty property = unbound.iterator().next();
-				assertThat(property.getName()).hasToString("foo[4].value");
-				assertThat(property.getValue()).isEqualTo("4");
-			});
+				.satisfies((ex) -> {
+					Set<ConfigurationProperty> unbound = ((UnboundConfigurationPropertiesException) ex.getCause())
+							.getUnboundProperties();
+					assertThat(unbound).hasSize(1);
+					ConfigurationProperty property = unbound.iterator().next();
+					assertThat(property.getName().toString()).isEqualTo("foo[4].value");
+					assertThat(property.getValue()).isEqualTo("4");
+				});
 	}
 
 	@Test
@@ -265,7 +266,7 @@ class CollectionBinderTests {
 		source.put("foo", "");
 		this.sources.add(source);
 		List<String> result = this.binder.bind("foo", STRING_LIST).get();
-		assertThat(result).isEmpty();
+		assertThat(result).isNotNull().isEmpty();
 	}
 
 	@Test
@@ -278,7 +279,7 @@ class CollectionBinderTests {
 		Bindable<List<JavaBean>> target = Bindable.listOf(JavaBean.class);
 		List<JavaBean> result = this.binder.bind("foo", target).get();
 		assertThat(result).hasSize(3);
-		List<String> values = result.stream().map(JavaBean::getValue).toList();
+		List<String> values = result.stream().map(JavaBean::getValue).collect(Collectors.toList());
 		assertThat(values).containsExactly("a", "b", "c");
 	}
 
@@ -307,8 +308,7 @@ class CollectionBinderTests {
 		source.put("foo.items", "a,b,c,c");
 		this.sources.add(source);
 		ExampleCustomNoDefaultConstructorBean result = this.binder
-			.bind("foo", ExampleCustomNoDefaultConstructorBean.class)
-			.get();
+				.bind("foo", ExampleCustomNoDefaultConstructorBean.class).get();
 		assertThat(result.getItems()).hasSize(4);
 		assertThat(result.getItems()).containsExactly("a", "b", "c", "c");
 	}
@@ -320,8 +320,7 @@ class CollectionBinderTests {
 		source.put("foo.items", "a,b,c,c");
 		this.sources.add(source);
 		ExampleCustomWithDefaultConstructorBean result = this.binder
-			.bind("foo", ExampleCustomWithDefaultConstructorBean.class)
-			.get();
+				.bind("foo", ExampleCustomWithDefaultConstructorBean.class).get();
 		assertThat(result.getItems()).hasSize(4);
 		assertThat(result.getItems()).containsExactly("a", "b", "c", "c");
 	}
@@ -432,7 +431,7 @@ class CollectionBinderTests {
 
 	static class ExampleCollectionBean {
 
-		private final List<String> items = new ArrayList<>();
+		private List<String> items = new ArrayList<>();
 
 		private Set<String> itemsSet = new LinkedHashSet<>();
 
@@ -479,7 +478,7 @@ class CollectionBinderTests {
 
 	static class ExampleCustomWithDefaultConstructorBean {
 
-		private final MyCustomWithDefaultConstructorList items = new MyCustomWithDefaultConstructorList();
+		private MyCustomWithDefaultConstructorList items = new MyCustomWithDefaultConstructorList();
 
 		MyCustomWithDefaultConstructorList getItems() {
 			return this.items;

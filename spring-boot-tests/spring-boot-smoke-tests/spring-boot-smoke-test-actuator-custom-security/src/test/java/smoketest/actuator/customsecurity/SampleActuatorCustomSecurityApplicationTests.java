@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -62,10 +62,11 @@ class SampleActuatorCustomSecurityApplicationTests extends AbstractSampleActuato
 	}
 
 	@Test
-	@SuppressWarnings({ "rawtypes", "unchecked" })
 	void testInsecureApplicationPath() {
+		@SuppressWarnings("rawtypes")
 		ResponseEntity<Map> entity = restTemplate().getForEntity(getPath() + "/foo", Map.class);
 		assertThat(entity.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+		@SuppressWarnings("unchecked")
 		Map<String, Object> body = entity.getBody();
 		assertThat((String) body.get("message")).contains("Expected exception in controller");
 	}
@@ -76,7 +77,7 @@ class SampleActuatorCustomSecurityApplicationTests extends AbstractSampleActuato
 				Object.class);
 		assertThat(entity.getStatusCode()).isEqualTo(HttpStatus.OK);
 		entity = beansRestTemplate().getForEntity(getManagementPath() + "/actuator/beans/", Object.class);
-		assertThat(entity.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+		assertThat(entity.getStatusCode()).isEqualTo(HttpStatus.OK);
 	}
 
 }

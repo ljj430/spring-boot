@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,12 @@ package org.springframework.boot.actuate.autoconfigure.endpoint.web;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.actuate.autoconfigure.endpoint.EndpointAutoConfiguration;
-import org.springframework.boot.actuate.autoconfigure.endpoint.expose.EndpointExposure;
 import org.springframework.boot.actuate.autoconfigure.endpoint.expose.IncludeExcludeEndpointFilter;
+import org.springframework.boot.actuate.autoconfigure.endpoint.expose.IncludeExcludeEndpointFilter.DefaultIncludes;
 import org.springframework.boot.actuate.endpoint.EndpointFilter;
 import org.springframework.boot.actuate.endpoint.EndpointsSupplier;
 import org.springframework.boot.actuate.endpoint.annotation.Endpoint;
@@ -40,7 +41,7 @@ import org.springframework.boot.actuate.endpoint.web.annotation.ExposableControl
 import org.springframework.boot.actuate.endpoint.web.annotation.ServletEndpointDiscoverer;
 import org.springframework.boot.actuate.endpoint.web.annotation.ServletEndpointsSupplier;
 import org.springframework.boot.actuate.endpoint.web.annotation.WebEndpointDiscoverer;
-import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
@@ -58,8 +59,9 @@ import org.springframework.context.annotation.Configuration;
  * @author Stephane Nicoll
  * @since 2.0.0
  */
-@AutoConfiguration(after = EndpointAutoConfiguration.class)
+@Configuration(proxyBeanMethods = false)
 @ConditionalOnWebApplication
+@AutoConfigureAfter(EndpointAutoConfiguration.class)
 @EnableConfigurationProperties(WebEndpointProperties.class)
 public class WebEndpointAutoConfiguration {
 
@@ -90,15 +92,17 @@ public class WebEndpointAutoConfiguration {
 			ObjectProvider<OperationInvokerAdvisor> invokerAdvisors,
 			ObjectProvider<EndpointFilter<ExposableWebEndpoint>> filters) {
 		return new WebEndpointDiscoverer(this.applicationContext, parameterValueMapper, endpointMediaTypes,
-				endpointPathMappers.orderedStream().toList(), invokerAdvisors.orderedStream().toList(),
-				filters.orderedStream().toList());
+				endpointPathMappers.orderedStream().collect(Collectors.toList()),
+				invokerAdvisors.orderedStream().collect(Collectors.toList()),
+				filters.orderedStream().collect(Collectors.toList()));
 	}
 
 	@Bean
 	@ConditionalOnMissingBean(ControllerEndpointsSupplier.class)
 	public ControllerEndpointDiscoverer controllerEndpointDiscoverer(ObjectProvider<PathMapper> endpointPathMappers,
 			ObjectProvider<Collection<EndpointFilter<ExposableControllerEndpoint>>> filters) {
-		return new ControllerEndpointDiscoverer(this.applicationContext, endpointPathMappers.orderedStream().toList(),
+		return new ControllerEndpointDiscoverer(this.applicationContext,
+				endpointPathMappers.orderedStream().collect(Collectors.toList()),
 				filters.getIfAvailable(Collections::emptyList));
 	}
 
@@ -112,7 +116,7 @@ public class WebEndpointAutoConfiguration {
 	public IncludeExcludeEndpointFilter<ExposableWebEndpoint> webExposeExcludePropertyEndpointFilter() {
 		WebEndpointProperties.Exposure exposure = this.properties.getExposure();
 		return new IncludeExcludeEndpointFilter<>(ExposableWebEndpoint.class, exposure.getInclude(),
-				exposure.getExclude(), EndpointExposure.WEB.getDefaultIncludes());
+				exposure.getExclude(), DefaultIncludes.WEB);
 	}
 
 	@Bean
@@ -131,8 +135,9 @@ public class WebEndpointAutoConfiguration {
 		ServletEndpointDiscoverer servletEndpointDiscoverer(ApplicationContext applicationContext,
 				ObjectProvider<PathMapper> endpointPathMappers,
 				ObjectProvider<EndpointFilter<ExposableServletEndpoint>> filters) {
-			return new ServletEndpointDiscoverer(applicationContext, endpointPathMappers.orderedStream().toList(),
-					filters.orderedStream().toList());
+			return new ServletEndpointDiscoverer(applicationContext,
+					endpointPathMappers.orderedStream().collect(Collectors.toList()),
+					filters.orderedStream().collect(Collectors.toList()));
 		}
 
 	}

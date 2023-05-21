@@ -162,11 +162,6 @@ public final class Layouts {
 		}
 
 		@Override
-		public String getClasspathIndexFileLocation() {
-			return "WEB-INF/classpath.idx";
-		}
-
-		@Override
 		public String getLayersIndexFileLocation() {
 			return "WEB-INF/layers.idx";
 		}

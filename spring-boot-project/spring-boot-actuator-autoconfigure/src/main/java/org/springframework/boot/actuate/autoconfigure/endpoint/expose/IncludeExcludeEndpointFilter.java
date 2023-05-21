@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,17 +65,17 @@ public class IncludeExcludeEndpointFilter<E extends ExposableEndpoint<?>> implem
 	}
 
 	/**
-	 * Create a new {@link IncludeExcludeEndpointFilter} with specific include/exclude
-	 * rules.
+	 * Create a new {@link IncludeExcludeEndpointFilter} with include/exclude rules bound
+	 * from the {@link Environment}.
 	 * @param endpointType the endpoint type that should be considered (other types always
 	 * match)
-	 * @param include the include patterns
-	 * @param exclude the exclude patterns
+	 * @param environment the environment containing the properties
+	 * @param prefix the property prefix to bind
 	 * @param defaultIncludes the default {@code includes} to use when none are specified.
 	 */
-	public IncludeExcludeEndpointFilter(Class<E> endpointType, Collection<String> include, Collection<String> exclude,
-			String... defaultIncludes) {
-		this(endpointType, include, exclude, new EndpointPatterns(defaultIncludes));
+	public IncludeExcludeEndpointFilter(Class<E> endpointType, Environment environment, String prefix,
+			DefaultIncludes defaultIncludes) {
+		this(endpointType, environment, prefix, DefaultIncludes.patterns(defaultIncludes));
 	}
 
 	private IncludeExcludeEndpointFilter(Class<E> endpointType, Environment environment, String prefix,
@@ -89,6 +89,34 @@ public class IncludeExcludeEndpointFilter<E extends ExposableEndpoint<?>> implem
 		this.include = new EndpointPatterns(bind(binder, prefix + ".include"));
 		this.defaultIncludes = defaultIncludes;
 		this.exclude = new EndpointPatterns(bind(binder, prefix + ".exclude"));
+	}
+
+	/**
+	 * Create a new {@link IncludeExcludeEndpointFilter} with specific include/exclude
+	 * rules.
+	 * @param endpointType the endpoint type that should be considered (other types always
+	 * match)
+	 * @param include the include patterns
+	 * @param exclude the exclude patterns
+	 * @param defaultIncludes the default {@code includes} to use when none are specified.
+	 */
+	public IncludeExcludeEndpointFilter(Class<E> endpointType, Collection<String> include, Collection<String> exclude,
+			String... defaultIncludes) {
+		this(endpointType, include, exclude, new EndpointPatterns(defaultIncludes));
+	}
+
+	/**
+	 * Create a new {@link IncludeExcludeEndpointFilter} with specific include/exclude
+	 * rules.
+	 * @param endpointType the endpoint type that should be considered (other types always
+	 * match)
+	 * @param include the include patterns
+	 * @param exclude the exclude patterns
+	 * @param defaultIncludes the default {@code includes} to use when none are specified.
+	 */
+	public IncludeExcludeEndpointFilter(Class<E> endpointType, Collection<String> include, Collection<String> exclude,
+			DefaultIncludes defaultIncludes) {
+		this(endpointType, include, exclude, DefaultIncludes.patterns(defaultIncludes));
 	}
 
 	private IncludeExcludeEndpointFilter(Class<E> endpointType, Collection<String> include, Collection<String> exclude,
@@ -118,9 +146,8 @@ public class IncludeExcludeEndpointFilter<E extends ExposableEndpoint<?>> implem
 	 * Return {@code true} if the filter matches.
 	 * @param endpointId the endpoint ID to check
 	 * @return {@code true} if the filter matches
-	 * @since 2.6.0
 	 */
-	public final boolean match(EndpointId endpointId) {
+	protected final boolean match(EndpointId endpointId) {
 		return isIncluded(endpointId) && !isExcluded(endpointId);
 	}
 
@@ -136,6 +163,33 @@ public class IncludeExcludeEndpointFilter<E extends ExposableEndpoint<?>> implem
 			return false;
 		}
 		return this.exclude.matches(endpointId);
+	}
+
+	/**
+	 * Default include patterns that can be used.
+	 */
+	public enum DefaultIncludes {
+
+		/**
+		 * The default set of include patterns used for JMX.
+		 */
+		JMX("*"),
+
+		/**
+		 * The default set of include patterns used for web.
+		 */
+		WEB("health");
+
+		private final EndpointPatterns patterns;
+
+		DefaultIncludes(String... patterns) {
+			this.patterns = new EndpointPatterns(patterns);
+		}
+
+		static EndpointPatterns patterns(DefaultIncludes defaultIncludes) {
+			return (defaultIncludes != null) ? defaultIncludes.patterns : (EndpointPatterns) null;
+		}
+
 	}
 
 	/**

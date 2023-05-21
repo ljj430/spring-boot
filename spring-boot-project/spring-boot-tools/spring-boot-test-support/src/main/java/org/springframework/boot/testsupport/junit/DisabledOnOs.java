@@ -37,22 +37,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 public @interface DisabledOnOs {
 
 	/**
-	 * The operating systems on which the annotated class or method should be disabled.
-	 * @return the operating systems where the test is disabled
+	 * See {@link org.junit.jupiter.api.condition.DisabledOnOs#value()}.
+	 * @return os
 	 */
-	OS[] value() default {};
+	OS os();
 
 	/**
-	 * The operating systems on which the annotated class or method should be disabled.
-	 * @return the operating systems where the test is disabled
+	 * Architecture of the operating system.
+	 * @return architecture
 	 */
-	OS[] os() default {};
-
-	/**
-	 * The architectures on which the annotated class or method should be disabled.
-	 * @return the architectures where the test is disabled
-	 */
-	String[] architecture() default {};
+	String architecture();
 
 	/**
 	 * See {@link org.junit.jupiter.api.condition.DisabledOnOs#disabledReason()}.

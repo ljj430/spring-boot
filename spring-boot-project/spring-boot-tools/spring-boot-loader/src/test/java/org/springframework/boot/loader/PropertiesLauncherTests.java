@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -99,7 +99,7 @@ class PropertiesLauncherTests {
 	@SuppressWarnings("unchecked")
 	private void clearHandlerCache() throws Exception {
 		Map<File, JarFile> rootFileCache = ((SoftReference<Map<File, JarFile>>) ReflectionTestUtils
-			.getField(Handler.class, "rootFileCache")).get();
+				.getField(Handler.class, "rootFileCache")).get();
 		if (rootFileCache != null) {
 			for (JarFile rootJarFile : rootFileCache.values()) {
 				rootJarFile.close();
@@ -127,8 +127,7 @@ class PropertiesLauncherTests {
 	void testNonExistentHome() {
 		System.setProperty("loader.home", "src/test/resources/nonexistent");
 		assertThatIllegalStateException().isThrownBy(PropertiesLauncher::new)
-			.withMessageContaining("Invalid source directory")
-			.withCauseInstanceOf(IllegalArgumentException.class);
+				.withMessageContaining("Invalid source directory").withCauseInstanceOf(IllegalArgumentException.class);
 	}
 
 	@Test
@@ -143,7 +142,7 @@ class PropertiesLauncherTests {
 		System.setProperty("loader.config.name", "foo");
 		this.launcher = new PropertiesLauncher();
 		assertThat(this.launcher.getMainClass()).isEqualTo("my.Application");
-		assertThat(ReflectionTestUtils.getField(this.launcher, "paths")).hasToString("[etc/]");
+		assertThat(ReflectionTestUtils.getField(this.launcher, "paths").toString()).isEqualTo("[etc/]");
 	}
 
 	@Test
@@ -157,14 +156,14 @@ class PropertiesLauncherTests {
 	void testUserSpecifiedDotPath() {
 		System.setProperty("loader.path", ".");
 		this.launcher = new PropertiesLauncher();
-		assertThat(ReflectionTestUtils.getField(this.launcher, "paths")).hasToString("[.]");
+		assertThat(ReflectionTestUtils.getField(this.launcher, "paths").toString()).isEqualTo("[.]");
 	}
 
 	@Test
 	void testUserSpecifiedSlashPath() throws Exception {
 		System.setProperty("loader.path", "jars/");
 		this.launcher = new PropertiesLauncher();
-		assertThat(ReflectionTestUtils.getField(this.launcher, "paths")).hasToString("[jars/]");
+		assertThat(ReflectionTestUtils.getField(this.launcher, "paths").toString()).isEqualTo("[jars/]");
 		List<Archive> archives = new ArrayList<>();
 		this.launcher.getClassPathArchivesIterator().forEachRemaining(archives::add);
 		assertThat(archives).areExactly(1, endingWith("app.jar"));
@@ -175,7 +174,7 @@ class PropertiesLauncherTests {
 		System.setProperty("loader.path", "jars/*");
 		System.setProperty("loader.main", "demo.Application");
 		this.launcher = new PropertiesLauncher();
-		assertThat(ReflectionTestUtils.getField(this.launcher, "paths")).hasToString("[jars/]");
+		assertThat(ReflectionTestUtils.getField(this.launcher, "paths").toString()).isEqualTo("[jars/]");
 		this.launcher.launch(new String[0]);
 		waitFor("Hello World");
 	}
@@ -185,7 +184,7 @@ class PropertiesLauncherTests {
 		System.setProperty("loader.path", "jars/app.jar");
 		System.setProperty("loader.main", "demo.Application");
 		this.launcher = new PropertiesLauncher();
-		assertThat(ReflectionTestUtils.getField(this.launcher, "paths")).hasToString("[jars/app.jar]");
+		assertThat(ReflectionTestUtils.getField(this.launcher, "paths").toString()).isEqualTo("[jars/app.jar]");
 		this.launcher.launch(new String[0]);
 		waitFor("Hello World");
 	}
@@ -194,8 +193,8 @@ class PropertiesLauncherTests {
 	void testUserSpecifiedRootOfJarPath() throws Exception {
 		System.setProperty("loader.path", "jar:file:./src/test/resources/nested-jars/app.jar!/");
 		this.launcher = new PropertiesLauncher();
-		assertThat(ReflectionTestUtils.getField(this.launcher, "paths"))
-			.hasToString("[jar:file:./src/test/resources/nested-jars/app.jar!/]");
+		assertThat(ReflectionTestUtils.getField(this.launcher, "paths").toString())
+				.isEqualTo("[jar:file:./src/test/resources/nested-jars/app.jar!/]");
 		List<Archive> archives = new ArrayList<>();
 		this.launcher.getClassPathArchivesIterator().forEachRemaining(archives::add);
 		assertThat(archives).areExactly(1, endingWith("foo.jar!/"));
@@ -237,8 +236,8 @@ class PropertiesLauncherTests {
 		System.setProperty("loader.path", "nested-jars/nested-jar-app.jar!/BOOT-INF/classes/");
 		System.setProperty("loader.main", "demo.Application");
 		this.launcher = new PropertiesLauncher();
-		assertThat(ReflectionTestUtils.getField(this.launcher, "paths"))
-			.hasToString("[nested-jars/nested-jar-app.jar!/BOOT-INF/classes/]");
+		assertThat(ReflectionTestUtils.getField(this.launcher, "paths").toString())
+				.isEqualTo("[nested-jars/nested-jar-app.jar!/BOOT-INF/classes/]");
 		this.launcher.launch(new String[0]);
 		waitFor("Hello World");
 	}
@@ -257,7 +256,7 @@ class PropertiesLauncherTests {
 		System.setProperty("loader.path", "./jars/app.jar");
 		System.setProperty("loader.main", "demo.Application");
 		this.launcher = new PropertiesLauncher();
-		assertThat(ReflectionTestUtils.getField(this.launcher, "paths")).hasToString("[jars/app.jar]");
+		assertThat(ReflectionTestUtils.getField(this.launcher, "paths").toString()).isEqualTo("[jars/app.jar]");
 		this.launcher.launch(new String[0]);
 		waitFor("Hello World");
 	}
@@ -267,7 +266,7 @@ class PropertiesLauncherTests {
 		System.setProperty("loader.path", "jars/app.jar");
 		System.setProperty("loader.classLoader", URLClassLoader.class.getName());
 		this.launcher = new PropertiesLauncher();
-		assertThat(ReflectionTestUtils.getField(this.launcher, "paths")).hasToString("[jars/app.jar]");
+		assertThat(ReflectionTestUtils.getField(this.launcher, "paths").toString()).isEqualTo("[jars/app.jar]");
 		this.launcher.launch(new String[0]);
 		waitFor("Hello World");
 	}
@@ -277,8 +276,8 @@ class PropertiesLauncherTests {
 		System.setProperty("loader.path", "more-jars/app.jar,jars/app.jar");
 		System.setProperty("loader.classLoader", URLClassLoader.class.getName());
 		this.launcher = new PropertiesLauncher();
-		assertThat(ReflectionTestUtils.getField(this.launcher, "paths"))
-			.hasToString("[more-jars/app.jar, jars/app.jar]");
+		assertThat(ReflectionTestUtils.getField(this.launcher, "paths").toString())
+				.isEqualTo("[more-jars/app.jar, jars/app.jar]");
 		this.launcher.launch(new String[0]);
 		waitFor("Hello Other World");
 	}
@@ -341,7 +340,7 @@ class PropertiesLauncherTests {
 	void testArgsEnhanced() throws Exception {
 		System.setProperty("loader.args", "foo");
 		this.launcher = new PropertiesLauncher();
-		assertThat(Arrays.asList(this.launcher.getArgs("bar"))).hasToString("[foo, bar]");
+		assertThat(Arrays.asList(this.launcher.getArgs("bar")).toString()).isEqualTo("[foo, bar]");
 	}
 
 	@SuppressWarnings("unchecked")
@@ -376,7 +375,7 @@ class PropertiesLauncherTests {
 		this.launcher = new PropertiesLauncher();
 		List<Archive> archives = new ArrayList<>();
 		this.launcher.getClassPathArchivesIterator().forEachRemaining(archives::add);
-		assertThat(archives).hasSize(1);
+		assertThat(archives.size()).isEqualTo(1);
 		File archiveRoot = (File) ReflectionTestUtils.getField(archives.get(0), "root");
 		assertThat(archiveRoot).isEqualTo(loaderPath);
 	}
@@ -394,7 +393,7 @@ class PropertiesLauncherTests {
 		catch (Exception ex) {
 			// Expected ClassNotFoundException
 			LaunchedURLClassLoader classLoader = (LaunchedURLClassLoader) Thread.currentThread()
-				.getContextClassLoader();
+					.getContextClassLoader();
 			classLoader.close();
 		}
 		URL resource = new URL("jar:" + jarFile.toURI() + "!/nested.jar!/3.dat");
@@ -407,7 +406,7 @@ class PropertiesLauncherTests {
 	}
 
 	private Condition<Archive> endingWith(String value) {
-		return new Condition<>() {
+		return new Condition<Archive>() {
 
 			@Override
 			public boolean matches(Archive archive) {

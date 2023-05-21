@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,6 @@ import javax.sql.DataSource;
 import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.orm.jpa.JpaVendorAdapter;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
-import org.springframework.orm.jpa.persistenceunit.PersistenceManagedTypes;
 import org.springframework.orm.jpa.persistenceunit.PersistenceUnitManager;
 import org.springframework.orm.jpa.persistenceunit.PersistenceUnitPostProcessor;
 import org.springframework.util.ClassUtils;
@@ -83,7 +82,7 @@ public class EntityManagerFactoryBuilder {
 	 * @param persistenceUnitManager optional source of persistence unit information (can
 	 * be null)
 	 * @param persistenceUnitRootLocation the persistence unit root location to use as a
-	 * fallback or {@code null}
+	 * fallback (can be null)
 	 * @since 1.4.1
 	 */
 	public EntityManagerFactoryBuilder(JpaVendorAdapter jpaVendorAdapter, Map<String, ?> jpaProperties,
@@ -124,15 +123,13 @@ public class EntityManagerFactoryBuilder {
 	 */
 	public final class Builder {
 
-		private final DataSource dataSource;
-
-		private PersistenceManagedTypes managedTypes;
+		private DataSource dataSource;
 
 		private String[] packagesToScan;
 
 		private String persistenceUnit;
 
-		private final Map<String, Object> properties = new HashMap<>();
+		private Map<String, Object> properties = new HashMap<>();
 
 		private String[] mappingResources;
 
@@ -143,21 +140,9 @@ public class EntityManagerFactoryBuilder {
 		}
 
 		/**
-		 * The persistence managed types, providing both the managed entities and packages
-		 * the entity manager should consider.
-		 * @param managedTypes managed types.
-		 * @return the builder for fluent usage
-		 */
-		public Builder managedTypes(PersistenceManagedTypes managedTypes) {
-			this.managedTypes = managedTypes;
-			return this;
-		}
-
-		/**
 		 * The names of packages to scan for {@code @Entity} annotations.
 		 * @param packagesToScan packages to scan
 		 * @return the builder for fluent usage
-		 * @see #managedTypes(PersistenceManagedTypes)
 		 */
 		public Builder packages(String... packagesToScan) {
 			this.packagesToScan = packagesToScan;
@@ -168,7 +153,6 @@ public class EntityManagerFactoryBuilder {
 		 * The classes whose packages should be scanned for {@code @Entity} annotations.
 		 * @param basePackageClasses the classes to use
 		 * @return the builder for fluent usage
-		 * @see #managedTypes(PersistenceManagedTypes)
 		 */
 		public Builder packages(Class<?>... basePackageClasses) {
 			Set<String> packages = new HashSet<>();
@@ -236,7 +220,7 @@ public class EntityManagerFactoryBuilder {
 			LocalContainerEntityManagerFactoryBean entityManagerFactoryBean = new LocalContainerEntityManagerFactoryBean();
 			if (EntityManagerFactoryBuilder.this.persistenceUnitManager != null) {
 				entityManagerFactoryBean
-					.setPersistenceUnitManager(EntityManagerFactoryBuilder.this.persistenceUnitManager);
+						.setPersistenceUnitManager(EntityManagerFactoryBuilder.this.persistenceUnitManager);
 			}
 			if (this.persistenceUnit != null) {
 				entityManagerFactoryBean.setPersistenceUnitName(this.persistenceUnit);
@@ -249,12 +233,7 @@ public class EntityManagerFactoryBuilder {
 			else {
 				entityManagerFactoryBean.setDataSource(this.dataSource);
 			}
-			if (this.managedTypes != null) {
-				entityManagerFactoryBean.setManagedTypes(this.managedTypes);
-			}
-			else {
-				entityManagerFactoryBean.setPackagesToScan(this.packagesToScan);
-			}
+			entityManagerFactoryBean.setPackagesToScan(this.packagesToScan);
 			entityManagerFactoryBean.getJpaPropertyMap().putAll(EntityManagerFactoryBuilder.this.jpaProperties);
 			entityManagerFactoryBean.getJpaPropertyMap().putAll(this.properties);
 			if (!ObjectUtils.isEmpty(this.mappingResources)) {
@@ -268,8 +247,8 @@ public class EntityManagerFactoryBuilder {
 				entityManagerFactoryBean.setBootstrapExecutor(EntityManagerFactoryBuilder.this.bootstrapExecutor);
 			}
 			if (EntityManagerFactoryBuilder.this.persistenceUnitPostProcessors != null) {
-				entityManagerFactoryBean
-					.setPersistenceUnitPostProcessors(EntityManagerFactoryBuilder.this.persistenceUnitPostProcessors);
+				entityManagerFactoryBean.setPersistenceUnitPostProcessors(
+						EntityManagerFactoryBuilder.this.persistenceUnitPostProcessors);
 			}
 			return entityManagerFactoryBean;
 		}
