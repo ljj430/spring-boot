@@ -18,10 +18,12 @@ package org.springframework.boot.autoconfigure.web.servlet.error;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.stream.Collectors;
 
-import jakarta.servlet.Servlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import javax.servlet.Servlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -106,7 +108,7 @@ public class ErrorMvcAutoConfiguration {
 	public BasicErrorController basicErrorController(ErrorAttributes errorAttributes,
 			ObjectProvider<ErrorViewResolver> errorViewResolvers) {
 		return new BasicErrorController(errorAttributes, this.serverProperties.getError(),
-				errorViewResolvers.orderedStream().toList());
+				errorViewResolvers.orderedStream().collect(Collectors.toList()));
 	}
 
 	@Bean

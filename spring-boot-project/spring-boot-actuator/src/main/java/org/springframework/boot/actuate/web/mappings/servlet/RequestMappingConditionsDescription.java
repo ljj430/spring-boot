@@ -18,6 +18,7 @@ package org.springframework.boot.actuate.web.mappings.servlet;
 
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.mvc.condition.MediaTypeExpression;
@@ -50,24 +51,24 @@ public class RequestMappingConditionsDescription {
 			.getExpressions()
 			.stream()
 			.map(MediaTypeExpressionDescription::new)
-			.toList();
+			.collect(Collectors.toList());
 		this.headers = requestMapping.getHeadersCondition()
 			.getExpressions()
 			.stream()
 			.map(NameValueExpressionDescription::new)
-			.toList();
+			.collect(Collectors.toList());
 		this.methods = requestMapping.getMethodsCondition().getMethods();
 		this.params = requestMapping.getParamsCondition()
 			.getExpressions()
 			.stream()
 			.map(NameValueExpressionDescription::new)
-			.toList();
+			.collect(Collectors.toList());
 		this.patterns = extractPathPatterns(requestMapping);
 		this.produces = requestMapping.getProducesCondition()
 			.getExpressions()
 			.stream()
 			.map(MediaTypeExpressionDescription::new)
-			.toList();
+			.collect(Collectors.toList());
 	}
 
 	private Set<String> extractPathPatterns(RequestMappingInfo requestMapping) {

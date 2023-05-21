@@ -23,6 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
 
@@ -80,7 +81,7 @@ class HibernateJpaConfiguration extends JpaBaseConfiguration {
 
 	private final HibernateDefaultDdlAutoProvider defaultDdlAutoProvider;
 
-	private final DataSourcePoolMetadataProvider poolMetadataProvider;
+	private DataSourcePoolMetadataProvider poolMetadataProvider;
 
 	private final List<HibernatePropertiesCustomizer> hibernatePropertiesCustomizers;
 
@@ -98,7 +99,7 @@ class HibernateJpaConfiguration extends JpaBaseConfiguration {
 		this.poolMetadataProvider = new CompositeDataSourcePoolMetadataProvider(metadataProviders.getIfAvailable());
 		this.hibernatePropertiesCustomizers = determineHibernatePropertiesCustomizers(
 				physicalNamingStrategy.getIfAvailable(), implicitNamingStrategy.getIfAvailable(), beanFactory,
-				hibernatePropertiesCustomizers.orderedStream().toList());
+				hibernatePropertiesCustomizers.orderedStream().collect(Collectors.toList()));
 	}
 
 	private List<HibernatePropertiesCustomizer> determineHibernatePropertiesCustomizers(

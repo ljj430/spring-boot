@@ -16,6 +16,9 @@
 
 package org.springframework.boot.autoconfigure.jms.artemis;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.apache.activemq.artemis.api.core.QueueConfiguration;
 import org.apache.activemq.artemis.api.core.RoutingType;
 import org.apache.activemq.artemis.core.config.CoreAddressConfiguration;
@@ -88,11 +91,17 @@ class ArtemisEmbeddedServerConfiguration {
 	JMSConfiguration artemisJmsConfiguration(ObjectProvider<JMSQueueConfiguration> queuesConfiguration,
 			ObjectProvider<TopicConfiguration> topicsConfiguration) {
 		JMSConfiguration configuration = new JMSConfigurationImpl();
-		configuration.getQueueConfigurations().addAll(queuesConfiguration.orderedStream().toList());
-		configuration.getTopicConfigurations().addAll(topicsConfiguration.orderedStream().toList());
+		addAll(configuration.getQueueConfigurations(), queuesConfiguration);
+		addAll(configuration.getTopicConfigurations(), topicsConfiguration);
 		addQueues(configuration, this.properties.getEmbedded().getQueues());
 		addTopics(configuration, this.properties.getEmbedded().getTopics());
 		return configuration;
+	}
+
+	private <T> void addAll(List<T> list, ObjectProvider<T> items) {
+		if (items != null) {
+			list.addAll(items.orderedStream().collect(Collectors.toList()));
+		}
 	}
 
 	private void addQueues(JMSConfiguration configuration, String[] queues) {

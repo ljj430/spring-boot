@@ -16,12 +16,11 @@
 
 package org.springframework.boot.maven;
 
-import java.util.Base64;
-
 import org.junit.jupiter.api.Test;
 
 import org.springframework.boot.buildpack.platform.docker.configuration.DockerConfiguration;
 import org.springframework.boot.buildpack.platform.docker.configuration.DockerHost;
+import org.springframework.util.Base64Utils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
@@ -56,7 +55,7 @@ class DockerTests {
 		DockerConfiguration dockerConfiguration = docker.asDockerConfiguration();
 		DockerHost host = dockerConfiguration.getHost();
 		assertThat(host.getAddress()).isEqualTo("docker.example.com");
-		assertThat(host.isSecure()).isTrue();
+		assertThat(host.isSecure()).isEqualTo(true);
 		assertThat(host.getCertificatePath()).isEqualTo("/tmp/ca-cert");
 		assertThat(dockerConfiguration.isBindHostToBuilder()).isFalse();
 		assertThat(docker.asDockerConfiguration().getBuilderRegistryAuthentication()).isNull();
@@ -77,7 +76,7 @@ class DockerTests {
 		DockerConfiguration dockerConfiguration = docker.asDockerConfiguration();
 		DockerHost host = dockerConfiguration.getHost();
 		assertThat(host.getAddress()).isEqualTo("docker.example.com");
-		assertThat(host.isSecure()).isTrue();
+		assertThat(host.isSecure()).isEqualTo(true);
 		assertThat(host.getCertificatePath()).isEqualTo("/tmp/ca-cert");
 		assertThat(dockerConfiguration.isBindHostToBuilder()).isTrue();
 		assertThat(docker.asDockerConfiguration().getBuilderRegistryAuthentication()).isNull();
@@ -151,7 +150,7 @@ class DockerTests {
 	}
 
 	String decoded(String value) {
-		return new String(Base64.getDecoder().decode(value));
+		return new String(Base64Utils.decodeFromString(value));
 	}
 
 }

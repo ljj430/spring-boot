@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.springframework.aot.AotDetector;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -34,13 +33,13 @@ import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
+import org.springframework.boot.util.Instantiator;
 import org.springframework.context.EnvironmentAware;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
 import org.springframework.core.Ordered;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.support.SpringFactoriesLoader;
-import org.springframework.core.io.support.SpringFactoriesLoader.ArgumentResolver;
 import org.springframework.core.type.AnnotationMetadata;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -96,9 +95,6 @@ public class DatabaseInitializationDependencyConfigurer implements ImportBeanDef
 
 		@Override
 		public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) {
-			if (AotDetector.useGeneratedArtifacts()) {
-				return;
-			}
 			InitializerBeanNames initializerBeanNames = detectInitializerBeanNames(beanFactory);
 			if (initializerBeanNames.isEmpty()) {
 				return;
@@ -155,9 +151,10 @@ public class DatabaseInitializationDependencyConfigurer implements ImportBeanDef
 		}
 
 		private <T> List<T> getDetectors(ConfigurableListableBeanFactory beanFactory, Class<T> type) {
-			ArgumentResolver argumentResolver = ArgumentResolver.of(Environment.class, this.environment);
-			return SpringFactoriesLoader.forDefaultResourceLocation(beanFactory.getBeanClassLoader())
-				.load(type, argumentResolver);
+			List<String> names = SpringFactoriesLoader.loadFactoryNames(type, beanFactory.getBeanClassLoader());
+			Instantiator<T> instantiator = new Instantiator<>(type,
+					(availableParameters) -> availableParameters.add(Environment.class, this.environment));
+			return instantiator.instantiate(beanFactory.getBeanClassLoader(), names);
 		}
 
 		private static BeanDefinition getBeanDefinition(String beanName, ConfigurableListableBeanFactory beanFactory) {
@@ -166,8 +163,8 @@ public class DatabaseInitializationDependencyConfigurer implements ImportBeanDef
 			}
 			catch (NoSuchBeanDefinitionException ex) {
 				BeanFactory parentBeanFactory = beanFactory.getParentBeanFactory();
-				if (parentBeanFactory instanceof ConfigurableListableBeanFactory configurableBeanFactory) {
-					return getBeanDefinition(beanName, configurableBeanFactory);
+				if (parentBeanFactory instanceof ConfigurableListableBeanFactory) {
+					return getBeanDefinition(beanName, (ConfigurableListableBeanFactory) parentBeanFactory);
 				}
 				throw ex;
 			}

@@ -17,6 +17,7 @@
 package org.springframework.boot.autoconfigure.data.neo4j;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.TestAutoConfigurationPackage;
@@ -35,7 +36,6 @@ import org.springframework.data.neo4j.repository.config.EnableNeo4jRepositories;
 import org.springframework.data.neo4j.repository.support.ReactiveNeo4jRepositoryFactoryBean;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 /**
  * Tests for {@link Neo4jRepositoriesAutoConfiguration}.
@@ -101,7 +101,7 @@ class Neo4jRepositoriesAutoConfigurationTests {
 
 		@Bean
 		ReactiveNeo4jRepositoryFactoryBean<?, ?, ?> reactiveNeo4jRepositoryFactoryBean() {
-			return mock(ReactiveNeo4jRepositoryFactoryBean.class);
+			return Mockito.mock(ReactiveNeo4jRepositoryFactoryBean.class);
 		}
 
 	}

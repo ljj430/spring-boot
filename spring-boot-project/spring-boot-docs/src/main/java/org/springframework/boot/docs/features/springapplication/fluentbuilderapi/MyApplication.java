@@ -22,12 +22,15 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 public class MyApplication {
 
 	public void hierarchyWithDisabledBanner(String[] args) {
+		// @formatter:off
 		// tag::code[]
-		new SpringApplicationBuilder().sources(Parent.class)
-			.child(Application.class)
-			.bannerMode(Banner.Mode.OFF)
-			.run(args);
+		new SpringApplicationBuilder()
+				.sources(Parent.class)
+				.child(Application.class)
+				.bannerMode(Banner.Mode.OFF)
+				.run(args);
 		// end::code[]
+		// @formatter:on
 	}
 
 	static class Parent {

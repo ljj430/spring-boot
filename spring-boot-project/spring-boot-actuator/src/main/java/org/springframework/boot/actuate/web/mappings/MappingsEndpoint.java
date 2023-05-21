@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.springframework.boot.actuate.endpoint.OperationResponseBody;
 import org.springframework.boot.actuate.endpoint.annotation.Endpoint;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
 import org.springframework.context.ApplicationContext;
@@ -44,51 +43,53 @@ public class MappingsEndpoint {
 	}
 
 	@ReadOperation
-	public ApplicationMappingsDescriptor mappings() {
+	public ApplicationMappings mappings() {
 		ApplicationContext target = this.context;
-		Map<String, ContextMappingsDescriptor> contextMappings = new HashMap<>();
+		Map<String, ContextMappings> contextMappings = new HashMap<>();
 		while (target != null) {
 			contextMappings.put(target.getId(), mappingsForContext(target));
 			target = target.getParent();
 		}
-		return new ApplicationMappingsDescriptor(contextMappings);
+		return new ApplicationMappings(contextMappings);
 	}
 
-	private ContextMappingsDescriptor mappingsForContext(ApplicationContext applicationContext) {
+	private ContextMappings mappingsForContext(ApplicationContext applicationContext) {
 		Map<String, Object> mappings = new HashMap<>();
 		this.descriptionProviders.forEach(
 				(provider) -> mappings.put(provider.getMappingName(), provider.describeMappings(applicationContext)));
-		return new ContextMappingsDescriptor(mappings,
+		return new ContextMappings(mappings,
 				(applicationContext.getParent() != null) ? applicationContext.getId() : null);
 	}
 
 	/**
-	 * Description of an application's request mappings.
+	 * A description of an application's request mappings. Primarily intended for
+	 * serialization to JSON.
 	 */
-	public static final class ApplicationMappingsDescriptor implements OperationResponseBody {
+	public static final class ApplicationMappings {
 
-		private final Map<String, ContextMappingsDescriptor> contextMappings;
+		private final Map<String, ContextMappings> contextMappings;
 
-		private ApplicationMappingsDescriptor(Map<String, ContextMappingsDescriptor> contextMappings) {
+		private ApplicationMappings(Map<String, ContextMappings> contextMappings) {
 			this.contextMappings = contextMappings;
 		}
 
-		public Map<String, ContextMappingsDescriptor> getContexts() {
+		public Map<String, ContextMappings> getContexts() {
 			return this.contextMappings;
 		}
 
 	}
 
 	/**
-	 * Description of an application context's request mappings.
+	 * A description of an application context's request mappings. Primarily intended for
+	 * serialization to JSON.
 	 */
-	public static final class ContextMappingsDescriptor {
+	public static final class ContextMappings {
 
 		private final Map<String, Object> mappings;
 
 		private final String parentId;
 
-		private ContextMappingsDescriptor(Map<String, Object> mappings, String parentId) {
+		private ContextMappings(Map<String, Object> mappings, String parentId) {
 			this.mappings = mappings;
 			this.parentId = parentId;
 		}

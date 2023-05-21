@@ -117,7 +117,7 @@ class ClassPathFileSystemWatcherTests {
 
 	static class Listener implements ApplicationListener<ClassPathChangedEvent> {
 
-		private final List<ClassPathChangedEvent> events = new CopyOnWriteArrayList<>();
+		private List<ClassPathChangedEvent> events = new CopyOnWriteArrayList<>();
 
 		@Override
 		public void onApplicationEvent(ClassPathChangedEvent event) {

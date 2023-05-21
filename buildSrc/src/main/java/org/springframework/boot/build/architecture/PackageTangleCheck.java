@@ -19,6 +19,7 @@ package org.springframework.boot.build.architecture;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.stream.Collectors;
@@ -67,7 +68,8 @@ public abstract class PackageTangleCheck extends DefaultTask {
 		File outputFile = getOutputDirectory().file("failure-report.txt").get().getAsFile();
 		outputFile.getParentFile().mkdirs();
 		if (result.hasViolation()) {
-			Files.writeString(outputFile.toPath(), result.getFailureReport().toString(), StandardOpenOption.CREATE);
+			Files.write(outputFile.toPath(), result.getFailureReport().toString().getBytes(StandardCharsets.UTF_8),
+					StandardOpenOption.CREATE);
 			FileWriter writer = new FileWriter(outputFile);
 			FileCopyUtils.copy(result.getFailureReport().toString(), writer);
 			throw new GradleException("Package tangle check failed. See '" + outputFile + "' for details.");

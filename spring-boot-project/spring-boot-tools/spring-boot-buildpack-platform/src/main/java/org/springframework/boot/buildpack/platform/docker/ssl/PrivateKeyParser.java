@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.springframework.boot.buildpack.platform.docker.ssl;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
@@ -25,12 +26,13 @@ import java.security.KeyFactory;
 import java.security.PrivateKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.springframework.util.Base64Utils;
 
 /**
  * Parser for PKCS private key files in PEM format.
@@ -113,7 +115,7 @@ final class PrivateKeyParser {
 	 */
 	static PrivateKey parse(Path path) {
 		try {
-			String text = Files.readString(path);
+			String text = readText(path);
 			for (PemParser pemParser : PEM_PARSERS) {
 				PrivateKey privateKey = pemParser.parse(text);
 				if (privateKey != null) {
@@ -125,6 +127,11 @@ final class PrivateKeyParser {
 		catch (Exception ex) {
 			throw new IllegalStateException("Error loading private key file " + path, ex);
 		}
+	}
+
+	private static String readText(Path path) throws IOException {
+		byte[] bytes = Files.readAllBytes(path);
+		return new String(bytes, StandardCharsets.UTF_8);
 	}
 
 	/**
@@ -152,7 +159,7 @@ final class PrivateKeyParser {
 
 		private static byte[] decodeBase64(String content) {
 			byte[] contentBytes = content.replaceAll("\r", "").replaceAll("\n", "").getBytes();
-			return Base64.getDecoder().decode(contentBytes);
+			return Base64Utils.decode(contentBytes);
 		}
 
 		private PrivateKey parse(byte[] bytes) {

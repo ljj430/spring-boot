@@ -27,7 +27,7 @@ public enum EndpointExposure {
 	/**
 	 * Exposed over a JMX endpoint.
 	 */
-	JMX("health"),
+	JMX("*"),
 
 	/**
 	 * Exposed over a web endpoint.
