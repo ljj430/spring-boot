@@ -427,6 +427,7 @@ class Log4J2LoggingSystemTests extends AbstractLoggingSystemTests {
 
 		this.loggingSystem.initialize(this.initializationContext, null, null);
 		java.util.logging.Logger logger = java.util.logging.Logger.getLogger(Log4J2LoggingSystemTests.class.getName());
+		logger.info("Log to trigger level propagation");
 		assertThat(logger.getLevel()).isNull();
 		this.loggingSystem.setLogLevel(Log4J2LoggingSystemTests.class.getName(), LogLevel.DEBUG);
 		assertThat(logger.getLevel()).isEqualTo(Level.FINE);
