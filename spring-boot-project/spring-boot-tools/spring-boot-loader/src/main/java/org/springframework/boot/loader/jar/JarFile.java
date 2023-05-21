@@ -79,9 +79,9 @@ public class JarFile extends AbstractJarFile implements Iterable<java.util.jar.J
 
 	private String urlString;
 
-	private JarFileEntries entries;
+	private final JarFileEntries entries;
 
-	private Supplier<Manifest> manifestSupplier;
+	private final Supplier<Manifest> manifestSupplier;
 
 	private SoftReference<Manifest> manifest;
 
@@ -128,9 +128,7 @@ public class JarFile extends AbstractJarFile implements Iterable<java.util.jar.J
 	private JarFile(RandomAccessDataFile rootFile, String pathFromRoot, RandomAccessData data, JarEntryFilter filter,
 			JarFileType type, Supplier<Manifest> manifestSupplier) throws IOException {
 		super(rootFile.getFile());
-		if (System.getSecurityManager() == null) {
-			super.close();
-		}
+		super.close();
 		this.rootFile = rootFile;
 		this.pathFromRoot = pathFromRoot;
 		CentralDirectoryParser parser = new CentralDirectoryParser();
@@ -272,8 +270,8 @@ public class JarFile extends AbstractJarFile implements Iterable<java.util.jar.J
 	@Override
 	public synchronized InputStream getInputStream(ZipEntry entry) throws IOException {
 		ensureOpen();
-		if (entry instanceof JarEntry) {
-			return this.entries.getInputStream((JarEntry) entry);
+		if (entry instanceof JarEntry jarEntry) {
+			return this.entries.getInputStream(jarEntry);
 		}
 		return getInputStream((entry != null) ? entry.getName() : null);
 	}

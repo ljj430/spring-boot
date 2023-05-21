@@ -16,8 +16,7 @@
 
 package org.springframework.boot.devtools.remote.server;
 
-import javax.servlet.http.HttpServletRequest;
-
+import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.http.server.ServerHttpRequest;
@@ -36,7 +35,7 @@ import static org.mockito.Mockito.mock;
  */
 class UrlHandlerMapperTests {
 
-	private Handler handler = mock(Handler.class);
+	private final Handler handler = mock(Handler.class);
 
 	@Test
 	void requestUriMustNotBeNull() {

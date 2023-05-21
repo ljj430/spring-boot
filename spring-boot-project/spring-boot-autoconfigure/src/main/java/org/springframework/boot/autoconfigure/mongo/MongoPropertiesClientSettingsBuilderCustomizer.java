@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,8 @@
 
 package org.springframework.boot.autoconfigure.mongo;
 
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.mongodb.ConnectionString;
 import com.mongodb.MongoClientSettings;
@@ -24,26 +25,27 @@ import com.mongodb.MongoCredential;
 import com.mongodb.ServerAddress;
 
 import org.springframework.core.Ordered;
-import org.springframework.core.env.Environment;
+import org.springframework.util.CollectionUtils;
 
 /**
  * A {@link MongoClientSettingsBuilderCustomizer} that applies properties from a
  * {@link MongoProperties} to a {@link MongoClientSettings}.
  *
  * @author Scott Frederick
+ * @author Safeer Ansari
  * @since 2.4.0
+ * @deprecated since 3.1.0 in favor of
+ * {@link StandardMongoClientSettingsBuilderCustomizer}
  */
+@Deprecated(since = "3.1.0", forRemoval = true)
 public class MongoPropertiesClientSettingsBuilderCustomizer implements MongoClientSettingsBuilderCustomizer, Ordered {
 
 	private final MongoProperties properties;
 
-	private final Environment environment;
-
 	private int order = 0;
 
-	public MongoPropertiesClientSettingsBuilderCustomizer(MongoProperties properties, Environment environment) {
+	public MongoPropertiesClientSettingsBuilderCustomizer(MongoProperties properties) {
 		this.properties = properties;
-		this.environment = environment;
 	}
 
 	@Override
@@ -59,10 +61,6 @@ public class MongoPropertiesClientSettingsBuilderCustomizer implements MongoClie
 	}
 
 	private void applyHostAndPort(MongoClientSettings.Builder settings) {
-		if (getEmbeddedPort() != null) {
-			settings.applyConnectionString(new ConnectionString("mongodb://localhost:" + getEmbeddedPort()));
-			return;
-		}
 		if (this.properties.getUri() != null) {
 			settings.applyConnectionString(new ConnectionString(this.properties.getUri()));
 			return;
@@ -70,8 +68,12 @@ public class MongoPropertiesClientSettingsBuilderCustomizer implements MongoClie
 		if (this.properties.getHost() != null || this.properties.getPort() != null) {
 			String host = getOrDefault(this.properties.getHost(), "localhost");
 			int port = getOrDefault(this.properties.getPort(), MongoProperties.DEFAULT_PORT);
-			ServerAddress serverAddress = new ServerAddress(host, port);
-			settings.applyToClusterSettings((cluster) -> cluster.hosts(Collections.singletonList(serverAddress)));
+			List<ServerAddress> serverAddresses = new ArrayList<>();
+			serverAddresses.add(new ServerAddress(host, port));
+			if (!CollectionUtils.isEmpty(this.properties.getAdditionalHosts())) {
+				this.properties.getAdditionalHosts().stream().map(ServerAddress::new).forEach(serverAddresses::add);
+			}
+			settings.applyToClusterSettings((cluster) -> cluster.hosts(serverAddresses));
 			return;
 		}
 		settings.applyConnectionString(new ConnectionString(MongoProperties.DEFAULT_URI));
@@ -96,16 +98,6 @@ public class MongoPropertiesClientSettingsBuilderCustomizer implements MongoClie
 
 	private <V> V getOrDefault(V value, V defaultValue) {
 		return (value != null) ? value : defaultValue;
-	}
-
-	private Integer getEmbeddedPort() {
-		if (this.environment != null) {
-			String localPort = this.environment.getProperty("local.mongo.port");
-			if (localPort != null) {
-				return Integer.valueOf(localPort);
-			}
-		}
-		return null;
 	}
 
 	@Override
