@@ -77,9 +77,9 @@ class SpringIterableConfigurationPropertySource extends SpringConfigurationPrope
 	}
 
 	private void assertEnumerablePropertySource() {
-		if (getPropertySource() instanceof MapPropertySource) {
+		if (getPropertySource() instanceof MapPropertySource mapSource) {
 			try {
-				((MapPropertySource) getPropertySource()).getSource().size();
+				mapSource.getSource().size();
 			}
 			catch (UnsupportedOperationException ex) {
 				throw new IllegalArgumentException("PropertySource must be fully enumerable");
