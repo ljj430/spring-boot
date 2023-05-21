@@ -16,8 +16,6 @@
 
 package org.springframework.boot.autoconfigure.mongo;
 
-import java.util.stream.Collectors;
-
 import com.mongodb.MongoClientSettings;
 import com.mongodb.MongoClientSettings.Builder;
 import com.mongodb.connection.netty.NettyStreamFactoryFactory;
@@ -38,7 +36,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
-import org.springframework.core.env.Environment;
 
 /**
  * {@link EnableAutoConfiguration Auto-configuration} for Reactive Mongo.
@@ -58,7 +55,7 @@ public class MongoReactiveAutoConfiguration {
 	public MongoClient reactiveStreamsMongoClient(
 			ObjectProvider<MongoClientSettingsBuilderCustomizer> builderCustomizers, MongoClientSettings settings) {
 		ReactiveMongoClientFactory factory = new ReactiveMongoClientFactory(
-				builderCustomizers.orderedStream().collect(Collectors.toList()));
+				builderCustomizers.orderedStream().toList());
 		return factory.createMongoClient(settings);
 	}
 
@@ -72,9 +69,12 @@ public class MongoReactiveAutoConfiguration {
 		}
 
 		@Bean
-		MongoPropertiesClientSettingsBuilderCustomizer mongoPropertiesCustomizer(MongoProperties properties,
-				Environment environment) {
-			return new MongoPropertiesClientSettingsBuilderCustomizer(properties, environment);
+		StandardMongoClientSettingsBuilderCustomizer standardMongoSettingsCustomizer(MongoProperties properties,
+				ObjectProvider<MongoConnectionDetails> connectionDetailsProvider) {
+			MongoConnectionDetails connectionDetails = connectionDetailsProvider
+				.getIfAvailable(() -> new PropertiesMongoConnectionDetails(properties));
+			return new StandardMongoClientSettingsBuilderCustomizer(connectionDetails.getConnectionString(),
+					properties.getUuidRepresentation());
 		}
 
 	}
