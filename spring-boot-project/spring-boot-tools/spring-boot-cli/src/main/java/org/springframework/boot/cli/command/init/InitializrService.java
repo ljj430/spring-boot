@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,18 +21,16 @@ import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
-import org.apache.hc.client5.http.classic.HttpClient;
-import org.apache.hc.client5.http.classic.methods.HttpGet;
-import org.apache.hc.client5.http.classic.methods.HttpUriRequest;
-import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
-import org.apache.hc.core5.http.ClassicHttpResponse;
-import org.apache.hc.core5.http.ContentType;
-import org.apache.hc.core5.http.Header;
-import org.apache.hc.core5.http.HttpEntity;
-import org.apache.hc.core5.http.HttpHeaders;
-import org.apache.hc.core5.http.HttpHost;
-import org.apache.hc.core5.http.message.BasicHeader;
-import org.apache.hc.core5.http.message.StatusLine;
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpHeaders;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.entity.ContentType;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.message.BasicHeader;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -64,16 +62,16 @@ class InitializrService {
 	/**
 	 * Late binding HTTP client.
 	 */
-	private HttpClient http;
+	private CloseableHttpClient http;
 
 	InitializrService() {
 	}
 
-	InitializrService(HttpClient http) {
+	InitializrService(CloseableHttpClient http) {
 		this.http = http;
 	}
 
-	protected HttpClient getHttp() {
+	protected CloseableHttpClient getHttp() {
 		if (this.http == null) {
 			this.http = HttpClientBuilder.create().useSystemProperties().build();
 		}
@@ -90,7 +88,7 @@ class InitializrService {
 		Log.info("Using service at " + request.getServiceUrl());
 		InitializrServiceMetadata metadata = loadMetadata(request.getServiceUrl());
 		URI url = request.generateUrl(metadata);
-		ClassicHttpResponse httpResponse = executeProjectGenerationRequest(url);
+		CloseableHttpResponse httpResponse = executeProjectGenerationRequest(url);
 		HttpEntity httpEntity = httpResponse.getEntity();
 		validateResponse(httpResponse, request.getServiceUrl());
 		return createResponse(httpResponse, httpEntity);
@@ -103,7 +101,7 @@ class InitializrService {
 	 * @throws IOException if the service's metadata cannot be loaded
 	 */
 	InitializrServiceMetadata loadMetadata(String serviceUrl) throws IOException {
-		ClassicHttpResponse httpResponse = executeInitializrMetadataRetrieval(serviceUrl);
+		CloseableHttpResponse httpResponse = executeInitializrMetadataRetrieval(serviceUrl);
 		validateResponse(httpResponse, serviceUrl);
 		return parseJsonMetadata(httpResponse.getEntity());
 	}
@@ -120,10 +118,10 @@ class InitializrService {
 	Object loadServiceCapabilities(String serviceUrl) throws IOException {
 		HttpGet request = new HttpGet(serviceUrl);
 		request.setHeader(new BasicHeader(HttpHeaders.ACCEPT, ACCEPT_SERVICE_CAPABILITIES));
-		ClassicHttpResponse httpResponse = execute(request, URI.create(serviceUrl), "retrieve help");
+		CloseableHttpResponse httpResponse = execute(request, serviceUrl, "retrieve help");
 		validateResponse(httpResponse, serviceUrl);
 		HttpEntity httpEntity = httpResponse.getEntity();
-		ContentType contentType = ContentType.create(httpEntity.getContentType());
+		ContentType contentType = ContentType.getOrDefault(httpEntity);
 		if (contentType.getMimeType().equals("text/plain")) {
 			return getContent(httpEntity);
 		}
@@ -139,19 +137,18 @@ class InitializrService {
 		}
 	}
 
-	private void validateResponse(ClassicHttpResponse httpResponse, String serviceUrl) {
+	private void validateResponse(CloseableHttpResponse httpResponse, String serviceUrl) {
 		if (httpResponse.getEntity() == null) {
 			throw new ReportableException("No content received from server '" + serviceUrl + "'");
 		}
-		if (httpResponse.getCode() != 200) {
+		if (httpResponse.getStatusLine().getStatusCode() != 200) {
 			throw createException(serviceUrl, httpResponse);
 		}
 	}
 
-	private ProjectGenerationResponse createResponse(ClassicHttpResponse httpResponse, HttpEntity httpEntity)
+	private ProjectGenerationResponse createResponse(CloseableHttpResponse httpResponse, HttpEntity httpEntity)
 			throws IOException {
-		ProjectGenerationResponse response = new ProjectGenerationResponse(
-				ContentType.create(httpEntity.getContentType()));
+		ProjectGenerationResponse response = new ProjectGenerationResponse(ContentType.getOrDefault(httpEntity));
 		response.setContent(FileCopyUtils.copyToByteArray(httpEntity.getContent()));
 		String fileName = extractFileName(httpResponse.getFirstHeader("Content-Disposition"));
 		if (fileName != null) {
@@ -165,7 +162,7 @@ class InitializrService {
 	 * @param url the URL
 	 * @return the response
 	 */
-	private ClassicHttpResponse executeProjectGenerationRequest(URI url) {
+	private CloseableHttpResponse executeProjectGenerationRequest(URI url) {
 		return execute(new HttpGet(url), url, "generate project");
 	}
 
@@ -174,17 +171,16 @@ class InitializrService {
 	 * @param url the URL
 	 * @return the response
 	 */
-	private ClassicHttpResponse executeInitializrMetadataRetrieval(String url) {
+	private CloseableHttpResponse executeInitializrMetadataRetrieval(String url) {
 		HttpGet request = new HttpGet(url);
 		request.setHeader(new BasicHeader(HttpHeaders.ACCEPT, ACCEPT_META_DATA));
-		return execute(request, URI.create(url), "retrieve metadata");
+		return execute(request, url, "retrieve metadata");
 	}
 
-	private ClassicHttpResponse execute(HttpUriRequest request, URI url, String description) {
+	private CloseableHttpResponse execute(HttpUriRequest request, Object url, String description) {
 		try {
-			HttpHost host = HttpHost.create(url);
 			request.addHeader("User-Agent", "SpringBootCli/" + getClass().getPackage().getImplementationVersion());
-			return getHttp().executeOpen(host, request, null);
+			return getHttp().execute(request);
 		}
 		catch (IOException ex) {
 			throw new ReportableException(
@@ -192,16 +188,15 @@ class InitializrService {
 		}
 	}
 
-	private ReportableException createException(String url, ClassicHttpResponse httpResponse) {
-		StatusLine statusLine = new StatusLine(httpResponse);
+	private ReportableException createException(String url, CloseableHttpResponse httpResponse) {
 		String message = "Initializr service call failed using '" + url + "' - service returned "
-				+ statusLine.getReasonPhrase();
+				+ httpResponse.getStatusLine().getReasonPhrase();
 		String error = extractMessage(httpResponse.getEntity());
 		if (StringUtils.hasText(error)) {
 			message += ": '" + error + "'";
 		}
 		else {
-			int statusCode = statusLine.getStatusCode();
+			int statusCode = httpResponse.getStatusLine().getStatusCode();
 			message += " (unexpected " + statusCode + " error)";
 		}
 		throw new ReportableException(message);
@@ -227,7 +222,7 @@ class InitializrService {
 	}
 
 	private String getContent(HttpEntity entity) throws IOException {
-		ContentType contentType = ContentType.create(entity.getContentType());
+		ContentType contentType = ContentType.getOrDefault(entity);
 		Charset charset = contentType.getCharset();
 		charset = (charset != null) ? charset : StandardCharsets.UTF_8;
 		byte[] content = FileCopyUtils.copyToByteArray(entity.getContent());

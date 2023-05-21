@@ -25,13 +25,14 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.mongo.MongoServiceConnection;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testsupport.testcontainers.DockerImageNames;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.mongodb.MongoDatabaseFactory;
 import org.springframework.data.mongodb.MongoTransactionManager;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,8 +41,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Tests for using {@link DataMongoTest @DataMongoTest} with transactions.
  *
  * @author Andy Wilkinson
- * @author Moritz Halbritter
- * @author Phillip Webb
  */
 @DataMongoTest
 @Transactional
@@ -49,7 +48,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 class TransactionalDataMongoTestIntegrationTests {
 
 	@Container
-	@MongoServiceConnection
 	static final MongoDBContainer mongoDB = new MongoDBContainer(DockerImageNames.mongo()).withStartupAttempts(5)
 		.withStartupTimeout(Duration.ofMinutes(5));
 
@@ -62,6 +60,11 @@ class TransactionalDataMongoTestIntegrationTests {
 		exampleDocument.setText("Look, new @DataMongoTest!");
 		exampleDocument = this.exampleRepository.save(exampleDocument);
 		assertThat(exampleDocument.getId()).isNotNull();
+	}
+
+	@DynamicPropertySource
+	static void mongoProperties(DynamicPropertyRegistry registry) {
+		registry.add("spring.data.mongodb.uri", mongoDB::getReplicaSetUrl);
 	}
 
 	@TestConfiguration(proxyBeanMethods = false)
