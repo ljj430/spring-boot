@@ -96,6 +96,9 @@ import static org.mockito.Mockito.mock;
  * @author Gary Russell
  * @author HaiTao Zhang
  * @author Franjo Zilic
+ * @author Moritz Halbritter
+ * @author Andy Wilkinson
+ * @author Phillip Webb
  */
 @ExtendWith(OutputCaptureExtension.class)
 class RabbitAutoConfigurationTests {
@@ -166,6 +169,33 @@ class RabbitAutoConfigurationTests {
 				assertThat(rcf.getConnectionTimeout()).isEqualTo(123);
 				assertThat(rcf.getChannelRpcTimeout()).isEqualTo(140);
 				assertThat((List<Address>) ReflectionTestUtils.getField(connectionFactory, "addresses")).hasSize(1);
+			});
+	}
+
+	@Test
+	void definesPropertiesBasedConnectionDetailsByDefault() {
+		this.contextRunner.run((context) -> assertThat(context).hasSingleBean(PropertiesRabbitConnectionDetails.class));
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void testConnectionFactoryWithOverridesWhenUsingCustomConnectionDetails() {
+		this.contextRunner.withUserConfiguration(TestConfiguration.class, ConnectionDetailsConfiguration.class)
+			.withPropertyValues("spring.rabbitmq.host:remote-server", "spring.rabbitmq.port:9000",
+					"spring.rabbitmq.username:alice", "spring.rabbitmq.password:secret",
+					"spring.rabbitmq.virtual_host:/vhost")
+			.run((context) -> {
+				assertThat(context).hasSingleBean(RabbitConnectionDetails.class)
+					.doesNotHaveBean(PropertiesRabbitConnectionDetails.class);
+				CachingConnectionFactory connectionFactory = context.getBean(CachingConnectionFactory.class);
+				assertThat(connectionFactory.getHost()).isEqualTo("rabbit.example.com");
+				assertThat(connectionFactory.getPort()).isEqualTo(12345);
+				assertThat(connectionFactory.getVirtualHost()).isEqualTo("/vhost-1");
+				assertThat(connectionFactory.getUsername()).isEqualTo("user-1");
+				assertThat(connectionFactory.getRabbitConnectionFactory().getPassword()).isEqualTo("password-1");
+				List<Address> addresses = (List<Address>) ReflectionTestUtils.getField(connectionFactory, "addresses");
+				assertThat(addresses).containsExactly(new Address("rabbit.example.com", 12345),
+						new Address("rabbit2.example.com", 23456));
 			});
 	}
 
@@ -382,6 +412,22 @@ class RabbitAutoConfigurationTests {
 				then(template).should().setExchange("my-exchange");
 				then(template).should().setRoutingKey("my-routing-key");
 				then(template).should().setDefaultReceiveQueue("default-queue");
+			});
+	}
+
+	@Test
+	void whenMultipleRabbitTemplateCustomizersAreDefinedThenTheyAreCalledInOrder() {
+		this.contextRunner.withUserConfiguration(MultipleRabbitTemplateCustomizersConfiguration.class)
+			.run((context) -> {
+				RabbitTemplateCustomizer firstCustomizer = context.getBean("firstCustomizer",
+						RabbitTemplateCustomizer.class);
+				RabbitTemplateCustomizer secondCustomizer = context.getBean("secondCustomizer",
+						RabbitTemplateCustomizer.class);
+				InOrder inOrder = inOrder(firstCustomizer, secondCustomizer);
+				RabbitTemplate template = context.getBean(RabbitTemplate.class);
+				then(firstCustomizer).should(inOrder).customize(template);
+				then(secondCustomizer).should(inOrder).customize(template);
+				inOrder.verifyNoMoreInteractions();
 			});
 	}
 
@@ -993,6 +1039,23 @@ class RabbitAutoConfigurationTests {
 	}
 
 	@Configuration(proxyBeanMethods = false)
+	static class MultipleRabbitTemplateCustomizersConfiguration {
+
+		@Bean
+		@Order(Ordered.LOWEST_PRECEDENCE)
+		RabbitTemplateCustomizer secondCustomizer() {
+			return mock(RabbitTemplateCustomizer.class);
+		}
+
+		@Bean
+		@Order(0)
+		RabbitTemplateCustomizer firstCustomizer() {
+			return mock(RabbitTemplateCustomizer.class);
+		}
+
+	}
+
+	@Configuration(proxyBeanMethods = false)
 	static class ConnectionNameStrategyConfiguration {
 
 		private final AtomicInteger counter = new AtomicInteger();
@@ -1181,6 +1244,38 @@ class RabbitAutoConfigurationTests {
 		@SuppressWarnings("unchecked")
 		ContainerCustomizer<DirectMessageListenerContainer> customizer() {
 			return mock(ContainerCustomizer.class);
+		}
+
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	static class ConnectionDetailsConfiguration {
+
+		@Bean
+		RabbitConnectionDetails rabbitConnectionDetails() {
+			return new RabbitConnectionDetails() {
+
+				@Override
+				public String getUsername() {
+					return "user-1";
+				}
+
+				@Override
+				public String getPassword() {
+					return "password-1";
+				}
+
+				@Override
+				public String getVirtualHost() {
+					return "/vhost-1";
+				}
+
+				@Override
+				public List<Address> getAddresses() {
+					return List.of(new Address("rabbit.example.com", 12345), new Address("rabbit2.example.com", 23456));
+				}
+
+			};
 		}
 
 	}
