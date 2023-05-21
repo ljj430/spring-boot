@@ -32,7 +32,11 @@ import org.apache.commons.compress.archivers.tar.TarConstants;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
+import org.apache.maven.plugins.annotations.Execute;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
+import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.plugins.annotations.ResolutionScope;
 
 import org.springframework.boot.buildpack.platform.build.AbstractBuildLog;
 import org.springframework.boot.buildpack.platform.build.BuildLog;
@@ -58,7 +62,13 @@ import org.springframework.util.StringUtils;
  * @author Jeroen Meijer
  * @since 2.3.0
  */
-public abstract class BuildImageMojo extends AbstractPackagerMojo {
+@Mojo(name = "build-image", defaultPhase = LifecyclePhase.PACKAGE, requiresProject = true, threadSafe = true,
+		requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME,
+		requiresDependencyCollection = ResolutionScope.COMPILE_PLUS_RUNTIME)
+@Execute(phase = LifecyclePhase.PACKAGE)
+public class BuildImageMojo extends AbstractPackagerMojo {
+
+	private static final String BUILDPACK_JVM_VERSION_KEY = "BP_JVM_VERSION";
 
 	static {
 		System.setProperty("org.slf4j.simpleLogger.log.org.apache.http.wire", "ERROR");
@@ -287,7 +297,19 @@ public abstract class BuildImageMojo extends AbstractPackagerMojo {
 	}
 
 	private BuildRequest customize(BuildRequest request) {
+		request = customizeEnvironment(request);
 		request = customizeCreator(request);
+		return request;
+	}
+
+	private BuildRequest customizeEnvironment(BuildRequest request) {
+		if (!request.getEnv().containsKey(BUILDPACK_JVM_VERSION_KEY)) {
+			JavaCompilerPluginConfiguration compilerConfiguration = new JavaCompilerPluginConfiguration(this.project);
+			String targetJavaVersion = compilerConfiguration.getTargetMajorVersion();
+			if (StringUtils.hasText(targetJavaVersion)) {
+				return request.withEnv(BUILDPACK_JVM_VERSION_KEY, targetJavaVersion + ".*");
+			}
+		}
 		return request;
 	}
 

@@ -23,10 +23,6 @@ import java.util.function.Function;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.aot.hint.MemberCategory;
-import org.springframework.aot.hint.RuntimeHints;
-import org.springframework.aot.hint.predicate.RuntimeHintsPredicates;
-import org.springframework.boot.actuate.autoconfigure.cloudfoundry.CloudFoundryWebEndpointDiscoverer.CloudFoundryWebEndpointDiscovererRuntimeHints;
 import org.springframework.boot.actuate.endpoint.EndpointId;
 import org.springframework.boot.actuate.endpoint.InvocationContext;
 import org.springframework.boot.actuate.endpoint.SecurityContext;
@@ -54,7 +50,6 @@ import static org.mockito.Mockito.mock;
  * Tests for {@link CloudFoundryWebEndpointDiscoverer}.
  *
  * @author Madhura Bhave
- * @author Moritz Halbritter
  */
 class CloudFoundryWebEndpointDiscovererTests {
 
@@ -62,7 +57,7 @@ class CloudFoundryWebEndpointDiscovererTests {
 	void getEndpointsShouldAddCloudFoundryHealthExtension() {
 		load(TestConfiguration.class, (discoverer) -> {
 			Collection<ExposableWebEndpoint> endpoints = discoverer.getEndpoints();
-			assertThat(endpoints).hasSize(2);
+			assertThat(endpoints.size()).isEqualTo(2);
 			for (ExposableWebEndpoint endpoint : endpoints) {
 				if (endpoint.getEndpointId().equals(EndpointId.of("health"))) {
 					WebOperation operation = findMainReadOperation(endpoint);
@@ -72,15 +67,6 @@ class CloudFoundryWebEndpointDiscovererTests {
 				}
 			}
 		});
-	}
-
-	@Test
-	void shouldRegisterHints() {
-		RuntimeHints runtimeHints = new RuntimeHints();
-		new CloudFoundryWebEndpointDiscovererRuntimeHints().registerHints(runtimeHints, getClass().getClassLoader());
-		assertThat(RuntimeHintsPredicates.reflection()
-			.onType(CloudFoundryEndpointFilter.class)
-			.withMemberCategories(MemberCategory.INVOKE_DECLARED_CONSTRUCTORS)).accepts(runtimeHints);
 	}
 
 	private WebOperation findMainReadOperation(ExposableWebEndpoint endpoint) {

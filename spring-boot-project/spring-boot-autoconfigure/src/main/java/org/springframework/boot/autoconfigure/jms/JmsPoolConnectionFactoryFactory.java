@@ -16,7 +16,8 @@
 
 package org.springframework.boot.autoconfigure.jms;
 
-import jakarta.jms.ConnectionFactory;
+import javax.jms.ConnectionFactory;
+
 import org.messaginghub.pooled.jms.JmsPoolConnectionFactory;
 
 /**

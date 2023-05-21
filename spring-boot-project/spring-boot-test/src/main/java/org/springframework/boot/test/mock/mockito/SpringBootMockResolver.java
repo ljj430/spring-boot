@@ -41,7 +41,8 @@ public class SpringBootMockResolver implements MockResolver {
 	private static <T> T getUltimateTargetObject(Object candidate) {
 		Assert.notNull(candidate, "Candidate must not be null");
 		try {
-			if (AopUtils.isAopProxy(candidate) && candidate instanceof Advised advised) {
+			if (AopUtils.isAopProxy(candidate) && candidate instanceof Advised) {
+				Advised advised = (Advised) candidate;
 				TargetSource targetSource = advised.getTargetSource();
 				if (targetSource.isStatic()) {
 					Object target = targetSource.getTarget();

@@ -60,7 +60,7 @@ class JdbcTestIntegrationTests {
 		Collection<ExampleEntity> entities = repository.findAll();
 		assertThat(entities).hasSize(1);
 		ExampleEntity entity = entities.iterator().next();
-		assertThat(entity.getId()).isOne();
+		assertThat(entity.getId()).isEqualTo(1);
 		assertThat(entity.getName()).isEqualTo("John");
 	}
 

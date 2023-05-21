@@ -58,8 +58,8 @@ class BuildRequestTests {
 		File jarFile = new File(this.tempDir, "my-app-0.0.1.jar");
 		writeTestJarFile(jarFile);
 		BuildRequest request = BuildRequest.forJarFile(jarFile);
-		assertThat(request.getName()).hasToString("docker.io/library/my-app:0.0.1");
-		assertThat(request.getBuilder()).hasToString("docker.io/" + BuildRequest.DEFAULT_BUILDER_IMAGE_NAME);
+		assertThat(request.getName().toString()).isEqualTo("docker.io/library/my-app:0.0.1");
+		assertThat(request.getBuilder().toString()).isEqualTo("docker.io/" + BuildRequest.DEFAULT_BUILDER_IMAGE_NAME);
 		assertThat(request.getApplicationContent(Owner.ROOT)).satisfies(this::hasExpectedJarContent);
 		assertThat(request.getEnv()).isEmpty();
 	}
@@ -69,8 +69,8 @@ class BuildRequestTests {
 		File jarFile = new File(this.tempDir, "my-app-0.0.1.jar");
 		writeTestJarFile(jarFile);
 		BuildRequest request = BuildRequest.forJarFile(ImageReference.of("test-app"), jarFile);
-		assertThat(request.getName()).hasToString("docker.io/library/test-app:latest");
-		assertThat(request.getBuilder()).hasToString("docker.io/" + BuildRequest.DEFAULT_BUILDER_IMAGE_NAME);
+		assertThat(request.getName().toString()).isEqualTo("docker.io/library/test-app:latest");
+		assertThat(request.getBuilder().toString()).isEqualTo("docker.io/" + BuildRequest.DEFAULT_BUILDER_IMAGE_NAME);
 		assertThat(request.getApplicationContent(Owner.ROOT)).satisfies(this::hasExpectedJarContent);
 		assertThat(request.getEnv()).isEmpty();
 	}
@@ -98,7 +98,7 @@ class BuildRequestTests {
 	void withBuilderUpdatesBuilder() throws IOException {
 		BuildRequest request = BuildRequest.forJarFile(writeTestJarFile("my-app-0.0.1.jar"))
 			.withBuilder(ImageReference.of("spring/builder"));
-		assertThat(request.getBuilder()).hasToString("docker.io/spring/builder:latest");
+		assertThat(request.getBuilder().toString()).isEqualTo("docker.io/spring/builder:latest");
 	}
 
 	@Test
@@ -106,7 +106,7 @@ class BuildRequestTests {
 		BuildRequest request = BuildRequest.forJarFile(writeTestJarFile("my-app-0.0.1.jar"))
 			.withBuilder(ImageReference
 				.of("spring/builder@sha256:6e9f67fa63b0323e9a1e587fd71c561ba48a034504fb804fd26fd8800039835d"));
-		assertThat(request.getBuilder()).hasToString(
+		assertThat(request.getBuilder().toString()).isEqualTo(
 				"docker.io/spring/builder@sha256:6e9f67fa63b0323e9a1e587fd71c561ba48a034504fb804fd26fd8800039835d");
 	}
 
@@ -114,7 +114,7 @@ class BuildRequestTests {
 	void withRunImageUpdatesRunImage() throws IOException {
 		BuildRequest request = BuildRequest.forJarFile(writeTestJarFile("my-app-0.0.1.jar"))
 			.withRunImage(ImageReference.of("example.com/custom/run-image:latest"));
-		assertThat(request.getRunImage()).hasToString("example.com/custom/run-image:latest");
+		assertThat(request.getRunImage().toString()).isEqualTo("example.com/custom/run-image:latest");
 	}
 
 	@Test
@@ -122,7 +122,7 @@ class BuildRequestTests {
 		BuildRequest request = BuildRequest.forJarFile(writeTestJarFile("my-app-0.0.1.jar"))
 			.withRunImage(ImageReference
 				.of("example.com/custom/run-image@sha256:6e9f67fa63b0323e9a1e587fd71c561ba48a034504fb804fd26fd8800039835d"));
-		assertThat(request.getRunImage()).hasToString(
+		assertThat(request.getRunImage().toString()).isEqualTo(
 				"example.com/custom/run-image@sha256:6e9f67fa63b0323e9a1e587fd71c561ba48a034504fb804fd26fd8800039835d");
 	}
 
@@ -131,7 +131,7 @@ class BuildRequestTests {
 		BuildRequest request = BuildRequest.forJarFile(writeTestJarFile("my-app-0.0.1.jar"));
 		BuildRequest withCreator = request.withCreator(Creator.withVersion("1.0.0"));
 		assertThat(request.getCreator().getName()).isEqualTo("Spring Boot");
-		assertThat(request.getCreator().getVersion()).isEmpty();
+		assertThat(request.getCreator().getVersion()).isEqualTo("");
 		assertThat(withCreator.getCreator().getName()).isEqualTo("Spring Boot");
 		assertThat(withCreator.getCreator().getVersion()).isEqualTo("1.0.0");
 	}

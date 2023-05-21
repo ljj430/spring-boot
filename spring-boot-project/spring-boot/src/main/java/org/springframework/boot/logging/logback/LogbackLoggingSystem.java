@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
 import java.util.logging.LogManager;
 
@@ -31,24 +30,18 @@ import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.classic.jul.LevelChangePropagator;
 import ch.qos.logback.classic.turbo.TurboFilter;
+import ch.qos.logback.classic.util.ContextInitializer;
 import ch.qos.logback.core.joran.spi.JoranException;
 import ch.qos.logback.core.spi.FilterReply;
 import ch.qos.logback.core.status.OnConsoleStatusListener;
 import ch.qos.logback.core.status.Status;
-import ch.qos.logback.core.status.StatusUtil;
 import ch.qos.logback.core.util.StatusListenerConfigHelper;
-import ch.qos.logback.core.util.StatusPrinter;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Marker;
 import org.slf4j.bridge.SLF4JBridgeHandler;
+import org.slf4j.impl.StaticLoggerBinder;
 
-import org.springframework.aot.AotDetector;
-import org.springframework.beans.factory.aot.BeanFactoryInitializationAotContribution;
-import org.springframework.beans.factory.aot.BeanFactoryInitializationAotProcessor;
-import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
-import org.springframework.boot.logging.AbstractLoggingSystem;
 import org.springframework.boot.logging.LogFile;
 import org.springframework.boot.logging.LogLevel;
 import org.springframework.boot.logging.LoggerConfiguration;
@@ -56,7 +49,9 @@ import org.springframework.boot.logging.LoggingInitializationContext;
 import org.springframework.boot.logging.LoggingSystem;
 import org.springframework.boot.logging.LoggingSystemFactory;
 import org.springframework.boot.logging.LoggingSystemProperties;
+import org.springframework.boot.logging.Slf4JLoggingSystem;
 import org.springframework.core.Ordered;
+import org.springframework.core.SpringProperties;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.Environment;
@@ -74,9 +69,10 @@ import org.springframework.util.StringUtils;
  * @author Ben Hale
  * @since 1.0.0
  */
-public class LogbackLoggingSystem extends AbstractLoggingSystem implements BeanFactoryInitializationAotProcessor {
+public class LogbackLoggingSystem extends Slf4JLoggingSystem {
 
-	private static final String BRIDGE_HANDLER = "org.slf4j.bridge.SLF4JBridgeHandler";
+	// Static final field to facilitate code removal by Graal
+	private static final boolean XML_ENABLED = !SpringProperties.getFlag("spring.xml.ignore");
 
 	private static final String CONFIGURATION_FILE_PROPERTY = "logback.configurationFile";
 
@@ -124,57 +120,7 @@ public class LogbackLoggingSystem extends AbstractLoggingSystem implements BeanF
 			return;
 		}
 		super.beforeInitialize();
-		configureJdkLoggingBridgeHandler();
 		loggerContext.getTurboFilterList().add(FILTER);
-	}
-
-	private void configureJdkLoggingBridgeHandler() {
-		try {
-			if (isBridgeJulIntoSlf4j()) {
-				removeJdkLoggingBridgeHandler();
-				SLF4JBridgeHandler.install();
-			}
-		}
-		catch (Throwable ex) {
-			// Ignore. No java.util.logging bridge is installed.
-		}
-	}
-
-	private boolean isBridgeJulIntoSlf4j() {
-		return isBridgeHandlerAvailable() && isJulUsingASingleConsoleHandlerAtMost();
-	}
-
-	private boolean isBridgeHandlerAvailable() {
-		return ClassUtils.isPresent(BRIDGE_HANDLER, getClassLoader());
-	}
-
-	private boolean isJulUsingASingleConsoleHandlerAtMost() {
-		java.util.logging.Logger rootLogger = LogManager.getLogManager().getLogger("");
-		Handler[] handlers = rootLogger.getHandlers();
-		return handlers.length == 0 || (handlers.length == 1 && handlers[0] instanceof ConsoleHandler);
-	}
-
-	private void removeJdkLoggingBridgeHandler() {
-		try {
-			removeDefaultRootHandler();
-			SLF4JBridgeHandler.uninstall();
-		}
-		catch (Throwable ex) {
-			// Ignore and continue
-		}
-	}
-
-	private void removeDefaultRootHandler() {
-		try {
-			java.util.logging.Logger rootLogger = LogManager.getLogManager().getLogger("");
-			Handler[] handlers = rootLogger.getHandlers();
-			if (handlers.length == 1 && handlers[0] instanceof ConsoleHandler) {
-				rootLogger.removeHandler(handlers[0]);
-			}
-		}
-		catch (Throwable ex) {
-			// Ignore and continue
-		}
 	}
 
 	@Override
@@ -183,34 +129,13 @@ public class LogbackLoggingSystem extends AbstractLoggingSystem implements BeanF
 		if (isAlreadyInitialized(loggerContext)) {
 			return;
 		}
-		if (!initializeFromAotGeneratedArtifactsIfPossible(initializationContext, logFile)) {
-			super.initialize(initializationContext, configLocation, logFile);
-		}
+		super.initialize(initializationContext, configLocation, logFile);
 		loggerContext.getTurboFilterList().remove(FILTER);
 		markAsInitialized(loggerContext);
 		if (StringUtils.hasText(System.getProperty(CONFIGURATION_FILE_PROPERTY))) {
 			getLogger(LogbackLoggingSystem.class.getName()).warn("Ignoring '" + CONFIGURATION_FILE_PROPERTY
 					+ "' system property. Please use 'logging.config' instead.");
 		}
-	}
-
-	private boolean initializeFromAotGeneratedArtifactsIfPossible(LoggingInitializationContext initializationContext,
-			LogFile logFile) {
-		if (!AotDetector.useGeneratedArtifacts()) {
-			return false;
-		}
-		if (initializationContext != null) {
-			applySystemProperties(initializationContext.getEnvironment(), logFile);
-		}
-		LoggerContext loggerContext = getLoggerContext();
-		stopAndReset(loggerContext);
-		SpringBootJoranConfigurator configurator = new SpringBootJoranConfigurator(initializationContext);
-		configurator.setContext(loggerContext);
-		boolean configuredUsingAotGeneratedArtifacts = configurator.configureUsingAotGeneratedArtifacts();
-		if (configuredUsingAotGeneratedArtifacts) {
-			reportConfigurationErrorsIfNecessary(loggerContext);
-		}
-		return configuredUsingAotGeneratedArtifacts;
 	}
 
 	@Override
@@ -233,9 +158,7 @@ public class LogbackLoggingSystem extends AbstractLoggingSystem implements BeanF
 	@Override
 	protected void loadConfiguration(LoggingInitializationContext initializationContext, String location,
 			LogFile logFile) {
-		if (initializationContext != null) {
-			applySystemProperties(initializationContext.getEnvironment(), logFile);
-		}
+		super.loadConfiguration(initializationContext, location, logFile);
 		LoggerContext loggerContext = getLoggerContext();
 		stopAndReset(loggerContext);
 		try {
@@ -244,10 +167,6 @@ public class LogbackLoggingSystem extends AbstractLoggingSystem implements BeanF
 		catch (Exception ex) {
 			throw new IllegalStateException("Could not initialize Logback logging from " + location, ex);
 		}
-		reportConfigurationErrorsIfNecessary(loggerContext);
-	}
-
-	private void reportConfigurationErrorsIfNecessary(LoggerContext loggerContext) {
 		List<Status> statuses = loggerContext.getStatusManager().getCopyOfStatusList();
 		StringBuilder errors = new StringBuilder();
 		for (Status status : statuses) {
@@ -259,20 +178,17 @@ public class LogbackLoggingSystem extends AbstractLoggingSystem implements BeanF
 		if (errors.length() > 0) {
 			throw new IllegalStateException(String.format("Logback configuration error detected: %n%s", errors));
 		}
-		if (!StatusUtil.contextHasStatusListener(loggerContext)) {
-			StatusPrinter.printInCaseOfErrorsOrWarnings(loggerContext);
-		}
 	}
 
 	private void configureByResourceUrl(LoggingInitializationContext initializationContext, LoggerContext loggerContext,
 			URL url) throws JoranException {
-		if (url.toString().endsWith(".xml")) {
+		if (XML_ENABLED && url.toString().endsWith("xml")) {
 			JoranConfigurator configurator = new SpringBootJoranConfigurator(initializationContext);
 			configurator.setContext(loggerContext);
 			configurator.doConfigure(url);
 		}
 		else {
-			throw new IllegalArgumentException("Unsupported file extension in '" + url + "'. Only .xml is supported");
+			new ContextInitializer(loggerContext).configureByResource(url);
 		}
 	}
 
@@ -305,9 +221,6 @@ public class LogbackLoggingSystem extends AbstractLoggingSystem implements BeanF
 		LoggerContext context = getLoggerContext();
 		markAsUninitialized(context);
 		super.cleanUp();
-		if (isBridgeHandlerAvailable()) {
-			removeJdkLoggingBridgeHandler();
-		}
 		context.getStatusManager().clear();
 		context.getTurboFilterList().remove(FILTER);
 	}
@@ -377,7 +290,7 @@ public class LogbackLoggingSystem extends AbstractLoggingSystem implements BeanF
 	}
 
 	private LoggerContext getLoggerContext() {
-		ILoggerFactory factory = LoggerFactory.getILoggerFactory();
+		ILoggerFactory factory = StaticLoggerBinder.getSingleton().getLoggerFactory();
 		Assert.isInstanceOf(LoggerContext.class, factory,
 				() -> String.format(
 						"LoggerFactory is not a Logback LoggerContext but Logback is on "
@@ -413,16 +326,6 @@ public class LogbackLoggingSystem extends AbstractLoggingSystem implements BeanF
 
 	private void markAsUninitialized(LoggerContext loggerContext) {
 		loggerContext.removeObject(LoggingSystem.class.getName());
-	}
-
-	@Override
-	public BeanFactoryInitializationAotContribution processAheadOfTime(ConfigurableListableBeanFactory beanFactory) {
-		String key = BeanFactoryInitializationAotContribution.class.getName();
-		LoggerContext context = getLoggerContext();
-		BeanFactoryInitializationAotContribution contribution = (BeanFactoryInitializationAotContribution) context
-			.getObject(key);
-		context.removeObject(key);
-		return contribution;
 	}
 
 	/**

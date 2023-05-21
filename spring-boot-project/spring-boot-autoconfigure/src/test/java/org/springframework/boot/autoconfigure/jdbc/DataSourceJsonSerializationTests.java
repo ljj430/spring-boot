@@ -60,7 +60,7 @@ class DataSourceJsonSerializationTests {
 		ObjectMapper mapper = new ObjectMapper();
 		mapper.setSerializerFactory(factory);
 		String value = mapper.writeValueAsString(dataSource);
-		assertThat(value).contains("\"url\":");
+		assertThat(value.contains("\"url\":")).isTrue();
 	}
 
 	@Test
@@ -69,8 +69,8 @@ class DataSourceJsonSerializationTests {
 		ObjectMapper mapper = new ObjectMapper();
 		mapper.addMixIn(DataSource.class, DataSourceJson.class);
 		String value = mapper.writeValueAsString(dataSource);
-		assertThat(value).contains("\"url\":");
-		assertThat(StringUtils.countOccurrencesOf(value, "\"url\"")).isOne();
+		assertThat(value.contains("\"url\":")).isTrue();
+		assertThat(StringUtils.countOccurrencesOf(value, "\"url\"")).isEqualTo(1);
 	}
 
 	@JsonSerialize(using = TomcatDataSourceSerializer.class)
@@ -80,7 +80,7 @@ class DataSourceJsonSerializationTests {
 
 	static class TomcatDataSourceSerializer extends JsonSerializer<DataSource> {
 
-		private final ConversionService conversionService = new DefaultConversionService();
+		private ConversionService conversionService = new DefaultConversionService();
 
 		@Override
 		public void serialize(DataSource value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
@@ -99,7 +99,7 @@ class DataSourceJsonSerializationTests {
 
 	static class GenericSerializerModifier extends BeanSerializerModifier {
 
-		private final ConversionService conversionService = new DefaultConversionService();
+		private ConversionService conversionService = new DefaultConversionService();
 
 		@Override
 		public List<BeanPropertyWriter> changeProperties(SerializationConfig config, BeanDescription beanDesc,

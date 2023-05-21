@@ -72,6 +72,13 @@ public class Saml2RelyingPartyProperties {
 		 */
 		private final AssertingParty assertingparty = new AssertingParty();
 
+		/**
+		 * Remote SAML Identity Provider.
+		 * @deprecated use {@link #assertingparty}
+		 */
+		@Deprecated
+		private final AssertingParty identityprovider = new AssertingParty();
+
 		public String getEntityId() {
 			return this.entityId;
 		}
@@ -94,6 +101,16 @@ public class Saml2RelyingPartyProperties {
 
 		public AssertingParty getAssertingparty() {
 			return this.assertingparty;
+		}
+
+		/**
+		 * Remote SAML Identity Provider.
+		 * @return remote SAML Identity Provider
+		 * @deprecated use {@link #getAssertingparty()}
+		 */
+		@Deprecated
+		public AssertingParty getIdentityprovider() {
+			return this.identityprovider;
 		}
 
 		public Singlelogout getSinglelogout() {
@@ -295,7 +312,7 @@ public class Saml2RelyingPartyProperties {
 			/**
 			 * Whether to sign authentication requests.
 			 */
-			private boolean signRequest = true;
+			private Boolean signRequest;
 
 			public String getUrl() {
 				return this.url;
@@ -317,7 +334,11 @@ public class Saml2RelyingPartyProperties {
 				return this.signRequest;
 			}
 
-			public void setSignRequest(boolean signRequest) {
+			public Boolean getSignRequest() {
+				return this.signRequest;
+			}
+
+			public void setSignRequest(Boolean signRequest) {
 				this.signRequest = signRequest;
 			}
 

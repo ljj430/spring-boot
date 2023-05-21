@@ -18,7 +18,7 @@ package org.springframework.boot.docs.web.servlet.springmvc.errorhandling.errorp
 
 import java.util.Map;
 
-import jakarta.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.boot.autoconfigure.web.servlet.error.ErrorViewResolver;
 import org.springframework.http.HttpStatus;

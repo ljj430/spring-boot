@@ -22,7 +22,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
-import jakarta.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequest;
+
 import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
@@ -88,7 +89,7 @@ class ApplicationContextRequestMatcherTests {
 	@Test
 	void initializeAndMatchesAreNotCalledIfContextIsIgnored() {
 		StaticWebApplicationContext context = createWebApplicationContext();
-		TestApplicationContextRequestMatcher<ApplicationContext> matcher = new TestApplicationContextRequestMatcher<>(
+		TestApplicationContextRequestMatcher<ApplicationContext> matcher = new TestApplicationContextRequestMatcher<ApplicationContext>(
 				ApplicationContext.class) {
 
 			@Override

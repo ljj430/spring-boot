@@ -19,6 +19,7 @@ package org.springframework.boot.actuate.autoconfigure.endpoint.web;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 
@@ -89,7 +90,9 @@ class WebEndpointAutoConfigurationTests {
 				WebEndpointDiscoverer discoverer = context.getBean(WebEndpointDiscoverer.class);
 				Collection<ExposableWebEndpoint> endpoints = discoverer.getEndpoints();
 				ExposableWebEndpoint[] webEndpoints = endpoints.toArray(new ExposableWebEndpoint[0]);
-				List<String> paths = Arrays.stream(webEndpoints).map(PathMappedEndpoint::getRootPath).toList();
+				List<String> paths = Arrays.stream(webEndpoints)
+					.map(PathMappedEndpoint::getRootPath)
+					.collect(Collectors.toList());
 				assertThat(paths).containsOnly("1/testone", "foo", "testtwo");
 			});
 	}

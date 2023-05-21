@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import jakarta.servlet.ServletContext;
+import javax.servlet.ServletContext;
 
 import org.springframework.boot.web.server.ConfigurableWebServerFactory;
 import org.springframework.boot.web.server.Cookie.SameSite;
