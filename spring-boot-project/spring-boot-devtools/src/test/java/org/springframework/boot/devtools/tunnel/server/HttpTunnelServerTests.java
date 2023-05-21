@@ -285,7 +285,7 @@ class HttpTunnelServerTests {
 		connection.waitForResponse();
 		connection.respond(HttpStatus.I_AM_A_TEAPOT);
 		assertThat(this.servletResponse.getStatus()).isEqualTo(418);
-		assertThat(this.servletResponse.getContentLength()).isZero();
+		assertThat(this.servletResponse.getContentLength()).isEqualTo(0);
 	}
 
 	@Test
@@ -348,11 +348,11 @@ class HttpTunnelServerTests {
 
 		private int timeout;
 
-		private final BlockingDeque<ByteBuffer> outgoing = new LinkedBlockingDeque<>();
+		private BlockingDeque<ByteBuffer> outgoing = new LinkedBlockingDeque<>();
 
-		private final ByteArrayOutputStream written = new ByteArrayOutputStream();
+		private ByteArrayOutputStream written = new ByteArrayOutputStream();
 
-		private final AtomicBoolean open = new AtomicBoolean(true);
+		private AtomicBoolean open = new AtomicBoolean(true);
 
 		void setTimeout(int timeout) {
 			this.timeout = timeout;

@@ -18,13 +18,14 @@ package org.springframework.boot.gradle.tasks.buildinfo;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.gradle.api.Action;
-import org.gradle.api.DefaultTask;
+import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.file.DirectoryProperty;
-import org.gradle.api.provider.SetProperty;
-import org.gradle.api.tasks.Internal;
+import org.gradle.api.internal.ConventionTask;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.TaskAction;
@@ -42,35 +43,29 @@ import org.springframework.boot.loader.tools.BuildPropertiesWriter.ProjectDetail
  * @since 2.0.0
  */
 @DisableCachingByDefault(because = "Not worth caching")
-public abstract class BuildInfo extends DefaultTask {
+public class BuildInfo extends ConventionTask {
 
-	private final BuildInfoProperties properties;
+	private final BuildInfoProperties properties = new BuildInfoProperties(getProject());
+
+	private final DirectoryProperty destinationDir;
 
 	public BuildInfo() {
-		this.properties = getProject().getObjects().newInstance(BuildInfoProperties.class, getExcludes());
-		getDestinationDir().convention(getProject().getLayout().getBuildDirectory().dir(getName()));
+		this.destinationDir = getProject().getObjects()
+			.directoryProperty()
+			.convention(getProject().getLayout().getBuildDirectory());
 	}
 
 	/**
-	 * Returns the names of the properties to exclude from the output.
-	 * @return names of the properties to exclude
-	 * @since 3.0.0
-	 */
-	@Internal
-	public abstract SetProperty<String> getExcludes();
-
-	/**
 	 * Generates the {@code build-info.properties} file in the configured
-	 * {@link #getDestinationDir destination}.
+	 * {@link #setDestinationDir(File) destination}.
 	 */
 	@TaskAction
 	public void generateBuildProperties() {
 		try {
-			ProjectDetails details = new ProjectDetails(this.properties.getGroupIfNotExcluded(),
-					this.properties.getArtifactIfNotExcluded(), this.properties.getVersionIfNotExcluded(),
-					this.properties.getNameIfNotExcluded(), this.properties.getTimeIfNotExcluded(),
-					this.properties.getAdditionalIfNotExcluded());
-			new BuildPropertiesWriter(new File(getDestinationDir().get().getAsFile(), "build-info.properties"))
+			ProjectDetails details = new ProjectDetails(this.properties.getGroup(), this.properties.getArtifact(),
+					this.properties.getVersion(), this.properties.getName(), this.properties.getTime(),
+					coerceToStringValues(this.properties.getAdditional()));
+			new BuildPropertiesWriter(new File(getDestinationDir(), "build-info.properties"))
 				.writeBuildProperties(details);
 		}
 		catch (IOException ex) {
@@ -80,11 +75,21 @@ public abstract class BuildInfo extends DefaultTask {
 
 	/**
 	 * Returns the directory to which the {@code build-info.properties} file will be
-	 * written.
+	 * written. Defaults to the {@link Project#getBuildDir() Project's build directory}.
 	 * @return the destination directory
 	 */
 	@OutputDirectory
-	public abstract DirectoryProperty getDestinationDir();
+	public File getDestinationDir() {
+		return this.destinationDir.getAsFile().get();
+	}
+
+	/**
+	 * Sets the directory to which the {@code build-info.properties} file will be written.
+	 * @param destinationDir the destination directory
+	 */
+	public void setDestinationDir(File destinationDir) {
+		this.destinationDir.set(destinationDir);
+	}
 
 	/**
 	 * Returns the {@link BuildInfoProperties properties} that will be included in the
@@ -102,6 +107,12 @@ public abstract class BuildInfo extends DefaultTask {
 	 */
 	public void properties(Action<BuildInfoProperties> action) {
 		action.execute(this.properties);
+	}
+
+	private Map<String, String> coerceToStringValues(Map<String, Object> input) {
+		Map<String, String> output = new HashMap<>();
+		input.forEach((key, value) -> output.put(key, (value != null) ? value.toString() : null));
+		return output;
 	}
 
 }

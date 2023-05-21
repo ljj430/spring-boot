@@ -17,6 +17,7 @@
 package org.springframework.boot.diagnostics;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -24,12 +25,12 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.boot.SpringBootExceptionReporter;
+import org.springframework.boot.util.Instantiator;
+import org.springframework.boot.util.Instantiator.FailureHandler;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.EnvironmentAware;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.support.SpringFactoriesLoader;
-import org.springframework.core.io.support.SpringFactoriesLoader.ArgumentResolver;
-import org.springframework.core.io.support.SpringFactoriesLoader.FailureHandler;
 import org.springframework.core.log.LogMessage;
 import org.springframework.util.StringUtils;
 
@@ -50,30 +51,45 @@ final class FailureAnalyzers implements SpringBootExceptionReporter {
 
 	private static final Log logger = LogFactory.getLog(FailureAnalyzers.class);
 
-	private final SpringFactoriesLoader springFactoriesLoader;
+	private final ClassLoader classLoader;
 
 	private final List<FailureAnalyzer> analyzers;
 
-	public FailureAnalyzers(ConfigurableApplicationContext context) {
-		this(context,
-				SpringFactoriesLoader.forDefaultResourceLocation((context != null) ? context.getClassLoader() : null));
+	FailureAnalyzers(ConfigurableApplicationContext context) {
+		this(context, SpringFactoriesLoader.loadFactoryNames(FailureAnalyzer.class, getClassLoader(context)));
 	}
 
-	FailureAnalyzers(ConfigurableApplicationContext context, SpringFactoriesLoader springFactoriesLoader) {
-		this.springFactoriesLoader = springFactoriesLoader;
-		this.analyzers = loadFailureAnalyzers(context, this.springFactoriesLoader);
+	FailureAnalyzers(ConfigurableApplicationContext context, List<String> classNames) {
+		this.classLoader = getClassLoader(context);
+		this.analyzers = loadFailureAnalyzers(classNames, context);
 	}
 
-	private static List<FailureAnalyzer> loadFailureAnalyzers(ConfigurableApplicationContext context,
-			SpringFactoriesLoader springFactoriesLoader) {
-		List<FailureAnalyzer> analyzers = springFactoriesLoader.load(FailureAnalyzer.class,
-				getArgumentResolver(context), FailureHandler.logging(logger));
+	private static ClassLoader getClassLoader(ConfigurableApplicationContext context) {
+		return (context != null) ? context.getClassLoader() : null;
+	}
+
+	private List<FailureAnalyzer> loadFailureAnalyzers(List<String> classNames,
+			ConfigurableApplicationContext context) {
+		Instantiator<FailureAnalyzer> instantiator = new Instantiator<>(FailureAnalyzer.class,
+				(availableParameters) -> {
+					if (context != null) {
+						availableParameters.add(BeanFactory.class, context.getBeanFactory());
+						availableParameters.add(Environment.class, context.getEnvironment());
+					}
+				}, new LoggingInstantiationFailureHandler());
+		List<FailureAnalyzer> analyzers = instantiator.instantiate(this.classLoader, classNames);
+		return handleAwareAnalyzers(analyzers, context);
+	}
+
+	private List<FailureAnalyzer> handleAwareAnalyzers(List<FailureAnalyzer> analyzers,
+			ConfigurableApplicationContext context) {
 		List<FailureAnalyzer> awareAnalyzers = analyzers.stream()
 			.filter((analyzer) -> analyzer instanceof BeanFactoryAware || analyzer instanceof EnvironmentAware)
-			.toList();
+			.collect(Collectors.toList());
 		if (!awareAnalyzers.isEmpty()) {
-			String awareAnalyzerNames = StringUtils.collectionToCommaDelimitedString(
-					awareAnalyzers.stream().map((analyzer) -> analyzer.getClass().getName()).toList());
+			String awareAnalyzerNames = StringUtils.collectionToCommaDelimitedString(awareAnalyzers.stream()
+				.map((analyzer) -> analyzer.getClass().getName())
+				.collect(Collectors.toList()));
 			logger.warn(LogMessage.format(
 					"FailureAnalyzers [%s] implement BeanFactoryAware or EnvironmentAware. "
 							+ "Support for these interfaces on FailureAnalyzers is deprecated, "
@@ -82,33 +98,26 @@ final class FailureAnalyzers implements SpringBootExceptionReporter {
 					awareAnalyzerNames));
 			if (context == null) {
 				logger.trace(LogMessage.format("Skipping [%s] due to missing context", awareAnalyzerNames));
-				return analyzers.stream().filter((analyzer) -> !awareAnalyzers.contains(analyzer)).toList();
+				return analyzers.stream()
+					.filter((analyzer) -> !awareAnalyzers.contains(analyzer))
+					.collect(Collectors.toList());
 			}
 			awareAnalyzers.forEach((analyzer) -> {
-				if (analyzer instanceof BeanFactoryAware beanFactoryAware) {
-					beanFactoryAware.setBeanFactory(context.getBeanFactory());
+				if (analyzer instanceof BeanFactoryAware) {
+					((BeanFactoryAware) analyzer).setBeanFactory(context.getBeanFactory());
 				}
-				if (analyzer instanceof EnvironmentAware environmentAware) {
-					environmentAware.setEnvironment(context.getEnvironment());
+				if (analyzer instanceof EnvironmentAware) {
+					((EnvironmentAware) analyzer).setEnvironment(context.getEnvironment());
 				}
 			});
 		}
 		return analyzers;
 	}
 
-	private static ArgumentResolver getArgumentResolver(ConfigurableApplicationContext context) {
-		if (context == null) {
-			return null;
-		}
-		ArgumentResolver argumentResolver = ArgumentResolver.of(BeanFactory.class, context.getBeanFactory());
-		argumentResolver = argumentResolver.and(Environment.class, context.getEnvironment());
-		return argumentResolver;
-	}
-
 	@Override
 	public boolean reportException(Throwable failure) {
 		FailureAnalysis analysis = analyze(failure, this.analyzers);
-		return report(analysis);
+		return report(analysis, this.classLoader);
 	}
 
 	private FailureAnalysis analyze(Throwable failure, List<FailureAnalyzer> analyzers) {
@@ -126,8 +135,9 @@ final class FailureAnalyzers implements SpringBootExceptionReporter {
 		return null;
 	}
 
-	private boolean report(FailureAnalysis analysis) {
-		List<FailureAnalysisReporter> reporters = this.springFactoriesLoader.load(FailureAnalysisReporter.class);
+	private boolean report(FailureAnalysis analysis, ClassLoader classLoader) {
+		List<FailureAnalysisReporter> reporters = SpringFactoriesLoader.loadFactories(FailureAnalysisReporter.class,
+				classLoader);
 		if (analysis == null || reporters.isEmpty()) {
 			return false;
 		}
@@ -135,6 +145,15 @@ final class FailureAnalyzers implements SpringBootExceptionReporter {
 			reporter.report(analysis);
 		}
 		return true;
+	}
+
+	static class LoggingInstantiationFailureHandler implements FailureHandler {
+
+		@Override
+		public void handleFailure(Class<?> type, String implementationName, Throwable failure) {
+			logger.trace(LogMessage.format("Skipping %s: %s", implementationName, failure.getMessage()));
+		}
+
 	}
 
 }

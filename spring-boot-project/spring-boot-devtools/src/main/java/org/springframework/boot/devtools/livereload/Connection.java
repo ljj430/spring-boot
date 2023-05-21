@@ -23,7 +23,6 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Base64;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -32,6 +31,7 @@ import org.apache.commons.logging.LogFactory;
 
 import org.springframework.core.log.LogMessage;
 import org.springframework.util.Assert;
+import org.springframework.util.Base64Utils;
 
 /**
  * A {@link LiveReloadServer} connection.
@@ -149,7 +149,7 @@ class Connection {
 		String response = matcher.group(1).trim() + WEBSOCKET_GUID;
 		MessageDigest messageDigest = MessageDigest.getInstance("SHA-1");
 		messageDigest.update(response.getBytes(), 0, response.length());
-		return Base64.getEncoder().encodeToString(messageDigest.digest());
+		return Base64Utils.encodeToString(messageDigest.digest());
 	}
 
 	/**

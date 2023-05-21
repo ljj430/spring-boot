@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,7 +78,7 @@ import static org.junit.jupiter.api.Assertions.fail;
  */
 class WebSocketMessagingAutoConfigurationTests {
 
-	private final AnnotationConfigServletWebServerApplicationContext context = new AnnotationConfigServletWebServerApplicationContext();
+	private AnnotationConfigServletWebServerApplicationContext context = new AnnotationConfigServletWebServerApplicationContext();
 
 	private SockJsClient sockJsClient;
 
@@ -121,7 +121,7 @@ class WebSocketMessagingAutoConfigurationTests {
 	void customizedConverterTypesMatchDefaultConverterTypes() {
 		List<MessageConverter> customizedConverters = getCustomizedConverters();
 		List<MessageConverter> defaultConverters = getDefaultConverters();
-		assertThat(customizedConverters).hasSameSizeAs(defaultConverters);
+		assertThat(customizedConverters.size()).isEqualTo(defaultConverters.size());
 		Iterator<MessageConverter> customizedIterator = customizedConverters.iterator();
 		Iterator<MessageConverter> defaultIterator = defaultConverters.iterator();
 		while (customizedIterator.hasNext()) {
@@ -192,7 +192,7 @@ class WebSocketMessagingAutoConfigurationTests {
 		};
 
 		stompClient.setMessageConverter(new SimpleMessageConverter());
-		stompClient.connectAsync("ws://localhost:{port}/messaging", handler, this.context.getWebServer().getPort());
+		stompClient.connect("ws://localhost:{port}/messaging", handler, this.context.getWebServer().getPort());
 
 		if (!latch.await(30, TimeUnit.SECONDS)) {
 			if (failure.get() != null) {
@@ -255,9 +255,9 @@ class WebSocketMessagingAutoConfigurationTests {
 
 	public static class Data {
 
-		private final int foo;
+		private int foo;
 
-		private final String bar;
+		private String bar;
 
 		Data(int foo, String bar) {
 			this.foo = foo;

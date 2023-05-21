@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.boot.autoconfigure.rsocket;
 
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.rsocket.SocketAcceptor;
@@ -45,7 +46,7 @@ class RSocketWebSocketNettyRouteProvider implements NettyRouteProvider {
 			Stream<RSocketServerCustomizer> customizers) {
 		this.mappingPath = mappingPath;
 		this.socketAcceptor = socketAcceptor;
-		this.customizers = customizers.toList();
+		this.customizers = customizers.collect(Collectors.toList());
 	}
 
 	@Override
