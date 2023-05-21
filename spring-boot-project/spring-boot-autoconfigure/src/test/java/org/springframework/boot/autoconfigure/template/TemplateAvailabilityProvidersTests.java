@@ -49,11 +49,11 @@ class TemplateAvailabilityProvidersTests {
 	@Mock
 	private TemplateAvailabilityProvider provider;
 
-	private final String view = "view";
+	private String view = "view";
 
-	private final ClassLoader classLoader = getClass().getClassLoader();
+	private ClassLoader classLoader = getClass().getClassLoader();
 
-	private final MockEnvironment environment = new MockEnvironment();
+	private MockEnvironment environment = new MockEnvironment();
 
 	@Mock
 	private ResourceLoader resourceLoader;

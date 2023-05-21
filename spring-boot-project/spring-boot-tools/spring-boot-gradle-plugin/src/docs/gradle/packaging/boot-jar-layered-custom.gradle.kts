@@ -19,12 +19,15 @@ tasks.named<BootJar>("bootJar") {
 			intoLayer("application")
 		}
 		dependencies {
+			intoLayer("application") {
+				includeProjectDependencies()
+			}
 			intoLayer("snapshot-dependencies") {
 				include("*:*:*SNAPSHOT")
 			}
 			intoLayer("dependencies")
 		}
-		layerOrder.set(listOf("dependencies", "spring-boot-loader", "snapshot-dependencies", "application"))
+		layerOrder = listOf("dependencies", "spring-boot-loader", "snapshot-dependencies", "application")
 	}
 }
 // end::layered[]

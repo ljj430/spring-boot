@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.jar.JarFile;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -56,7 +57,7 @@ class WarIntegrationTests extends AbstractArchiveIntegrationTests {
 				.hasEntryWithNameStartingWith("WEB-INF/lib/spring-context")
 				.hasEntryWithNameStartingWith("WEB-INF/lib/spring-core")
 				.hasEntryWithNameStartingWith("WEB-INF/lib/spring-jcl")
-				.hasEntryWithNameStartingWith("WEB-INF/lib-provided/jakarta.servlet-api-6")
+				.hasEntryWithNameStartingWith("WEB-INF/lib-provided/jakarta.servlet-api-4")
 				.hasEntryWithName("org/springframework/boot/loader/WarLauncher.class")
 				.hasEntryWithName("WEB-INF/classes/org/test/SampleApplication.class")
 				.hasEntryWithName("index.html")
@@ -103,7 +104,7 @@ class WarIntegrationTests extends AbstractArchiveIntegrationTests {
 				List<String> unreproducibleEntries = jar.stream()
 					.filter((entry) -> entry.getLastModifiedTime().toMillis() != offsetExpectedModified)
 					.map((entry) -> entry.getName() + ": " + entry.getLastModifiedTime())
-					.toList();
+					.collect(Collectors.toList());
 				assertThat(unreproducibleEntries).isEmpty();
 				warHash.set(FileUtils.sha1Hash(repackaged));
 				FileSystemUtils.deleteRecursively(project);

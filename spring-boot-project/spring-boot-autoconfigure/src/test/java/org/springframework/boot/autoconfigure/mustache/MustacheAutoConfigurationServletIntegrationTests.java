@@ -82,13 +82,13 @@ class MustacheAutoConfigurationServletIntegrationTests {
 	@Test
 	void testHomePage() {
 		String body = new TestRestTemplate().getForObject("http://localhost:" + this.port, String.class);
-		assertThat(body).contains("Hello World");
+		assertThat(body.contains("Hello World")).isTrue();
 	}
 
 	@Test
 	void testPartialPage() {
 		String body = new TestRestTemplate().getForObject("http://localhost:" + this.port + "/partial", String.class);
-		assertThat(body).contains("Hello World");
+		assertThat(body.contains("Hello World")).isTrue();
 	}
 
 	@Configuration(proxyBeanMethods = false)

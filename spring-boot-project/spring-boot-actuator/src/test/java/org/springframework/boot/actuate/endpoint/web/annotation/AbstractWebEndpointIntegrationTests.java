@@ -166,9 +166,16 @@ public abstract class AbstractWebEndpointIntegrationTests<T extends Configurable
 	}
 
 	@Test
-	protected void operationWithTrailingSlashShouldNotMatch() {
+	void operationWithTrailingSlashShouldMatch() {
 		load(TestEndpointConfiguration.class,
-				(client) -> client.get().uri("/test/").exchange().expectStatus().isNotFound());
+				(client) -> client.get()
+					.uri("/test/")
+					.exchange()
+					.expectStatus()
+					.isOk()
+					.expectBody()
+					.jsonPath("All")
+					.isEqualTo(true));
 	}
 
 	@Test

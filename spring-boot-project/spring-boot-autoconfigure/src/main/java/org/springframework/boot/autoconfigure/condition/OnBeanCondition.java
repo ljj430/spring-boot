@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -182,13 +181,8 @@ class OnBeanCondition extends FilteringSpringBootCondition implements Configurat
 		for (String type : spec.getTypes()) {
 			Collection<String> typeMatches = getBeanNamesForType(classLoader, considerHierarchy, beanFactory, type,
 					parameterizedContainers);
-			Iterator<String> iterator = typeMatches.iterator();
-			while (iterator.hasNext()) {
-				String match = iterator.next();
-				if (beansIgnoredByType.contains(match) || ScopedProxyUtils.isScopedTarget(match)) {
-					iterator.remove();
-				}
-			}
+			typeMatches
+				.removeIf((match) -> beansIgnoredByType.contains(match) || ScopedProxyUtils.isScopedTarget(match));
 			if (typeMatches.isEmpty()) {
 				result.recordUnmatchedType(type);
 			}
@@ -254,11 +248,11 @@ class OnBeanCondition extends FilteringSpringBootCondition implements Configurat
 			ResolvableType generic = ResolvableType.forClassWithGenerics(container, type);
 			result = addAll(result, beanFactory.getBeanNamesForType(generic, true, false));
 		}
-		if (considerHierarchy && beanFactory instanceof HierarchicalBeanFactory hierarchicalBeanFactory) {
-			BeanFactory parent = hierarchicalBeanFactory.getParentBeanFactory();
-			if (parent instanceof ListableBeanFactory listableBeanFactory) {
-				result = collectBeanNamesForType(listableBeanFactory, considerHierarchy, type, parameterizedContainers,
-						result);
+		if (considerHierarchy && beanFactory instanceof HierarchicalBeanFactory) {
+			BeanFactory parent = ((HierarchicalBeanFactory) beanFactory).getParentBeanFactory();
+			if (parent instanceof ListableBeanFactory) {
+				result = collectBeanNamesForType((ListableBeanFactory) parent, considerHierarchy, type,
+						parameterizedContainers, result);
 			}
 		}
 		return result;
@@ -288,8 +282,9 @@ class OnBeanCondition extends FilteringSpringBootCondition implements Configurat
 		result = addAll(result, beanFactory.getBeanNamesForAnnotation(annotationType));
 		if (considerHierarchy) {
 			BeanFactory parent = ((HierarchicalBeanFactory) beanFactory).getParentBeanFactory();
-			if (parent instanceof ListableBeanFactory listableBeanFactory) {
-				result = collectBeanNamesForAnnotation(listableBeanFactory, annotationType, considerHierarchy, result);
+			if (parent instanceof ListableBeanFactory) {
+				result = collectBeanNamesForAnnotation((ListableBeanFactory) parent, annotationType, considerHierarchy,
+						result);
 			}
 		}
 		return result;
@@ -371,9 +366,9 @@ class OnBeanCondition extends FilteringSpringBootCondition implements Configurat
 		if (beanFactory.containsBeanDefinition(beanName)) {
 			return beanFactory.getBeanDefinition(beanName);
 		}
-		if (considerHierarchy
-				&& beanFactory.getParentBeanFactory() instanceof ConfigurableListableBeanFactory listableBeanFactory) {
-			return findBeanDefinition(listableBeanFactory, beanName, considerHierarchy);
+		if (considerHierarchy && beanFactory.getParentBeanFactory() instanceof ConfigurableListableBeanFactory) {
+			return findBeanDefinition(((ConfigurableListableBeanFactory) beanFactory.getParentBeanFactory()), beanName,
+					considerHierarchy);
 		}
 		return null;
 	}
@@ -456,11 +451,11 @@ class OnBeanCondition extends FilteringSpringBootCondition implements Configurat
 			for (String attributeName : attributeNames) {
 				List<Object> values = attributes.getOrDefault(attributeName, Collections.emptyList());
 				for (Object value : values) {
-					if (value instanceof String[] stringArray) {
-						merge(result, stringArray);
+					if (value instanceof String[]) {
+						merge(result, (String[]) value);
 					}
-					else if (value instanceof String string) {
-						merge(result, string);
+					else if (value instanceof String) {
+						merge(result, (String) value);
 					}
 				}
 			}

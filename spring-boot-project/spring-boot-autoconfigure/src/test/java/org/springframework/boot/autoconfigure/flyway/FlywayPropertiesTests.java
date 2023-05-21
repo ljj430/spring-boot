@@ -17,7 +17,6 @@
 package org.springframework.boot.autoconfigure.flyway;
 
 import java.beans.PropertyDescriptor;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -45,19 +44,22 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class FlywayPropertiesTests {
 
+	@SuppressWarnings("deprecation")
 	@Test
 	void defaultValuesAreConsistent() {
 		FlywayProperties properties = new FlywayProperties();
 		Configuration configuration = new FluentConfiguration();
-		assertThat(properties.isFailOnMissingLocations()).isEqualTo(configuration.isFailOnMissingLocations());
+		assertThat(configuration.isFailOnMissingLocations()).isEqualTo(properties.isFailOnMissingLocations());
 		assertThat(properties.getLocations().stream().map(Location::new).toArray(Location[]::new))
 			.isEqualTo(configuration.getLocations());
 		assertThat(properties.getEncoding()).isEqualTo(configuration.getEncoding());
 		assertThat(properties.getConnectRetries()).isEqualTo(configuration.getConnectRetries());
-		assertThat(properties.getConnectRetriesInterval()).extracting(Duration::getSeconds)
-			.extracting(Long::intValue)
-			.isEqualTo(configuration.getConnectRetriesInterval());
-		assertThat(properties.getLockRetryCount()).isEqualTo(configuration.getLockRetryCount());
+		// Can't assert connect retries interval as it is new in Flyway 7.15
+		// Asserting hard-coded value in the metadata instead
+		assertThat(configuration.getConnectRetriesInterval()).isEqualTo(120);
+		// Can't assert lock retry count default as it is new in Flyway 7.1
+		// Asserting hard-coded value in the metadata instead
+		assertThat(configuration.getLockRetryCount()).isEqualTo(50);
 		assertThat(properties.getDefaultSchema()).isEqualTo(configuration.getDefaultSchema());
 		assertThat(properties.getSchemas()).isEqualTo(Arrays.asList(configuration.getSchemas()));
 		assertThat(properties.isCreateSchemas()).isEqualTo(configuration.isCreateSchemas());
@@ -71,27 +73,32 @@ class FlywayPropertiesTests {
 		assertThat(properties.getPlaceholderSuffix()).isEqualTo(configuration.getPlaceholderSuffix());
 		assertThat(properties.isPlaceholderReplacement()).isEqualTo(configuration.isPlaceholderReplacement());
 		assertThat(properties.getSqlMigrationPrefix()).isEqualTo(configuration.getSqlMigrationPrefix());
-		assertThat(properties.getSqlMigrationSuffixes()).containsExactly(configuration.getSqlMigrationSuffixes());
-		assertThat(properties.getSqlMigrationSeparator()).isEqualTo(configuration.getSqlMigrationSeparator());
+		assertThat(properties.getSqlMigrationSuffixes())
+			.isEqualTo(Arrays.asList(configuration.getSqlMigrationSuffixes()));
+		assertThat(properties.getSqlMigrationSeparator()).isEqualTo(properties.getSqlMigrationSeparator());
 		assertThat(properties.getRepeatableSqlMigrationPrefix())
-			.isEqualTo(configuration.getRepeatableSqlMigrationPrefix());
-		assertThat(MigrationVersion.fromVersion(properties.getTarget())).isEqualTo(configuration.getTarget());
+			.isEqualTo(properties.getRepeatableSqlMigrationPrefix());
+		assertThat(properties.getTarget()).isNull();
+		assertThat(configuration.getTarget()).isNull();
 		assertThat(configuration.getInitSql()).isNull();
 		assertThat(properties.getInitSqls()).isEmpty();
-		assertThat(properties.isBaselineOnMigrate()).isEqualTo(configuration.isBaselineOnMigrate());
-		assertThat(properties.isCleanDisabled()).isEqualTo(configuration.isCleanDisabled());
-		assertThat(properties.isCleanOnValidationError()).isEqualTo(configuration.isCleanOnValidationError());
-		assertThat(properties.isGroup()).isEqualTo(configuration.isGroup());
-		assertThat(properties.isMixed()).isEqualTo(configuration.isMixed());
-		assertThat(properties.isOutOfOrder()).isEqualTo(configuration.isOutOfOrder());
-		assertThat(properties.isSkipDefaultCallbacks()).isEqualTo(configuration.isSkipDefaultCallbacks());
-		assertThat(properties.isSkipDefaultResolvers()).isEqualTo(configuration.isSkipDefaultResolvers());
-		assertThat(properties.isValidateMigrationNaming()).isEqualTo(configuration.isValidateMigrationNaming());
-		assertThat(properties.isValidateOnMigrate()).isEqualTo(configuration.isValidateOnMigrate());
+		assertThat(configuration.isBaselineOnMigrate()).isEqualTo(properties.isBaselineOnMigrate());
+		assertThat(configuration.isCleanDisabled()).isEqualTo(properties.isCleanDisabled());
+		assertThat(configuration.isCleanOnValidationError()).isEqualTo(properties.isCleanOnValidationError());
+		assertThat(configuration.isGroup()).isEqualTo(properties.isGroup());
+		assertThat(configuration.isIgnoreMissingMigrations()).isEqualTo(properties.isIgnoreMissingMigrations());
+		assertThat(configuration.isIgnoreIgnoredMigrations()).isEqualTo(properties.isIgnoreIgnoredMigrations());
+		assertThat(configuration.isIgnorePendingMigrations()).isEqualTo(properties.isIgnorePendingMigrations());
+		assertThat(configuration.isIgnoreFutureMigrations()).isEqualTo(properties.isIgnoreFutureMigrations());
+		assertThat(configuration.isMixed()).isEqualTo(properties.isMixed());
+		assertThat(configuration.isOutOfOrder()).isEqualTo(properties.isOutOfOrder());
+		assertThat(configuration.isSkipDefaultCallbacks()).isEqualTo(properties.isSkipDefaultCallbacks());
+		assertThat(configuration.isSkipDefaultResolvers()).isEqualTo(properties.isSkipDefaultResolvers());
+		assertThat(configuration.isValidateMigrationNaming()).isEqualTo(properties.isValidateMigrationNaming());
+		assertThat(configuration.isValidateOnMigrate()).isEqualTo(properties.isValidateOnMigrate());
 		assertThat(properties.getDetectEncoding()).isNull();
-		assertThat(properties.getPlaceholderSeparator()).isEqualTo(configuration.getPlaceholderSeparator());
-		assertThat(properties.getScriptPlaceholderPrefix()).isEqualTo(configuration.getScriptPlaceholderPrefix());
-		assertThat(properties.getScriptPlaceholderSuffix()).isEqualTo(configuration.getScriptPlaceholderSuffix());
+		assertThat(configuration.getScriptPlaceholderPrefix()).isEqualTo("FP__");
+		assertThat(configuration.getScriptPlaceholderSuffix()).isEqualTo("__");
 	}
 
 	@Test
@@ -106,10 +113,9 @@ class FlywayPropertiesTests {
 		ignoreProperties(properties, "sqlServerKerberosLoginFile");
 		// High level object we can't set with properties
 		ignoreProperties(configuration, "callbacks", "classLoader", "dataSource", "javaMigrations",
-				"javaMigrationClassProvider", "pluginRegister", "resourceProvider", "resolvers");
+				"javaMigrationClassProvider", "resourceProvider", "resolvers");
 		// Properties we don't want to expose
-		ignoreProperties(configuration, "resolversAsClassNames", "callbacksAsClassNames", "loggers", "driver",
-				"modernConfig", "resolvedEnvironments");
+		ignoreProperties(configuration, "resolversAsClassNames", "callbacksAsClassNames", "loggers", "driver");
 		// Handled by the conversion service
 		ignoreProperties(configuration, "baselineVersionAsString", "encodingAsString", "locationsAsStrings",
 				"targetAsString");

@@ -16,9 +16,7 @@
 
 package org.springframework.boot.actuate.autoconfigure.endpoint.web.documentation;
 
-import java.io.File;
 import java.io.FileWriter;
-import java.nio.file.Files;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -69,11 +67,7 @@ class HeapDumpWebEndpointDocumentationTests extends MockMvcEndpointDocumentation
 
 				@Override
 				protected HeapDumper createHeapDumper() {
-					return (live) -> {
-						File file = Files.createTempFile("heap-", ".hprof").toFile();
-						FileCopyUtils.copy("<<binary content>>", new FileWriter(file));
-						return file;
-					};
+					return (file, live) -> FileCopyUtils.copy("<<binary content>>", new FileWriter(file));
 				}
 
 			};
