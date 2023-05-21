@@ -56,8 +56,8 @@ class MockBeanContextCachingTests {
 		Map<MergedContextConfiguration, ApplicationContext> contexts = (Map<MergedContextConfiguration, ApplicationContext>) ReflectionTestUtils
 			.getField(this.contextCache, "contextMap");
 		for (ApplicationContext context : contexts.values()) {
-			if (context instanceof ConfigurableApplicationContext) {
-				((ConfigurableApplicationContext) context).close();
+			if (context instanceof ConfigurableApplicationContext configurableContext) {
+				configurableContext.close();
 			}
 		}
 		this.contextCache.clear();
@@ -66,7 +66,7 @@ class MockBeanContextCachingTests {
 	@Test
 	void whenThereIsANormalBeanAndAMockBeanThenTwoContextsAreCreated() {
 		bootstrapContext(TestClass.class);
-		assertThat(this.contextCache.size()).isEqualTo(1);
+		assertThat(this.contextCache.size()).isOne();
 		bootstrapContext(MockedBeanTestClass.class);
 		assertThat(this.contextCache.size()).isEqualTo(2);
 	}
@@ -74,9 +74,9 @@ class MockBeanContextCachingTests {
 	@Test
 	void whenThereIsTheSameMockedBeanInEachTestClassThenOneContextIsCreated() {
 		bootstrapContext(MockedBeanTestClass.class);
-		assertThat(this.contextCache.size()).isEqualTo(1);
+		assertThat(this.contextCache.size()).isOne();
 		bootstrapContext(AnotherMockedBeanTestClass.class);
-		assertThat(this.contextCache.size()).isEqualTo(1);
+		assertThat(this.contextCache.size()).isOne();
 	}
 
 	@SuppressWarnings("rawtypes")

@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.SynchronousQueue;
-import java.util.stream.Collectors;
 
 import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.Connector;
@@ -46,6 +45,8 @@ import org.springframework.boot.autoconfigure.web.ServerProperties.Jetty;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.boot.context.properties.source.ConfigurationPropertySources;
+import org.springframework.boot.testsupport.web.servlet.DirtiesUrlFactories;
+import org.springframework.boot.testsupport.web.servlet.Servlet5ClassPathOverrides;
 import org.springframework.boot.web.embedded.jetty.ConfigurableJettyWebServerFactory;
 import org.springframework.boot.web.embedded.jetty.JettyServletWebServerFactory;
 import org.springframework.boot.web.embedded.jetty.JettyWebServer;
@@ -64,6 +65,8 @@ import static org.mockito.Mockito.mock;
  * @author Phillip Webb
  * @author HaiTao Zhang
  */
+@DirtiesUrlFactories
+@Servlet5ClassPathOverrides
 class JettyWebServerFactoryCustomizerTests {
 
 	private MockEnvironment environment;
@@ -298,7 +301,7 @@ class JettyWebServerFactoryCustomizerTests {
 		return Arrays.stream(server.getServer().getConnectors())
 			.filter((connector) -> connector instanceof AbstractConnector)
 			.map(Connector::getIdleTimeout)
-			.collect(Collectors.toList());
+			.toList();
 	}
 
 	private List<Integer> getRequestHeaderSizes(JettyWebServer server) {

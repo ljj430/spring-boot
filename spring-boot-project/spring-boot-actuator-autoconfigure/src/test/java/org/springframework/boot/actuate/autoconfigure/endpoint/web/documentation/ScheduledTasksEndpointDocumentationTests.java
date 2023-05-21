@@ -16,8 +16,8 @@
 
 package org.springframework.boot.actuate.autoconfigure.endpoint.web.documentation;
 
+import java.time.Instant;
 import java.util.Collection;
-import java.util.Date;
 import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.Test;
@@ -118,8 +118,8 @@ class ScheduledTasksEndpointDocumentationTests extends MockMvcEndpointDocumentat
 		static class CustomTrigger implements Trigger {
 
 			@Override
-			public Date nextExecutionTime(TriggerContext triggerContext) {
-				return new Date();
+			public Instant nextExecution(TriggerContext triggerContext) {
+				return Instant.now();
 			}
 
 		}

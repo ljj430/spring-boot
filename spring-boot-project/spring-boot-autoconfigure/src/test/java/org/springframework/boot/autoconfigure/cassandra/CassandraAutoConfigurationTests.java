@@ -76,8 +76,8 @@ class CassandraAutoConfigurationTests {
 	@Test
 	void driverConfigLoaderWithContactPoints() {
 		this.contextRunner
-			.withPropertyValues("spring.data.cassandra.contact-points=cluster.example.com:9042",
-					"spring.data.cassandra.local-datacenter=cassandra-eu1")
+			.withPropertyValues("spring.cassandra.contact-points=cluster.example.com:9042",
+					"spring.cassandra.local-datacenter=cassandra-eu1")
 			.run((context) -> {
 				assertThat(context).hasSingleBean(DriverConfigLoader.class);
 				DriverExecutionProfile configuration = context.getBean(DriverConfigLoader.class)
@@ -93,8 +93,8 @@ class CassandraAutoConfigurationTests {
 	@Test
 	void driverConfigLoaderWithContactPointAndNoPort() {
 		this.contextRunner
-			.withPropertyValues("spring.data.cassandra.contact-points=cluster.example.com,another.example.com:9041",
-					"spring.data.cassandra.local-datacenter=cassandra-eu1")
+			.withPropertyValues("spring.cassandra.contact-points=cluster.example.com,another.example.com:9041",
+					"spring.cassandra.local-datacenter=cassandra-eu1")
 			.run((context) -> {
 				assertThat(context).hasSingleBean(DriverConfigLoader.class);
 				DriverExecutionProfile configuration = context.getBean(DriverConfigLoader.class)
@@ -110,8 +110,8 @@ class CassandraAutoConfigurationTests {
 	@Test
 	void driverConfigLoaderWithContactPointAndNoPortAndCustomPort() {
 		this.contextRunner
-			.withPropertyValues("spring.data.cassandra.contact-points=cluster.example.com:9041,another.example.com",
-					"spring.data.cassandra.port=9043", "spring.data.cassandra.local-datacenter=cassandra-eu1")
+			.withPropertyValues("spring.cassandra.contact-points=cluster.example.com:9041,another.example.com",
+					"spring.cassandra.port=9043", "spring.cassandra.local-datacenter=cassandra-eu1")
 			.run((context) -> {
 				assertThat(context).hasSingleBean(DriverConfigLoader.class);
 				DriverExecutionProfile configuration = context.getBean(DriverConfigLoader.class)
@@ -126,7 +126,7 @@ class CassandraAutoConfigurationTests {
 
 	@Test
 	void driverConfigLoaderWithCustomSessionName() {
-		this.contextRunner.withPropertyValues("spring.data.cassandra.session-name=testcluster").run((context) -> {
+		this.contextRunner.withPropertyValues("spring.cassandra.session-name=testcluster").run((context) -> {
 			assertThat(context).hasSingleBean(DriverConfigLoader.class);
 			assertThat(context.getBean(DriverConfigLoader.class)
 				.getInitialConfig()
@@ -138,7 +138,7 @@ class CassandraAutoConfigurationTests {
 	@Test
 	void driverConfigLoaderWithCustomSessionNameAndCustomizer() {
 		this.contextRunner.withUserConfiguration(SimpleDriverConfigLoaderBuilderCustomizerConfig.class)
-			.withPropertyValues("spring.data.cassandra.session-name=testcluster")
+			.withPropertyValues("spring.cassandra.session-name=testcluster")
 			.run((context) -> {
 				assertThat(context).hasSingleBean(DriverConfigLoader.class);
 				assertThat(context.getBean(DriverConfigLoader.class)
@@ -151,8 +151,8 @@ class CassandraAutoConfigurationTests {
 	@Test
 	void driverConfigLoaderCustomizeConnectionOptions() {
 		this.contextRunner
-			.withPropertyValues("spring.data.cassandra.connection.connect-timeout=200ms",
-					"spring.data.cassandra.connection.init-query-timeout=10")
+			.withPropertyValues("spring.cassandra.connection.connect-timeout=200ms",
+					"spring.cassandra.connection.init-query-timeout=10")
 			.run((context) -> {
 				DriverExecutionProfile config = context.getBean(DriverConfigLoader.class)
 					.getInitialConfig()
@@ -165,8 +165,7 @@ class CassandraAutoConfigurationTests {
 	@Test
 	void driverConfigLoaderCustomizePoolOptions() {
 		this.contextRunner
-			.withPropertyValues("spring.data.cassandra.pool.idle-timeout=42",
-					"spring.data.cassandra.pool.heartbeat-interval=62")
+			.withPropertyValues("spring.cassandra.pool.idle-timeout=42", "spring.cassandra.pool.heartbeat-interval=62")
 			.run((context) -> {
 				DriverExecutionProfile config = context.getBean(DriverConfigLoader.class)
 					.getInitialConfig()
@@ -178,9 +177,9 @@ class CassandraAutoConfigurationTests {
 
 	@Test
 	void driverConfigLoaderCustomizeRequestOptions() {
-		this.contextRunner.withPropertyValues("spring.data.cassandra.request.timeout=5s",
-				"spring.data.cassandra.request.consistency=two",
-				"spring.data.cassandra.request.serial-consistency=quorum", "spring.data.cassandra.request.page-size=42")
+		this.contextRunner
+			.withPropertyValues("spring.cassandra.request.timeout=5s", "spring.cassandra.request.consistency=two",
+					"spring.cassandra.request.serial-consistency=quorum", "spring.cassandra.request.page-size=42")
 			.run((context) -> {
 				DriverExecutionProfile config = context.getBean(DriverConfigLoader.class)
 					.getInitialConfig()
@@ -194,13 +193,12 @@ class CassandraAutoConfigurationTests {
 
 	@Test
 	void driverConfigLoaderCustomizeControlConnectionOptions() {
-		this.contextRunner.withPropertyValues("spring.data.cassandra.controlconnection.timeout=200ms")
-			.run((context) -> {
-				DriverExecutionProfile config = context.getBean(DriverConfigLoader.class)
-					.getInitialConfig()
-					.getDefaultProfile();
-				assertThat(config.getInt(DefaultDriverOption.CONTROL_CONNECTION_TIMEOUT)).isEqualTo(200);
-			});
+		this.contextRunner.withPropertyValues("spring.cassandra.controlconnection.timeout=200ms").run((context) -> {
+			DriverExecutionProfile config = context.getBean(DriverConfigLoader.class)
+				.getInitialConfig()
+				.getDefaultProfile();
+			assertThat(config.getInt(DefaultDriverOption.CONTROL_CONNECTION_TIMEOUT)).isEqualTo(200);
+		});
 	}
 
 	@Test
@@ -216,7 +214,7 @@ class CassandraAutoConfigurationTests {
 
 	@Test
 	void driverConfigLoaderWithRateLimitingRequiresExtraConfiguration() {
-		this.contextRunner.withPropertyValues("spring.data.cassandra.request.throttler.type=rate-limiting")
+		this.contextRunner.withPropertyValues("spring.cassandra.request.throttler.type=rate-limiting")
 			.run((context) -> assertThatThrownBy(() -> context.getBean(CqlSession.class))
 				.hasMessageContaining("Error instantiating class RateLimitingRequestThrottler")
 				.hasMessageContaining("No configuration setting found for key"));
@@ -225,9 +223,9 @@ class CassandraAutoConfigurationTests {
 	@Test
 	void driverConfigLoaderCustomizeConcurrencyLimitingRequestThrottler() {
 		this.contextRunner
-			.withPropertyValues("spring.data.cassandra.request.throttler.type=concurrency-limiting",
-					"spring.data.cassandra.request.throttler.max-concurrent-requests=62",
-					"spring.data.cassandra.request.throttler.max-queue-size=72")
+			.withPropertyValues("spring.cassandra.request.throttler.type=concurrency-limiting",
+					"spring.cassandra.request.throttler.max-concurrent-requests=62",
+					"spring.cassandra.request.throttler.max-queue-size=72")
 			.run((context) -> {
 				DriverExecutionProfile config = context.getBean(DriverConfigLoader.class)
 					.getInitialConfig()
@@ -242,10 +240,10 @@ class CassandraAutoConfigurationTests {
 	@Test
 	void driverConfigLoaderCustomizeRateLimitingRequestThrottler() {
 		this.contextRunner
-			.withPropertyValues("spring.data.cassandra.request.throttler.type=rate-limiting",
-					"spring.data.cassandra.request.throttler.max-requests-per-second=62",
-					"spring.data.cassandra.request.throttler.max-queue-size=72",
-					"spring.data.cassandra.request.throttler.drain-interval=16ms")
+			.withPropertyValues("spring.cassandra.request.throttler.type=rate-limiting",
+					"spring.cassandra.request.throttler.max-requests-per-second=62",
+					"spring.cassandra.request.throttler.max-queue-size=72",
+					"spring.cassandra.request.throttler.drain-interval=16ms")
 			.run((context) -> {
 				DriverExecutionProfile config = context.getBean(DriverConfigLoader.class)
 					.getInitialConfig()
@@ -262,8 +260,8 @@ class CassandraAutoConfigurationTests {
 	void driverConfigLoaderWithConfigComplementSettings() {
 		String configLocation = "org/springframework/boot/autoconfigure/cassandra/simple.conf";
 		this.contextRunner
-			.withPropertyValues("spring.data.cassandra.session-name=testcluster",
-					"spring.data.cassandra.config=" + configLocation)
+			.withPropertyValues("spring.cassandra.session-name=testcluster",
+					"spring.cassandra.config=" + configLocation)
 			.run((context) -> {
 				assertThat(context).hasSingleBean(DriverConfigLoader.class);
 				assertThat(context.getBean(DriverConfigLoader.class)
@@ -280,7 +278,7 @@ class CassandraAutoConfigurationTests {
 	@Test // gh-31238
 	void driverConfigLoaderWithConfigOverridesDefaults() {
 		String configLocation = "org/springframework/boot/autoconfigure/cassandra/override-defaults.conf";
-		this.contextRunner.withPropertyValues("spring.data.cassandra.config=" + configLocation).run((context) -> {
+		this.contextRunner.withPropertyValues("spring.cassandra.config=" + configLocation).run((context) -> {
 			DriverExecutionProfile actual = context.getBean(DriverConfigLoader.class)
 				.getInitialConfig()
 				.getDefaultProfile();
@@ -302,7 +300,7 @@ class CassandraAutoConfigurationTests {
 
 	@Test
 	void placeholdersInReferenceConfAreResolvedAgainstConfigDerivedFromSpringCassandraProperties() {
-		this.contextRunner.withPropertyValues("spring.data.cassandra.request.timeout=60s").run((context) -> {
+		this.contextRunner.withPropertyValues("spring.cassandra.request.timeout=60s").run((context) -> {
 			DriverExecutionProfile actual = context.getBean(DriverConfigLoader.class)
 				.getInitialConfig()
 				.getDefaultProfile();
@@ -315,7 +313,7 @@ class CassandraAutoConfigurationTests {
 	@Test
 	void driverConfigLoaderWithConfigCreateProfiles() {
 		String configLocation = "org/springframework/boot/autoconfigure/cassandra/profiles.conf";
-		this.contextRunner.withPropertyValues("spring.data.cassandra.config=" + configLocation).run((context) -> {
+		this.contextRunner.withPropertyValues("spring.cassandra.config=" + configLocation).run((context) -> {
 			assertThat(context).hasSingleBean(DriverConfigLoader.class);
 			DriverConfig driverConfig = context.getBean(DriverConfigLoader.class).getInitialConfig();
 			assertThat(driverConfig.getProfiles()).containsOnlyKeys("default", "first", "second");
