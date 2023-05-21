@@ -22,8 +22,6 @@ import graphql.schema.idl.TypeRuntimeWiring;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
-import org.springframework.aot.hint.RuntimeHints;
-import org.springframework.aot.hint.predicate.RuntimeHintsPredicates;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.graphql.GraphQlAutoConfiguration;
 import org.springframework.boot.autoconfigure.graphql.GraphQlTestDataFetchers;
@@ -87,7 +85,7 @@ class GraphQlWebMvcAutoConfigurationTests {
 			MvcResult result = mockMvc.perform(post("/graphql").content("{\"query\": \"" + query + "\"}")).andReturn();
 			mockMvc.perform(asyncDispatch(result))
 				.andExpect(status().isOk())
-				.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_GRAPHQL_RESPONSE))
+				.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_GRAPHQL))
 				.andExpect(jsonPath("data.bookById.name").value("GraphQL for beginners"));
 		});
 	}
@@ -177,18 +175,11 @@ class GraphQlWebMvcAutoConfigurationTests {
 		});
 	}
 
-	@Test
-	void shouldRegisterHints() {
-		RuntimeHints hints = new RuntimeHints();
-		new GraphQlWebMvcAutoConfiguration.GraphiQlResourceHints().registerHints(hints, getClass().getClassLoader());
-		assertThat(RuntimeHintsPredicates.resource().forResource("graphiql/index.html")).accepts(hints);
-	}
-
 	private void testWith(MockMvcConsumer mockMvcConsumer) {
 		this.contextRunner.run((context) -> {
 			MockMvc mockMvc = MockMvcBuilders.webAppContextSetup(context)
-				.defaultRequest(post("/graphql").contentType(MediaType.APPLICATION_JSON)
-					.accept(MediaType.APPLICATION_GRAPHQL_RESPONSE))
+				.defaultRequest(post("/graphql").contentType(MediaType.APPLICATION_GRAPHQL)
+					.accept(MediaType.APPLICATION_GRAPHQL))
 				.build();
 			mockMvcConsumer.accept(mockMvc);
 		});

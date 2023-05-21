@@ -39,7 +39,6 @@ import org.springframework.context.annotation.ConditionContext;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.Environment;
 import org.springframework.core.type.AnnotatedTypeMetadata;
 import org.springframework.util.ClassUtils;
@@ -47,7 +46,6 @@ import org.springframework.util.ClassUtils;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatIOException;
-import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 
 /**
  * Abstract tests for {@link AbstractApplicationContextRunner} implementations.
@@ -71,20 +69,20 @@ abstract class AbstractApplicationContextRunnerTests<T extends AbstractApplicati
 	@Test
 	void runWithSystemPropertiesShouldSetAndRemoveProperties() {
 		String key = "test." + UUID.randomUUID();
-		assertThat(System.getProperties()).doesNotContainKey(key);
+		assertThat(System.getProperties().containsKey(key)).isFalse();
 		get().withSystemProperties(key + "=value")
 			.run((context) -> assertThat(System.getProperties()).containsEntry(key, "value"));
-		assertThat(System.getProperties()).doesNotContainKey(key);
+		assertThat(System.getProperties().containsKey(key)).isFalse();
 	}
 
 	@Test
 	void runWithSystemPropertiesWhenContextFailsShouldRemoveProperties() {
 		String key = "test." + UUID.randomUUID();
-		assertThat(System.getProperties()).doesNotContainKey(key);
+		assertThat(System.getProperties().containsKey(key)).isFalse();
 		get().withSystemProperties(key + "=value")
 			.withUserConfiguration(FailingConfig.class)
 			.run((context) -> assertThat(context).hasFailed());
-		assertThat(System.getProperties()).doesNotContainKey(key);
+		assertThat(System.getProperties().containsKey(key)).isFalse();
 	}
 
 	@Test
@@ -241,23 +239,6 @@ abstract class AbstractApplicationContextRunnerTests<T extends AbstractApplicati
 			});
 	}
 
-	@Test
-	void changesMadeByInitializersShouldBeVisibleToRegisteredClasses() {
-		get().withInitializer((context) -> context.getEnvironment().setActiveProfiles("test"))
-			.withUserConfiguration(ProfileConfig.class)
-			.run((context) -> assertThat(context).hasSingleBean(ProfileConfig.class));
-	}
-
-	@Test
-	void prepareDoesNotRefreshContext() {
-		get().withUserConfiguration(FooConfig.class).prepare((context) -> {
-			assertThatIllegalStateException().isThrownBy(() -> context.getBean(String.class))
-				.withMessageContaining("not been refreshed");
-			context.getSourceApplicationContext().refresh();
-			assertThat(context.getBean(String.class)).isEqualTo("foo");
-		});
-	}
-
 	protected abstract T get();
 
 	private static void throwCheckedException(String message) throws IOException {
@@ -367,12 +348,6 @@ abstract class AbstractApplicationContextRunnerTests<T extends AbstractApplicati
 			return (example) -> {
 			};
 		}
-
-	}
-
-	@Profile("test")
-	@Configuration(proxyBeanMethods = false)
-	static class ProfileConfig {
 
 	}
 

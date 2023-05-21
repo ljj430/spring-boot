@@ -54,8 +54,12 @@ public class LogUpdateEvent extends UpdateEvent {
 
 	public void print() {
 		switch (this.streamType) {
-			case STD_OUT -> System.out.println(this);
-			case STD_ERR -> System.err.println(this);
+			case STD_OUT:
+				System.out.println(this);
+				return;
+			case STD_ERR:
+				System.err.println(this);
+				return;
 		}
 	}
 

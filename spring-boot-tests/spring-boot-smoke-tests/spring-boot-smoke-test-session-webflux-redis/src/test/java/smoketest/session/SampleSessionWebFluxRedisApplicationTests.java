@@ -27,9 +27,10 @@ import reactor.util.function.Tuples;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.boot.testsupport.testcontainers.RedisContainer;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,16 +40,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Vedran Pavic
  * @author Scott Frederick
- * @author Moritz Halbritter
- * @author Andy Wilkinson
- * @author Phillip Webb
  */
 @SpringBootTest(properties = "spring.session.timeout:10", webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers(disabledWithoutDocker = true)
 class SampleSessionWebFluxRedisApplicationTests {
 
 	@Container
-	@ServiceConnection
 	private static final RedisContainer redis = new RedisContainer();
 
 	@LocalServerPort
@@ -56,6 +53,12 @@ class SampleSessionWebFluxRedisApplicationTests {
 
 	@Autowired
 	private WebClient.Builder webClientBuilder;
+
+	@DynamicPropertySource
+	static void applicationProperties(DynamicPropertyRegistry registry) {
+		registry.add("spring.redis.host", redis::getHost);
+		registry.add("spring.redis.port", redis::getFirstMappedPort);
+	}
 
 	@Test
 	void userDefinedMappingsSecureByDefault() {

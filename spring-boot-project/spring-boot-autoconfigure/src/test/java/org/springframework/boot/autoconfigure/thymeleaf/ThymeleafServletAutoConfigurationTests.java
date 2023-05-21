@@ -22,8 +22,8 @@ import java.util.EnumSet;
 import java.util.Locale;
 import java.util.Map;
 
-import jakarta.servlet.DispatcherType;
-import jakarta.servlet.ServletContext;
+import javax.servlet.DispatcherType;
+
 import nz.net.ultraq.thymeleaf.layoutdialect.LayoutDialect;
 import nz.net.ultraq.thymeleaf.layoutdialect.decorators.strategies.GroupingStrategy;
 import org.junit.jupiter.api.Test;
@@ -31,13 +31,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.context.WebContext;
-import org.thymeleaf.extras.springsecurity6.dialect.SpringSecurityDialect;
-import org.thymeleaf.spring6.SpringTemplateEngine;
-import org.thymeleaf.spring6.templateresolver.SpringResourceTemplateResolver;
-import org.thymeleaf.spring6.view.ThymeleafView;
-import org.thymeleaf.spring6.view.ThymeleafViewResolver;
+import org.thymeleaf.extras.springsecurity5.dialect.SpringSecurityDialect;
+import org.thymeleaf.spring5.SpringTemplateEngine;
+import org.thymeleaf.spring5.templateresolver.SpringResourceTemplateResolver;
+import org.thymeleaf.spring5.view.ThymeleafView;
+import org.thymeleaf.spring5.view.ThymeleafViewResolver;
 import org.thymeleaf.templateresolver.ITemplateResolver;
-import org.thymeleaf.web.servlet.JakartaServletWebApplication;
 
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.FilteredClassLoader;
@@ -83,7 +82,7 @@ class ThymeleafServletAutoConfigurationTests {
 
 	@Test
 	void autoConfigurationBackOffWithoutThymeleafSpring() {
-		this.contextRunner.withClassLoader(new FilteredClassLoader("org.thymeleaf.spring6"))
+		this.contextRunner.withClassLoader(new FilteredClassLoader("org.thymeleaf.spring5"))
 			.run((context) -> assertThat(context).doesNotHaveBean(TemplateEngine.class));
 	}
 
@@ -188,7 +187,7 @@ class ThymeleafServletAutoConfigurationTests {
 			ThymeleafView view = (ThymeleafView) context.getBean(ThymeleafViewResolver.class)
 				.resolveViewName("view", Locale.UK);
 			MockHttpServletResponse response = new MockHttpServletResponse();
-			MockHttpServletRequest request = new MockHttpServletRequest(context.getBean(ServletContext.class));
+			MockHttpServletRequest request = new MockHttpServletRequest();
 			request.setAttribute(RequestContext.WEB_APPLICATION_CONTEXT_ATTRIBUTE, context);
 			view.render(Collections.singletonMap("foo", "bar"), request, response);
 			String result = response.getContentAsString();
@@ -222,10 +221,8 @@ class ThymeleafServletAutoConfigurationTests {
 	void useSecurityDialect() {
 		this.contextRunner.run((context) -> {
 			TemplateEngine engine = context.getBean(TemplateEngine.class);
-			MockServletContext servletContext = new MockServletContext();
-			JakartaServletWebApplication webApplication = JakartaServletWebApplication.buildApplication(servletContext);
-			WebContext attrs = new WebContext(webApplication.buildExchange(new MockHttpServletRequest(servletContext),
-					new MockHttpServletResponse()));
+			WebContext attrs = new WebContext(new MockHttpServletRequest(), new MockHttpServletResponse(),
+					new MockServletContext());
 			try {
 				SecurityContextHolder
 					.setContext(new SecurityContextImpl(new TestingAuthenticationToken("alice", "admin")));

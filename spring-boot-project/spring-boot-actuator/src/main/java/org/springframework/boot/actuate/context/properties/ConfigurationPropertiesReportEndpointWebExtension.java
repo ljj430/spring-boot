@@ -16,11 +16,7 @@
 
 package org.springframework.boot.actuate.context.properties;
 
-import java.util.Set;
-
-import org.springframework.boot.actuate.context.properties.ConfigurationPropertiesReportEndpoint.ConfigurationPropertiesDescriptor;
-import org.springframework.boot.actuate.endpoint.SecurityContext;
-import org.springframework.boot.actuate.endpoint.Show;
+import org.springframework.boot.actuate.context.properties.ConfigurationPropertiesReportEndpoint.ApplicationConfigurationProperties;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
 import org.springframework.boot.actuate.endpoint.annotation.Selector;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
@@ -38,29 +34,15 @@ public class ConfigurationPropertiesReportEndpointWebExtension {
 
 	private final ConfigurationPropertiesReportEndpoint delegate;
 
-	private final Show showValues;
-
-	private final Set<String> roles;
-
-	public ConfigurationPropertiesReportEndpointWebExtension(ConfigurationPropertiesReportEndpoint delegate,
-			Show showValues, Set<String> roles) {
+	public ConfigurationPropertiesReportEndpointWebExtension(ConfigurationPropertiesReportEndpoint delegate) {
 		this.delegate = delegate;
-		this.showValues = showValues;
-		this.roles = roles;
 	}
 
 	@ReadOperation
-	public ConfigurationPropertiesDescriptor configurationProperties(SecurityContext securityContext) {
-		boolean showUnsanitized = this.showValues.isShown(securityContext, this.roles);
-		return this.delegate.getConfigurationProperties(showUnsanitized);
-	}
-
-	@ReadOperation
-	public WebEndpointResponse<ConfigurationPropertiesDescriptor> configurationPropertiesWithPrefix(
-			SecurityContext securityContext, @Selector String prefix) {
-		boolean showUnsanitized = this.showValues.isShown(securityContext, this.roles);
-		ConfigurationPropertiesDescriptor configurationProperties = this.delegate.getConfigurationProperties(prefix,
-				showUnsanitized);
+	public WebEndpointResponse<ApplicationConfigurationProperties> configurationPropertiesWithPrefix(
+			@Selector String prefix) {
+		ApplicationConfigurationProperties configurationProperties = this.delegate
+			.configurationPropertiesWithPrefix(prefix);
 		boolean foundMatchingBeans = configurationProperties.getContexts()
 			.values()
 			.stream()

@@ -1,6 +1,6 @@
 [[messaging.jms]]
 == JMS
-The `jakarta.jms.ConnectionFactory` interface provides a standard method of creating a `jakarta.jms.Connection` for interacting with a JMS broker.
+The `javax.jms.ConnectionFactory` interface provides a standard method of creating a `javax.jms.Connection` for interacting with a JMS broker.
 Although Spring needs a `ConnectionFactory` to work with JMS, you generally need not use it directly yourself and can instead rely on higher level messaging abstractions.
 (See the {spring-framework-docs}/integration.html#jms[relevant section] of the Spring Framework reference documentation for details.)
 Spring Boot also auto-configures the necessary infrastructure to send and receive messages.
@@ -9,12 +9,25 @@ Spring Boot also auto-configures the necessary infrastructure to send and receiv
 
 [[messaging.jms.activemq]]
 === ActiveMQ Support
-When https://activemq.apache.org/[ActiveMQ] is available on the classpath, Spring Boot can configure a `ConnectionFactory`.
+When https://activemq.apache.org/[ActiveMQ] is available on the classpath, Spring Boot can also configure a `ConnectionFactory`.
+If the broker is present, an embedded broker is automatically started and configured (provided no broker URL is specified through configuration and the embedded broker is not disabled in the configuration).
 
-NOTE: If you use `spring-boot-starter-activemq`, the necessary dependencies to connect to an ActiveMQ instance are provided, as is the Spring infrastructure to integrate with JMS.
+NOTE: If you use `spring-boot-starter-activemq`, the necessary dependencies to connect or embed an ActiveMQ instance are provided, as is the Spring infrastructure to integrate with JMS.
 
 ActiveMQ configuration is controlled by external configuration properties in `+spring.activemq.*+`.
-By default, ActiveMQ is auto-configured to use the https://activemq.apache.org/tcp-transport-reference[TCP transport], connecting by default to `tcp://localhost:61616`. The following example shows how to change the default broker URL:
+
+By default, ActiveMQ is auto-configured to use the https://activemq.apache.org/vm-transport-reference.html[VM transport], which starts a broker embedded in the same JVM instance.
+
+You can disable the embedded broker by configuring the configprop:spring.activemq.in-memory[] property, as shown in the following example:
+
+[source,yaml,indent=0,subs="verbatim",configprops,configblocks]
+----
+	spring:
+	  activemq:
+	    in-memory: false
+----
+
+The embedded broker will also be disabled if you configure the broker URL, as shown in the following example:
 
 [source,yaml,indent=0,configprops,configblocks]
 ----
@@ -24,6 +37,8 @@ By default, ActiveMQ is auto-configured to use the https://activemq.apache.org/t
 	    user: "admin"
 	    password: "secret"
 ----
+
+If you want to take full control over the embedded broker, see https://activemq.apache.org/how-do-i-embed-a-broker-inside-a-connection.html[the ActiveMQ documentation] for further information.
 
 By default, a `CachingConnectionFactory` wraps the native `ConnectionFactory` with sensible settings that you can control by external configuration properties in `+spring.jms.*+`:
 
@@ -61,7 +76,7 @@ The supported modes are `embedded` (to make explicit that an embedded broker is 
 When the latter is configured, Spring Boot configures a `ConnectionFactory` that connects to a broker running on the local machine with the default settings.
 
 NOTE: If you use `spring-boot-starter-artemis`, the necessary dependencies to connect to an existing ActiveMQ Artemis instance are provided, as well as the Spring infrastructure to integrate with JMS.
-Adding `org.apache.activemq:artemis-jakarta-server` to your application lets you use embedded mode.
+Adding `org.apache.activemq:artemis-jms-server` to your application lets you use embedded mode.
 
 ActiveMQ Artemis configuration is controlled by external configuration properties in `+spring.artemis.*+`.
 For example, you might declare the following section in `application.properties`:
@@ -89,7 +104,7 @@ By default, a `CachingConnectionFactory` wraps the native `ConnectionFactory` wi
 	      session-cache-size: 5
 ----
 
-If you'd rather use native pooling, you can do so by adding a dependency on `org.messaginghub:pooled-jms` and configuring the `JmsPoolConnectionFactory` accordingly, as shown in the following example:
+If you'd rather use native pooling, you can do so by adding a dependency to `org.messaginghub:pooled-jms` and configuring the `JmsPoolConnectionFactory` accordingly, as shown in the following example:
 
 [source,yaml,indent=0,subs="verbatim",configprops,configblocks]
 ----
@@ -134,10 +149,9 @@ If a `DestinationResolver` or a `MessageConverter` bean is defined, it is associ
 
 [[messaging.jms.receiving]]
 === Receiving a Message
-
 When the JMS infrastructure is present, any bean can be annotated with `@JmsListener` to create a listener endpoint.
 If no `JmsListenerContainerFactory` has been defined, a default one is configured automatically.
-If a `DestinationResolver`, a `MessageConverter`, or a `jakarta.jms.ExceptionListener` beans are defined, they are associated automatically with the default factory.
+If a `DestinationResolver`, a `MessageConverter`, or a `javax.jms.ExceptionListener` beans are defined, they are associated automatically with the default factory.
 
 By default, the default factory is transactional.
 If you run in an infrastructure where a `JtaTransactionManager` is present, it is associated to the listener container by default.

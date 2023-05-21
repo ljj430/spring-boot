@@ -18,12 +18,10 @@ package org.springframework.boot.deployment;
 
 import java.io.File;
 import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import org.apache.hc.client5.http.impl.DefaultHttpRequestRetryStrategy;
-import org.apache.hc.client5.http.impl.classic.HttpClients;
-import org.apache.hc.core5.util.TimeValue;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.client.StandardHttpRequestRetryHandler;
 import org.awaitility.Awaitility;
 import org.awaitility.core.ConditionTimeoutException;
 import org.junit.jupiter.api.Test;
@@ -97,9 +95,9 @@ abstract class AbstractDeploymentTests {
 			TestRestTemplate rest = new TestRestTemplate(new RestTemplateBuilder()
 				.rootUri("http://" + this.container.getHost() + ":" + this.container.getMappedPort(this.port)
 						+ "/spring-boot")
-				.requestFactory(() -> new HttpComponentsClientHttpRequestFactory(HttpClients.custom()
-					.setRetryStrategy(new DefaultHttpRequestRetryStrategy(10, TimeValue.of(1, TimeUnit.SECONDS)))
-					.build())));
+				.basicAuthentication("test", "test")
+				.requestFactory(() -> new HttpComponentsClientHttpRequestFactory(
+						HttpClients.custom().setRetryHandler(new StandardHttpRequestRetryHandler(10, false)).build())));
 			try {
 				Awaitility.await().atMost(Duration.ofMinutes(10)).until(() -> {
 					try {

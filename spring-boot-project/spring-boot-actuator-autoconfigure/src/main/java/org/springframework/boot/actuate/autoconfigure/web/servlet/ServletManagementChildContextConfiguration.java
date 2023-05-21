@@ -18,7 +18,8 @@ package org.springframework.boot.actuate.autoconfigure.web.servlet;
 
 import java.io.File;
 
-import jakarta.servlet.Filter;
+import javax.servlet.Filter;
+
 import org.apache.catalina.Valve;
 import org.apache.catalina.valves.AccessLogValve;
 import org.eclipse.jetty.server.CustomRequestLog;
@@ -173,8 +174,8 @@ class ServletManagementChildContextConfiguration {
 
 		private AccessLogValve findAccessLogValve(TomcatServletWebServerFactory factory) {
 			for (Valve engineValve : factory.getEngineValves()) {
-				if (engineValve instanceof AccessLogValve accessLogValve) {
-					return accessLogValve;
+				if (engineValve instanceof AccessLogValve) {
+					return (AccessLogValve) engineValve;
 				}
 			}
 			return null;
@@ -202,14 +203,14 @@ class ServletManagementChildContextConfiguration {
 
 		private void customizeServer(Server server) {
 			RequestLog requestLog = server.getRequestLog();
-			if (requestLog instanceof CustomRequestLog customRequestLog) {
-				customizeRequestLog(customRequestLog);
+			if (requestLog instanceof CustomRequestLog) {
+				customizeRequestLog((CustomRequestLog) requestLog);
 			}
 		}
 
 		private void customizeRequestLog(CustomRequestLog requestLog) {
-			if (requestLog.getWriter() instanceof RequestLogWriter requestLogWriter) {
-				customizeRequestLogWriter(requestLogWriter);
+			if (requestLog.getWriter() instanceof RequestLogWriter) {
+				customizeRequestLogWriter((RequestLogWriter) requestLog.getWriter());
 			}
 		}
 

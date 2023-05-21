@@ -95,9 +95,10 @@ class HypermediaAutoConfigurationTests {
 				.stream()
 				.filter(MappingJackson2HttpMessageConverter.class::isInstance)
 				.findFirst();
-			assertThat(mappingJacksonConverter).hasValueSatisfying(
-					(converter) -> assertThat(converter.canWrite(RepresentationModel.class, MediaType.APPLICATION_JSON))
-						.isTrue());
+			assertThat(mappingJacksonConverter).isPresent()
+				.hasValueSatisfying((converter) -> assertThat(
+						converter.canWrite(RepresentationModel.class, MediaType.APPLICATION_JSON))
+					.isTrue());
 		});
 	}
 
@@ -110,9 +111,10 @@ class HypermediaAutoConfigurationTests {
 					.stream()
 					.filter(MappingJackson2HttpMessageConverter.class::isInstance)
 					.findFirst();
-				assertThat(mappingJacksonConverter).hasValueSatisfying((converter) -> assertThat(
-						converter.canWrite(RepresentationModel.class, MediaType.APPLICATION_JSON))
-					.isFalse());
+				assertThat(mappingJacksonConverter).isPresent()
+					.hasValueSatisfying((converter) -> assertThat(
+							converter.canWrite(RepresentationModel.class, MediaType.APPLICATION_JSON))
+						.isFalse());
 			});
 	}
 

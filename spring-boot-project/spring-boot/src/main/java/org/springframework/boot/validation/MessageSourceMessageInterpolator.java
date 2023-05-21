@@ -20,7 +20,7 @@ import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Set;
 
-import jakarta.validation.MessageInterpolator;
+import javax.validation.MessageInterpolator;
 
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
