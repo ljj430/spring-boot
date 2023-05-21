@@ -18,7 +18,8 @@ package org.springframework.boot.devtools.autoconfigure;
 
 import java.util.Collection;
 
-import jakarta.servlet.Filter;
+import javax.servlet.Filter;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 

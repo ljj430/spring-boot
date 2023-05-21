@@ -19,6 +19,5 @@ dependencies {
 	testImplementation("org.seleniumhq.selenium:selenium-api")
 	testImplementation("org.seleniumhq.selenium:htmlunit-driver") {
 		exclude group: "commons-logging", module: "commons-logging"
-		exclude(group: "com.sun.activation", module: "jakarta.activation")
 	}
 }

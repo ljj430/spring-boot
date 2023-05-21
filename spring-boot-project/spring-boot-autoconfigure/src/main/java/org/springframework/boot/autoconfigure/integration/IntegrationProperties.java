@@ -170,7 +170,7 @@ public class IntegrationProperties {
 	public static class Error {
 
 		/**
-		 * Whether to not silently ignore messages on the global 'errorChannel' when there
+		 * Whether to not silently ignore messages on the global 'errorChannel' when they
 		 * are no subscribers.
 		 */
 		private boolean requireSubscribers = true;
@@ -416,29 +416,12 @@ public class IntegrationProperties {
 		 */
 		private boolean defaultLoggingEnabled = true;
 
-		/**
-		 * Comma-separated list of simple patterns to match against the names of Spring
-		 * Integration components. When matched, observation instrumentation will be
-		 * performed for the component. Please refer to the javadoc of the smartMatch
-		 * method of Spring Integration's PatternMatchUtils for details of the pattern
-		 * syntax.
-		 */
-		private List<String> observationPatterns = new ArrayList<>();
-
 		public boolean isDefaultLoggingEnabled() {
 			return this.defaultLoggingEnabled;
 		}
 
 		public void setDefaultLoggingEnabled(boolean defaultLoggingEnabled) {
 			this.defaultLoggingEnabled = defaultLoggingEnabled;
-		}
-
-		public List<String> getObservationPatterns() {
-			return this.observationPatterns;
-		}
-
-		public void setObservationPatterns(List<String> observationPatterns) {
-			this.observationPatterns = observationPatterns;
 		}
 
 	}

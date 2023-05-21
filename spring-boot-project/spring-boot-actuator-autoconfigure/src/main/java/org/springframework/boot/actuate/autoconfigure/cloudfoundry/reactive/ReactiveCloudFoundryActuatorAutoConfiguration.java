@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.ObjectProvider;
@@ -100,7 +101,7 @@ public class ReactiveCloudFoundryActuatorAutoConfiguration {
 		List<InfoContributor> contributors = infoContributors.orderedStream()
 			.map((infoContributor) -> (infoContributor instanceof GitInfoContributor)
 					? new GitInfoContributor(properties, InfoPropertiesInfoContributor.Mode.FULL) : infoContributor)
-			.toList();
+			.collect(Collectors.toList());
 		return new CloudFoundryInfoEndpointWebExtension(new InfoEndpoint(contributors));
 	}
 
@@ -171,8 +172,8 @@ public class ReactiveCloudFoundryActuatorAutoConfiguration {
 
 		@Override
 		public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
-			if (bean instanceof WebFilterChainProxy webFilterChainProxy) {
-				return postProcess(webFilterChainProxy, this.pathMappedEndpoints);
+			if (bean instanceof WebFilterChainProxy) {
+				return postProcess((WebFilterChainProxy) bean, this.pathMappedEndpoints);
 			}
 			return bean;
 		}

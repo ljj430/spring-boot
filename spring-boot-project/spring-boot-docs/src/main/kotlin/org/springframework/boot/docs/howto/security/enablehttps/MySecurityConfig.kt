@@ -27,7 +27,7 @@ class MySecurityConfig {
 	@Bean
 	fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
 		// Customize the application security ...
-		http.requiresChannel { requests -> requests.anyRequest().requiresSecure() }
+		http.requiresChannel().anyRequest().requiresSecure()
 		return http.build()
 	}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package org.springframework.boot.autoconfigure.data.cassandra;
 
+import java.util.Set;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -29,7 +31,6 @@ import org.springframework.data.cassandra.core.ReactiveCassandraTemplate;
 import org.springframework.data.cassandra.core.convert.CassandraConverter;
 import org.springframework.data.cassandra.core.mapping.CassandraMappingContext;
 import org.springframework.data.cassandra.core.mapping.SimpleUserTypeResolver;
-import org.springframework.data.domain.ManagedTypes;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -54,21 +55,23 @@ class CassandraReactiveDataAutoConfigurationTests {
 
 	@Test
 	void templateExists() {
-		load("spring.cassandra.keyspaceName:boot_test");
+		load("spring.data.cassandra.keyspaceName:boot_test");
 		assertThat(this.context.getBeanNamesForType(ReactiveCassandraTemplate.class)).hasSize(1);
 	}
 
 	@Test
-	void entityScanShouldSetManagedTypes() {
-		load(EntityScanConfig.class, "spring.cassandra.keyspaceName:boot_test");
+	@SuppressWarnings("unchecked")
+	void entityScanShouldSetInitialEntitySet() {
+		load(EntityScanConfig.class, "spring.data.cassandra.keyspaceName:boot_test");
 		CassandraMappingContext mappingContext = this.context.getBean(CassandraMappingContext.class);
-		ManagedTypes managedTypes = (ManagedTypes) ReflectionTestUtils.getField(mappingContext, "managedTypes");
-		assertThat(managedTypes.toList()).containsOnly(City.class);
+		Set<Class<?>> initialEntitySet = (Set<Class<?>>) ReflectionTestUtils.getField(mappingContext,
+				"initialEntitySet");
+		assertThat(initialEntitySet).containsOnly(City.class);
 	}
 
 	@Test
 	void userTypeResolverShouldBeSet() {
-		load("spring.cassandra.keyspaceName:boot_test");
+		load("spring.data.cassandra.keyspaceName:boot_test");
 		CassandraConverter cassandraConverter = this.context.getBean(CassandraConverter.class);
 		assertThat(cassandraConverter).extracting("userTypeResolver").isInstanceOf(SimpleUserTypeResolver.class);
 	}

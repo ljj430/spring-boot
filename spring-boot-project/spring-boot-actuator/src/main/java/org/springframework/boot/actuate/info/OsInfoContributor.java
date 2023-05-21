@@ -16,12 +16,7 @@
 
 package org.springframework.boot.actuate.info;
 
-import org.springframework.aot.hint.BindingReflectionHintsRegistrar;
-import org.springframework.aot.hint.RuntimeHints;
-import org.springframework.aot.hint.RuntimeHintsRegistrar;
-import org.springframework.boot.actuate.info.OsInfoContributor.OsInfoContributorRuntimeHints;
 import org.springframework.boot.info.OsInfo;
-import org.springframework.context.annotation.ImportRuntimeHints;
 
 /**
  * An {@link InfoContributor} that exposes {@link OsInfo}.
@@ -29,7 +24,6 @@ import org.springframework.context.annotation.ImportRuntimeHints;
  * @author Jonatan Ivanov
  * @since 2.7.0
  */
-@ImportRuntimeHints(OsInfoContributorRuntimeHints.class)
 public class OsInfoContributor implements InfoContributor {
 
 	private final OsInfo osInfo;
@@ -41,17 +35,6 @@ public class OsInfoContributor implements InfoContributor {
 	@Override
 	public void contribute(Info.Builder builder) {
 		builder.withDetail("os", this.osInfo);
-	}
-
-	static class OsInfoContributorRuntimeHints implements RuntimeHintsRegistrar {
-
-		private final BindingReflectionHintsRegistrar bindingRegistrar = new BindingReflectionHintsRegistrar();
-
-		@Override
-		public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
-			this.bindingRegistrar.registerReflectionHints(hints.reflection(), OsInfo.class);
-		}
-
 	}
 
 }

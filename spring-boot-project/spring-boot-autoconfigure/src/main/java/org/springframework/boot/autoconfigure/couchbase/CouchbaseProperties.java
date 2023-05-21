@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -148,8 +148,8 @@ public class CouchbaseProperties {
 	public static class Ssl {
 
 		/**
-		 * Whether to enable SSL support. Enabled automatically if a "keyStore" or
-		 * "bundle" is provided unless specified otherwise.
+		 * Whether to enable SSL support. Enabled automatically if a "keyStore" is
+		 * provided unless specified otherwise.
 		 */
 		private Boolean enabled;
 
@@ -163,14 +163,8 @@ public class CouchbaseProperties {
 		 */
 		private String keyStorePassword;
 
-		/**
-		 * SSL bundle name.
-		 */
-		private String bundle;
-
 		public Boolean getEnabled() {
-			return (this.enabled != null) ? this.enabled
-					: StringUtils.hasText(this.keyStore) || StringUtils.hasText(this.bundle);
+			return (this.enabled != null) ? this.enabled : StringUtils.hasText(this.keyStore);
 		}
 
 		public void setEnabled(Boolean enabled) {
@@ -191,14 +185,6 @@ public class CouchbaseProperties {
 
 		public void setKeyStorePassword(String keyStorePassword) {
 			this.keyStorePassword = keyStorePassword;
-		}
-
-		public String getBundle() {
-			return this.bundle;
-		}
-
-		public void setBundle(String bundle) {
-			this.bundle = bundle;
 		}
 
 	}

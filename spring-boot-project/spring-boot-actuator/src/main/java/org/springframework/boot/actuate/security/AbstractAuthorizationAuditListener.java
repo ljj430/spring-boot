@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,21 +21,18 @@ import org.springframework.boot.actuate.audit.listener.AuditApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.context.ApplicationListener;
-import org.springframework.security.authorization.event.AuthorizationDeniedEvent;
-import org.springframework.security.authorization.event.AuthorizationEvent;
-import org.springframework.security.authorization.event.AuthorizationGrantedEvent;
+import org.springframework.security.access.event.AbstractAuthorizationEvent;
 
 /**
  * Abstract {@link ApplicationListener} to expose Spring Security
- * {@link AuthorizationDeniedEvent authorization denied} and
- * {@link AuthorizationGrantedEvent authorization granted} events as {@link AuditEvent}s.
+ * {@link AbstractAuthorizationEvent authorization events} as {@link AuditEvent}s.
  *
  * @author Dave Syer
  * @author Vedran Pavic
  * @since 1.3.0
  */
 public abstract class AbstractAuthorizationAuditListener
-		implements ApplicationListener<AuthorizationEvent>, ApplicationEventPublisherAware {
+		implements ApplicationListener<AbstractAuthorizationEvent>, ApplicationEventPublisherAware {
 
 	private ApplicationEventPublisher publisher;
 

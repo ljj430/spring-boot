@@ -37,7 +37,7 @@ import org.springframework.util.Assert;
  */
 public class BoundConfigurationProperties {
 
-	private final Map<ConfigurationPropertyName, ConfigurationProperty> properties = new LinkedHashMap<>();
+	private Map<ConfigurationPropertyName, ConfigurationProperty> properties = new LinkedHashMap<>();
 
 	/**
 	 * The bean name that this class is registered with.
@@ -81,7 +81,8 @@ public class BoundConfigurationProperties {
 	static void register(BeanDefinitionRegistry registry) {
 		Assert.notNull(registry, "Registry must not be null");
 		if (!registry.containsBeanDefinition(BEAN_NAME)) {
-			BeanDefinition definition = BeanDefinitionBuilder.genericBeanDefinition(BoundConfigurationProperties.class)
+			BeanDefinition definition = BeanDefinitionBuilder
+				.genericBeanDefinition(BoundConfigurationProperties.class, BoundConfigurationProperties::new)
 				.getBeanDefinition();
 			definition.setRole(BeanDefinition.ROLE_INFRASTRUCTURE);
 			registry.registerBeanDefinition(BEAN_NAME, definition);

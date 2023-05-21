@@ -25,6 +25,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.channel.DirectChannel;
 import org.springframework.integration.dsl.IntegrationFlow;
+import org.springframework.integration.dsl.IntegrationFlows;
 import org.springframework.integration.dsl.Pollers;
 import org.springframework.integration.dsl.SourcePollingChannelAdapterSpec;
 import org.springframework.integration.file.FileReadingMessageSource;
@@ -73,7 +74,7 @@ public class SampleParentContextApplication {
 
 		@Bean
 		public IntegrationFlow integrationFlow(SampleEndpoint endpoint) {
-			return IntegrationFlow.from(fileReader(), new FixedRatePoller())
+			return IntegrationFlows.from(fileReader(), new FixedRatePoller())
 				.channel(inputChannel())
 				.handle(endpoint)
 				.channel(outputChannel())

@@ -84,8 +84,7 @@ If you do so, the default welcome page detection switches to your custom locatio
 So, if there is an `index.html` in any of your locations on startup, it is the home page of the application.
 
 In addition to the "`standard`" static resource locations listed earlier, a special case is made for https://www.webjars.org/[Webjars content].
-By default, any resources with a path in `+/webjars/**+` are served from jar files if they are packaged in the Webjars format.
-The path can be customized with the configprop:spring.webflux.webjars-path-pattern[] property.
+Any resources with a path in `+/webjars/**+` are served from jar files if they are packaged in the Webjars format.
 
 TIP: Spring WebFlux applications do not strictly depend on the servlet API, so they cannot be deployed as war files and do not use the `src/main/webapp` directory.
 
@@ -122,23 +121,6 @@ Its position in the processing order is immediately before the handlers provided
 For machine clients, it produces a JSON response with details of the error, the HTTP status, and the exception message.
 For browser clients, there is a "`whitelabel`" error handler that renders the same data in HTML format.
 You can also provide your own HTML templates to display errors (see the <<web#web.reactive.webflux.error-handling.error-pages,next section>>).
-
-Before customizing error handling in Spring Boot directly, you can leverage the {spring-framework-docs}/web-reactive.html#webflux-ann-rest-exceptions[RFC 7807 Problem Details] support in Spring WebFlux.
-Spring WebFlux can produce custom error messages with the `application/problem+json` media type, like:
-
-[source,json,indent=0,subs="verbatim"]
-----
-{
-  "type": "https://example.org/problems/unknown-project",
-  "title": "Unknown project",
-  "status": 404,
-  "detail": "No project found for id 'spring-unknown'",
-  "instance": "/projects/spring-unknown"
-}
-----
-
-This support can be enabled by setting configprop:spring.webflux.problemdetails.enabled[] to `true`.
-
 
 The first step to customizing this feature often involves using the existing mechanism but replacing or augmenting the error contents.
 For that, you can add a bean of type `ErrorAttributes`.
@@ -208,13 +190,13 @@ When it does so, the orders shown in the following table will be used:
 |===
 | Web Filter | Order
 
-| `ServerHttpObservationFilter` (Micrometer Observability)
+| `MetricsWebFilter`
 | `Ordered.HIGHEST_PRECEDENCE + 1`
 
 | `WebFilterChainProxy` (Spring Security)
 | `-100`
 
-| `HttpExchangesWebFilter`
+| `HttpTraceWebFilter`
 | `Ordered.LOWEST_PRECEDENCE - 10`
 |===
 

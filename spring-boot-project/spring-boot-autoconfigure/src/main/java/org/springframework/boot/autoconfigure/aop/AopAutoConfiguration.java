@@ -77,7 +77,8 @@ public class AopAutoConfiguration {
 		@Bean
 		static BeanFactoryPostProcessor forceAutoProxyCreatorToUseClassProxying() {
 			return (beanFactory) -> {
-				if (beanFactory instanceof BeanDefinitionRegistry registry) {
+				if (beanFactory instanceof BeanDefinitionRegistry) {
+					BeanDefinitionRegistry registry = (BeanDefinitionRegistry) beanFactory;
 					AopConfigUtils.registerAutoProxyCreatorIfNecessary(registry);
 					AopConfigUtils.forceAutoProxyCreatorToUseClassProxying(registry);
 				}
