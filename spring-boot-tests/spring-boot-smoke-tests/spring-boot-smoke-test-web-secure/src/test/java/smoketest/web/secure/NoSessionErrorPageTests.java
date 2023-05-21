@@ -45,8 +45,8 @@ class NoSessionErrorPageTests extends AbstractErrorPageTests {
 		@Bean
 		SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
 			http.sessionManagement((session) -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-				.authorizeHttpRequests((requests) -> {
-					requests.requestMatchers("/public/**").permitAll();
+				.authorizeRequests((requests) -> {
+					requests.antMatchers("/public/**").permitAll();
 					requests.anyRequest().authenticated();
 				});
 			http.httpBasic();

@@ -78,6 +78,8 @@ class LoaderIntegrationTests {
 
 	static Stream<JavaRuntime> javaRuntimes() {
 		List<JavaRuntime> javaRuntimes = new ArrayList<>();
+		javaRuntimes.add(JavaRuntime.openJdk(JavaVersion.EIGHT));
+		javaRuntimes.add(JavaRuntime.openJdk(JavaVersion.ELEVEN));
 		javaRuntimes.add(JavaRuntime.openJdk(JavaVersion.SEVENTEEN));
 		javaRuntimes.add(JavaRuntime.openJdk(JavaVersion.NINETEEN));
 		javaRuntimes.add(JavaRuntime.oracleJdk17());
@@ -112,7 +114,7 @@ class LoaderIntegrationTests {
 		}
 
 		static JavaRuntime openJdk(JavaVersion version) {
-			String imageVersion = version.toString();
+			String imageVersion = (version != JavaVersion.EIGHT) ? version.toString() : "8";
 			DockerImageName image = DockerImageName.parse("bellsoft/liberica-openjdk-debian:" + imageVersion);
 			return new JavaRuntime("OpenJDK " + imageVersion, version, () -> new GenericContainer<>(image));
 		}

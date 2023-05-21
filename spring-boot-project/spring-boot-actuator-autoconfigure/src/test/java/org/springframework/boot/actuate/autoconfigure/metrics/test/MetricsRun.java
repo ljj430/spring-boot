@@ -30,7 +30,6 @@ import org.springframework.boot.actuate.autoconfigure.metrics.export.graphite.Gr
 import org.springframework.boot.actuate.autoconfigure.metrics.export.influx.InfluxMetricsExportAutoConfiguration;
 import org.springframework.boot.actuate.autoconfigure.metrics.export.jmx.JmxMetricsExportAutoConfiguration;
 import org.springframework.boot.actuate.autoconfigure.metrics.export.newrelic.NewRelicMetricsExportAutoConfiguration;
-import org.springframework.boot.actuate.autoconfigure.metrics.export.otlp.OtlpMetricsExportAutoConfiguration;
 import org.springframework.boot.actuate.autoconfigure.metrics.export.prometheus.PrometheusMetricsExportAutoConfiguration;
 import org.springframework.boot.actuate.autoconfigure.metrics.export.signalfx.SignalFxMetricsExportAutoConfiguration;
 import org.springframework.boot.actuate.autoconfigure.metrics.export.simple.SimpleMetricsExportAutoConfiguration;
@@ -60,7 +59,6 @@ public final class MetricsRun {
 		implementations.add(InfluxMetricsExportAutoConfiguration.class);
 		implementations.add(JmxMetricsExportAutoConfiguration.class);
 		implementations.add(NewRelicMetricsExportAutoConfiguration.class);
-		implementations.add(OtlpMetricsExportAutoConfiguration.class);
 		implementations.add(PrometheusMetricsExportAutoConfiguration.class);
 		implementations.add(SimpleMetricsExportAutoConfiguration.class);
 		implementations.add(SignalFxMetricsExportAutoConfiguration.class);

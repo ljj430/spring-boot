@@ -19,6 +19,7 @@ package org.springframework.boot.autoconfigure.graphql.data;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.graphql.GraphQlSourceBuilderCustomizer;
@@ -46,13 +47,15 @@ class GraphQlQuerydslSourceBuilderCustomizer<E, R> implements GraphQlSourceBuild
 	GraphQlQuerydslSourceBuilderCustomizer(
 			BiFunction<List<E>, List<R>, RuntimeWiringConfigurer> wiringConfigurerFactory, ObjectProvider<E> executors,
 			ObjectProvider<R> reactiveExecutors) {
-		this.wiringConfigurerFactory = wiringConfigurerFactory;
-		this.executors = asList(executors);
-		this.reactiveExecutors = asList(reactiveExecutors);
+		this(wiringConfigurerFactory, toList(executors), toList(reactiveExecutors));
 	}
 
-	private static <T> List<T> asList(ObjectProvider<T> provider) {
-		return (provider != null) ? provider.orderedStream().toList() : Collections.emptyList();
+	GraphQlQuerydslSourceBuilderCustomizer(
+			BiFunction<List<E>, List<R>, RuntimeWiringConfigurer> wiringConfigurerFactory, List<E> executors,
+			List<R> reactiveExecutors) {
+		this.wiringConfigurerFactory = wiringConfigurerFactory;
+		this.executors = executors;
+		this.reactiveExecutors = reactiveExecutors;
 	}
 
 	@Override
@@ -60,6 +63,10 @@ class GraphQlQuerydslSourceBuilderCustomizer<E, R> implements GraphQlSourceBuild
 		if (!this.executors.isEmpty() || !this.reactiveExecutors.isEmpty()) {
 			builder.configureRuntimeWiring(this.wiringConfigurerFactory.apply(this.executors, this.reactiveExecutors));
 		}
+	}
+
+	private static <T> List<T> toList(ObjectProvider<T> provider) {
+		return (provider != null) ? provider.orderedStream().collect(Collectors.toList()) : Collections.emptyList();
 	}
 
 }

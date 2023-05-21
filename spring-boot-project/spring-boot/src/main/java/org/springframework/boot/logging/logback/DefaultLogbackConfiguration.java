@@ -25,7 +25,6 @@ import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.ConsoleAppender;
 import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy;
-import ch.qos.logback.core.spi.ScanException;
 import ch.qos.logback.core.util.FileSize;
 import ch.qos.logback.core.util.OptionHelper;
 
@@ -41,7 +40,6 @@ import org.springframework.boot.logging.LogFile;
  * @author Madhura Bhave
  * @author Vedran Pavic
  * @author Robert Thornton
- * @author Scott Frederick
  */
 class DefaultLogbackConfiguration {
 
@@ -71,7 +69,7 @@ class DefaultLogbackConfiguration {
 		config.conversionRule("wEx", ExtendedWhitespaceThrowableProxyConverter.class);
 		config.getContext()
 			.putProperty("CONSOLE_LOG_PATTERN", resolve(config, "${CONSOLE_LOG_PATTERN:-"
-					+ "%clr(%d{${LOG_DATEFORMAT_PATTERN:-yyyy-MM-dd'T'HH:mm:ss.SSSXXX}}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) "
+					+ "%clr(%d{${LOG_DATEFORMAT_PATTERN:-yyyy-MM-dd HH:mm:ss.SSS}}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) "
 					+ "%clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} "
 					+ "%clr(:){faint} %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}}"));
 		String defaultCharset = Charset.defaultCharset().name();
@@ -79,7 +77,7 @@ class DefaultLogbackConfiguration {
 			.putProperty("CONSOLE_LOG_CHARSET", resolve(config, "${CONSOLE_LOG_CHARSET:-" + defaultCharset + "}"));
 		config.getContext()
 			.putProperty("FILE_LOG_PATTERN", resolve(config, "${FILE_LOG_PATTERN:-"
-					+ "%d{${LOG_DATEFORMAT_PATTERN:-yyyy-MM-dd'T'HH:mm:ss.SSSXXX}} ${LOG_LEVEL_PATTERN:-%5p} ${PID:- } --- [%t] "
+					+ "%d{${LOG_DATEFORMAT_PATTERN:-yyyy-MM-dd HH:mm:ss.SSS}} ${LOG_LEVEL_PATTERN:-%5p} ${PID:- } --- [%t] "
 					+ "%-40.40logger{39} : %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}}"));
 		config.getContext()
 			.putProperty("FILE_LOG_CHARSET", resolve(config, "${FILE_LOG_CHARSET:-" + defaultCharset + "}"));
@@ -149,12 +147,7 @@ class DefaultLogbackConfiguration {
 	}
 
 	private String resolve(LogbackConfigurator config, String val) {
-		try {
-			return OptionHelper.substVars(val, config.getContext());
-		}
-		catch (ScanException ex) {
-			throw new RuntimeException(ex);
-		}
+		return OptionHelper.substVars(val, config.getContext());
 	}
 
 }

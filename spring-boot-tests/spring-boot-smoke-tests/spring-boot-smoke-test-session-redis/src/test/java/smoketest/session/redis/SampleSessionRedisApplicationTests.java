@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package smoketest.session.redis;
 
 import java.net.URI;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -30,17 +29,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.testsupport.testcontainers.RedisContainer;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -51,7 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers(disabledWithoutDocker = true)
-class SampleSessionRedisApplicationTests {
+public class SampleSessionRedisApplicationTests {
 
 	@Container
 	static RedisContainer redis = new RedisContainer();
@@ -61,31 +56,24 @@ class SampleSessionRedisApplicationTests {
 
 	@DynamicPropertySource
 	static void applicationProperties(DynamicPropertyRegistry registry) {
-		registry.add("spring.data.redis.host", redis::getHost);
-		registry.add("spring.data.redis.port", redis::getFirstMappedPort);
+		registry.add("spring.redis.host", redis::getHost);
+		registry.add("spring.redis.port", redis::getFirstMappedPort);
 	}
 
 	@Test
 	@SuppressWarnings("unchecked")
 	void sessionsEndpointShouldReturnUserSessions() {
-		performLogin();
-		ResponseEntity<Map<String, Object>> response = getSessions();
+		createSession(URI.create("/"));
+		ResponseEntity<Map<String, Object>> response = this.getSessions();
 		assertThat(response).isNotNull();
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 		List<Map<String, Object>> sessions = (List<Map<String, Object>>) response.getBody().get("sessions");
-		assertThat(sessions).hasSize(1);
+		assertThat(sessions.size()).isEqualTo(1);
 	}
 
-	private String performLogin() {
-		HttpHeaders headers = new HttpHeaders();
-		headers.setAccept(Collections.singletonList(MediaType.TEXT_HTML));
-		headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-		MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
-		form.set("username", "user");
-		form.set("password", "password");
-		ResponseEntity<String> entity = this.restTemplate.exchange("/login", HttpMethod.POST,
-				new HttpEntity<>(form, headers), String.class);
-		return entity.getHeaders().getFirst("Set-Cookie");
+	private void createSession(URI uri) {
+		RequestEntity<Object> request = getRequestEntity(uri);
+		this.restTemplate.exchange(request, String.class);
 	}
 
 	private RequestEntity<Object> getRequestEntity(URI uri) {
@@ -96,7 +84,7 @@ class SampleSessionRedisApplicationTests {
 
 	private ResponseEntity<Map<String, Object>> getSessions() {
 		RequestEntity<Object> request = getRequestEntity(URI.create("/actuator/sessions?username=user"));
-		ParameterizedTypeReference<Map<String, Object>> stringObjectMap = new ParameterizedTypeReference<>() {
+		ParameterizedTypeReference<Map<String, Object>> stringObjectMap = new ParameterizedTypeReference<Map<String, Object>>() {
 		};
 		return this.restTemplate.exchange(request, stringObjectMap);
 	}

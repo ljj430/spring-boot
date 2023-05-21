@@ -18,9 +18,9 @@ package org.springframework.boot.actuate.autoconfigure.metrics;
 
 import java.util.Arrays;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.Meter.Id;
@@ -61,12 +61,11 @@ public class PropertiesMeterFilter implements MeterFilter {
 			return new MeterFilter() {
 			};
 		}
-		Tags commonTags = Tags.of(tags.entrySet().stream().map(PropertiesMeterFilter::asTag).toList());
+		Tags commonTags = Tags.of(tags.entrySet()
+			.stream()
+			.map((entry) -> Tag.of(entry.getKey(), entry.getValue()))
+			.collect(Collectors.toList()));
 		return MeterFilter.commonTags(commonTags);
-	}
-
-	private static Tag asTag(Entry<String, String> entry) {
-		return Tag.of(entry.getKey(), entry.getValue());
 	}
 
 	@Override

@@ -181,7 +181,7 @@ class TomcatWebServerFactoryCustomizerTests {
 		bind("server.max-http-header-size=1KB");
 		customizeAndRunServer((server) -> assertThat(
 				((AbstractHttp11Protocol<?>) server.getTomcat().getConnector().getProtocolHandler())
-					.getMaxHttpRequestHeaderSize())
+					.getMaxHttpHeaderSize())
 			.isEqualTo(DataSize.ofKilobytes(1).toBytes()));
 	}
 
@@ -193,7 +193,7 @@ class TomcatWebServerFactoryCustomizerTests {
 				.getConnector()
 				.getProtocolHandler();
 			long expectedSize = DataSize.ofKilobytes(1).toBytes();
-			assertThat(protocolHandler.getMaxHttpRequestHeaderSize()).isEqualTo(expectedSize);
+			assertThat(protocolHandler.getMaxHttpHeaderSize()).isEqualTo(expectedSize);
 			assertThat(((Http2Protocol) protocolHandler.getUpgradeProtocol("h2c")).getMaxHeaderSize())
 				.isEqualTo(expectedSize);
 		});
@@ -204,7 +204,7 @@ class TomcatWebServerFactoryCustomizerTests {
 		bind("server.max-http-header-size=-1");
 		customizeAndRunServer((server) -> assertThat(
 				((AbstractHttp11Protocol<?>) server.getTomcat().getConnector().getProtocolHandler())
-					.getMaxHttpRequestHeaderSize())
+					.getMaxHttpHeaderSize())
 			.isEqualTo(DataSize.ofKilobytes(8).toBytes()));
 	}
 
@@ -213,7 +213,7 @@ class TomcatWebServerFactoryCustomizerTests {
 		bind("server.max-http-header-size=0");
 		customizeAndRunServer((server) -> assertThat(
 				((AbstractHttp11Protocol<?>) server.getTomcat().getConnector().getProtocolHandler())
-					.getMaxHttpRequestHeaderSize())
+					.getMaxHttpHeaderSize())
 			.isEqualTo(DataSize.ofKilobytes(8).toBytes()));
 	}
 
@@ -233,8 +233,7 @@ class TomcatWebServerFactoryCustomizerTests {
 				"server.tomcat.remoteip.internal-proxies=192.168.0.1",
 				"server.tomcat.remoteip.host-header=x-my-forward-host",
 				"server.tomcat.remoteip.port-header=x-my-forward-port",
-				"server.tomcat.remoteip.protocol-header-https-value=On",
-				"server.tomcat.remoteip.trusted-proxies=proxy1|proxy2");
+				"server.tomcat.remoteip.protocol-header-https-value=On");
 		TomcatServletWebServerFactory factory = customizeAndGetFactory();
 		assertThat(factory.getEngineValves()).hasSize(1);
 		Valve valve = factory.getEngineValves().iterator().next();
@@ -246,7 +245,6 @@ class TomcatWebServerFactoryCustomizerTests {
 		assertThat(remoteIpValve.getHostHeader()).isEqualTo("x-my-forward-host");
 		assertThat(remoteIpValve.getPortHeader()).isEqualTo("x-my-forward-port");
 		assertThat(remoteIpValve.getInternalProxies()).isEqualTo("192.168.0.1");
-		assertThat(remoteIpValve.getTrustedProxies()).isEqualTo("proxy1|proxy2");
 	}
 
 	@Test
@@ -296,7 +294,7 @@ class TomcatWebServerFactoryCustomizerTests {
 	@Test
 	void defaultUseForwardHeaders() {
 		TomcatServletWebServerFactory factory = customizeAndGetFactory();
-		assertThat(factory.getEngineValves()).isEmpty();
+		assertThat(factory.getEngineValves()).hasSize(0);
 	}
 
 	@Test
@@ -310,7 +308,7 @@ class TomcatWebServerFactoryCustomizerTests {
 		this.environment.setProperty("DYNO", "-");
 		this.serverProperties.setForwardHeadersStrategy(ServerProperties.ForwardHeadersStrategy.NONE);
 		TomcatServletWebServerFactory factory = customizeAndGetFactory();
-		assertThat(factory.getEngineValves()).isEmpty();
+		assertThat(factory.getEngineValves()).hasSize(0);
 	}
 
 	@Test
@@ -381,7 +379,8 @@ class TomcatWebServerFactoryCustomizerTests {
 		Valve[] valves = server.getTomcat().getHost().getPipeline().getValves();
 		assertThat(valves).hasAtLeastOneElementOfType(ErrorReportValve.class);
 		for (Valve valve : valves) {
-			if (valve instanceof ErrorReportValve errorReportValve) {
+			if (valve instanceof ErrorReportValve) {
+				ErrorReportValve errorReportValve = (ErrorReportValve) valve;
 				assertThat(errorReportValve.isShowReport()).isFalse();
 				assertThat(errorReportValve.isShowServerInfo()).isFalse();
 			}

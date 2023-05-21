@@ -30,13 +30,13 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLHandshakeException;
+import javax.servlet.ServletRegistration.Dynamic;
 
 import io.undertow.Undertow;
 import io.undertow.Undertow.Builder;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.ServletContainer;
-import jakarta.servlet.ServletRegistration.Dynamic;
-import org.apache.hc.core5.http.HttpResponse;
+import org.apache.http.HttpResponse;
 import org.apache.jasper.servlet.JspServlet;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
@@ -207,7 +207,8 @@ class UndertowServletWebServerFactoryTests extends AbstractServletWebServerFacto
 		assertThat(request.get()).isInstanceOf(HttpResponse.class);
 		Object rejectedResult = initiateGetRequest(port, "/").get();
 		assertThat(rejectedResult).isInstanceOf(HttpResponse.class);
-		assertThat(((HttpResponse) rejectedResult).getCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE.value());
+		assertThat(((HttpResponse) rejectedResult).getStatusLine().getStatusCode())
+			.isEqualTo(HttpStatus.SERVICE_UNAVAILABLE.value());
 		this.webServer.stop();
 	}
 
@@ -219,7 +220,7 @@ class UndertowServletWebServerFactoryTests extends AbstractServletWebServerFacto
 		factory.setAccessLogSuffix(suffix);
 		File accessLogDirectory = this.tempDir;
 		factory.setAccessLogDirectory(accessLogDirectory);
-		assertThat(accessLogDirectory).isEmptyDirectory();
+		assertThat(accessLogDirectory.listFiles()).isEmpty();
 		this.webServer = factory.getWebServer(new ServletRegistrationBean<>(new ExampleServlet(), "/hello"));
 		this.webServer.start();
 		assertThat(getResponse(getLocalUrl("/hello"))).isEqualTo("Hello World");

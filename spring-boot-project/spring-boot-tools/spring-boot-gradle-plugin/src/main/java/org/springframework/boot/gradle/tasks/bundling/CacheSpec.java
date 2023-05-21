@@ -16,12 +16,9 @@
 
 package org.springframework.boot.gradle.tasks.bundling;
 
-import javax.inject.Inject;
-
+import groovy.lang.Closure;
 import org.gradle.api.Action;
 import org.gradle.api.GradleException;
-import org.gradle.api.model.ObjectFactory;
-import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 
 import org.springframework.boot.buildpack.platform.build.Cache;
@@ -34,13 +31,9 @@ import org.springframework.boot.buildpack.platform.build.Cache;
  */
 public class CacheSpec {
 
-	private final ObjectFactory objectFactory;
-
 	private Cache cache = null;
 
-	@Inject
-	public CacheSpec(ObjectFactory objectFactory) {
-		this.objectFactory = objectFactory;
+	CacheSpec() {
 	}
 
 	public Cache asCache() {
@@ -55,22 +48,45 @@ public class CacheSpec {
 		if (this.cache != null) {
 			throw new GradleException("Each image building cache can be configured only once");
 		}
-		VolumeCacheSpec spec = this.objectFactory.newInstance(VolumeCacheSpec.class);
+		VolumeCacheSpec spec = new VolumeCacheSpec();
 		action.execute(spec);
-		this.cache = Cache.volume(spec.getName().get());
+		this.cache = Cache.volume(spec.getName());
+	}
+
+	/**
+	 * Configures a volume cache using the given {@code closure}.
+	 * @param closure the closure
+	 */
+	public void volume(Closure<?> closure) {
+		if (this.cache != null) {
+			throw new GradleException("Each image building cache can be configured only once");
+		}
+		volume(Closures.asAction(closure));
 	}
 
 	/**
 	 * Configuration for an image building cache stored in a Docker volume.
 	 */
-	public abstract static class VolumeCacheSpec {
+	public static class VolumeCacheSpec {
+
+		private String name;
 
 		/**
 		 * Returns the name of the cache.
 		 * @return the cache name
 		 */
 		@Input
-		public abstract Property<String> getName();
+		public String getName() {
+			return this.name;
+		}
+
+		/**
+		 * Sets the name of the cache.
+		 * @param name the cache name
+		 */
+		public void setName(String name) {
+			this.name = name;
+		}
 
 	}
 

@@ -79,8 +79,8 @@ public class CheckClasspathForUnnecessaryExclusions extends DefaultTask {
 	}
 
 	private void processDependency(Dependency dependency) {
-		if (dependency instanceof ModuleDependency moduleDependency) {
-			processDependency(moduleDependency);
+		if (dependency instanceof ModuleDependency) {
+			processDependency((ModuleDependency) dependency);
 		}
 	}
 
@@ -113,7 +113,7 @@ public class CheckClasspathForUnnecessaryExclusions extends DefaultTask {
 					.getArtifacts()
 					.stream()
 					.map(this::getId)
-					.toList();
+					.collect(Collectors.toList());
 				exclusions.removeAll(dependencies);
 				removeProfileExclusions(dependencyId, exclusions);
 				if (!exclusions.isEmpty()) {

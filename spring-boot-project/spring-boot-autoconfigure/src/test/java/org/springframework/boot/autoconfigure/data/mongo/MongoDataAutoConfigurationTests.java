@@ -18,6 +18,7 @@ package org.springframework.boot.autoconfigure.data.mongo;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Set;
 
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
@@ -36,7 +37,6 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
-import org.springframework.data.domain.ManagedTypes;
 import org.springframework.data.mapping.model.CamelCaseAbbreviatingFieldNamingStrategy;
 import org.springframework.data.mapping.model.FieldNamingStrategy;
 import org.springframework.data.mapping.model.PropertyNameFieldNamingStrategy;
@@ -57,7 +57,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Josh Long
  * @author Oliver Gierke
- * @author Mark Paluch
  */
 class MongoDataAutoConfigurationTests {
 
@@ -160,11 +159,13 @@ class MongoDataAutoConfigurationTests {
 	}
 
 	@Test
-	void entityScanShouldSetManagedTypes() {
+	@SuppressWarnings("unchecked")
+	void entityScanShouldSetInitialEntitySet() {
 		this.contextRunner.withUserConfiguration(EntityScanConfig.class).run((context) -> {
 			MongoMappingContext mappingContext = context.getBean(MongoMappingContext.class);
-			ManagedTypes managedTypes = (ManagedTypes) ReflectionTestUtils.getField(mappingContext, "managedTypes");
-			assertThat(managedTypes.toList()).containsOnly(City.class, Country.class);
+			Set<Class<?>> initialEntitySet = (Set<Class<?>>) ReflectionTestUtils.getField(mappingContext,
+					"initialEntitySet");
+			assertThat(initialEntitySet).containsOnly(City.class, Country.class);
 		});
 
 	}
@@ -209,9 +210,10 @@ class MongoDataAutoConfigurationTests {
 			.run((context) -> assertThat(context).hasSingleBean(MongoTemplate.class));
 	}
 
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	private static void assertDomainTypesDiscovered(MongoMappingContext mappingContext, Class<?>... types) {
-		ManagedTypes managedTypes = (ManagedTypes) ReflectionTestUtils.getField(mappingContext, "managedTypes");
-		assertThat(managedTypes.toList()).containsOnly(types);
+		Set<Class> initialEntitySet = (Set<Class>) ReflectionTestUtils.getField(mappingContext, "initialEntitySet");
+		assertThat(initialEntitySet).containsOnly(types);
 	}
 
 	@Configuration(proxyBeanMethods = false)

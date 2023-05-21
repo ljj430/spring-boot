@@ -19,9 +19,9 @@ package org.springframework.boot.web.embedded.jetty;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URL;
 import java.nio.channels.ReadableByteChannel;
 import java.time.Duration;
@@ -33,11 +33,12 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpServletResponseWrapper;
+import javax.servlet.ServletException;
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletResponseWrapper;
+
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
@@ -83,6 +84,7 @@ import org.springframework.context.ResourceLoaderAware;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
 /**
@@ -330,7 +332,15 @@ public class JettyServletWebServerFactory extends AbstractServletWebServerFactor
 		holder.setInitOrder(1);
 		context.getServletHandler().addServletWithMapping(holder, "/");
 		ServletMapping servletMapping = context.getServletHandler().getServletMapping("/");
-		servletMapping.setFromDefaultDescriptor(true);
+		try {
+			servletMapping.setDefault(true);
+		}
+		catch (NoSuchMethodError ex) {
+			// Jetty 10
+			Method setFromDefaultDescriptor = ReflectionUtils.findMethod(servletMapping.getClass(),
+					"setFromDefaultDescriptor", boolean.class);
+			ReflectionUtils.invokeMethod(setFromDefaultDescriptor, servletMapping, true);
+		}
 	}
 
 	/**
@@ -526,7 +536,8 @@ public class JettyServletWebServerFactory extends AbstractServletWebServerFactor
 	}
 
 	private void addJettyErrorPages(ErrorHandler errorHandler, Collection<ErrorPage> errorPages) {
-		if (errorHandler instanceof ErrorPageErrorHandler handler) {
+		if (errorHandler instanceof ErrorPageErrorHandler) {
+			ErrorPageErrorHandler handler = (ErrorPageErrorHandler) errorHandler;
 			for (ErrorPage errorPage : errorPages) {
 				if (errorPage.isGlobal()) {
 					handler.addErrorPage(ErrorPageErrorHandler.GLOBAL_ERROR_PAGE, errorPage.getPath());
@@ -590,8 +601,9 @@ public class JettyServletWebServerFactory extends AbstractServletWebServerFactor
 		}
 
 		@Override
-		public URI getURI() {
-			return this.delegate.getURI();
+		@Deprecated
+		public URL getURL() {
+			return this.delegate.getURL();
 		}
 
 		@Override
@@ -693,7 +705,6 @@ public class JettyServletWebServerFactory extends AbstractServletWebServerFactor
 			}
 
 			@Override
-			@SuppressWarnings("removal")
 			public void addCookie(Cookie cookie) {
 				SameSite sameSite = getSameSite(cookie);
 				if (sameSite != null) {
@@ -705,11 +716,15 @@ public class JettyServletWebServerFactory extends AbstractServletWebServerFactor
 			}
 
 			private String getSameSiteComment(SameSite sameSite) {
-				return switch (sameSite) {
-					case NONE -> HttpCookie.SAME_SITE_NONE_COMMENT;
-					case LAX -> HttpCookie.SAME_SITE_LAX_COMMENT;
-					case STRICT -> HttpCookie.SAME_SITE_STRICT_COMMENT;
-				};
+				switch (sameSite) {
+					case NONE:
+						return HttpCookie.SAME_SITE_NONE_COMMENT;
+					case LAX:
+						return HttpCookie.SAME_SITE_LAX_COMMENT;
+					case STRICT:
+						return HttpCookie.SAME_SITE_STRICT_COMMENT;
+				}
+				throw new IllegalStateException("Unsupported SameSite value " + sameSite);
 			}
 
 			private SameSite getSameSite(Cookie cookie) {

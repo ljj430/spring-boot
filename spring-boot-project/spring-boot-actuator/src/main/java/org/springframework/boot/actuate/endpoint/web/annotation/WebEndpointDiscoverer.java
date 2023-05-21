@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,6 @@ package org.springframework.boot.actuate.endpoint.web.annotation;
 import java.util.Collection;
 import java.util.List;
 
-import org.springframework.aot.hint.MemberCategory;
-import org.springframework.aot.hint.RuntimeHints;
-import org.springframework.aot.hint.RuntimeHintsRegistrar;
 import org.springframework.boot.actuate.endpoint.EndpointFilter;
 import org.springframework.boot.actuate.endpoint.EndpointId;
 import org.springframework.boot.actuate.endpoint.annotation.DiscoveredOperationMethod;
@@ -35,9 +32,7 @@ import org.springframework.boot.actuate.endpoint.web.PathMapper;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointsSupplier;
 import org.springframework.boot.actuate.endpoint.web.WebOperation;
 import org.springframework.boot.actuate.endpoint.web.WebOperationRequestPredicate;
-import org.springframework.boot.actuate.endpoint.web.annotation.WebEndpointDiscoverer.WebEndpointDiscovererRuntimeHints;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.ImportRuntimeHints;
 
 /**
  * {@link EndpointDiscoverer} for {@link ExposableWebEndpoint web endpoints}.
@@ -45,7 +40,6 @@ import org.springframework.context.annotation.ImportRuntimeHints;
  * @author Phillip Webb
  * @since 2.0.0
  */
-@ImportRuntimeHints(WebEndpointDiscovererRuntimeHints.class)
 public class WebEndpointDiscoverer extends EndpointDiscoverer<ExposableWebEndpoint, WebOperation>
 		implements WebEndpointsSupplier {
 
@@ -91,15 +85,6 @@ public class WebEndpointDiscoverer extends EndpointDiscoverer<ExposableWebEndpoi
 	protected OperationKey createOperationKey(WebOperation operation) {
 		return new OperationKey(operation.getRequestPredicate(),
 				() -> "web request predicate " + operation.getRequestPredicate());
-	}
-
-	static class WebEndpointDiscovererRuntimeHints implements RuntimeHintsRegistrar {
-
-		@Override
-		public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
-			hints.reflection().registerType(WebEndpointFilter.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS);
-		}
-
 	}
 
 }

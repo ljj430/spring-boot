@@ -7,12 +7,12 @@ plugins {
 
 // tag::launch[]
 tasks.named<BootRun>("bootRun") {
-	optimizedLaunch.set(false)
+	isOptimizedLaunch = false
 }
 // end::launch[]
 
 tasks.register("optimizedLaunch") {
 	doLast {
-		println(tasks.getByName<BootRun>("bootRun").optimizedLaunch.get())
+		println(tasks.getByName<BootRun>("bootRun").isOptimizedLaunch)
 	}
 }

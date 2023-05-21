@@ -27,7 +27,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import jakarta.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.boot.actuate.autoconfigure.endpoint.web.WebEndpointProperties;
@@ -252,7 +252,7 @@ public final class EndpointRequest {
 				RequestMatcherProvider matcherProvider, Set<String> paths) {
 			return paths.stream()
 				.map((path) -> requestMatcherFactory.antPath(matcherProvider, path, "/**"))
-				.collect(Collectors.toCollection(ArrayList::new));
+				.collect(Collectors.toList());
 		}
 
 		@Override
@@ -269,11 +269,11 @@ public final class EndpointRequest {
 		}
 
 		private EndpointId getEndpointId(Object source) {
-			if (source instanceof EndpointId endpointId) {
-				return endpointId;
+			if (source instanceof EndpointId) {
+				return (EndpointId) source;
 			}
-			if (source instanceof String string) {
-				return EndpointId.of(string);
+			if (source instanceof String) {
+				return (EndpointId.of((String) source));
 			}
 			if (source instanceof Class) {
 				return getEndpointId((Class<?>) source);
