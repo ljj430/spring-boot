@@ -20,15 +20,10 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Set;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
-import org.springframework.core.log.LogMessage;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 
@@ -40,12 +35,8 @@ import org.springframework.util.ObjectUtils;
  */
 public class ApplicationPid {
 
-	private static final Log logger = LogFactory.getLog(ApplicationPid.class);
-
 	private static final PosixFilePermission[] WRITE_PERMISSIONS = { PosixFilePermission.OWNER_WRITE,
 			PosixFilePermission.GROUP_WRITE, PosixFilePermission.OTHERS_WRITE };
-
-	private static final long JVM_NAME_RESOLVE_THRESHOLD = 200;
 
 	private final String pid;
 
@@ -59,34 +50,11 @@ public class ApplicationPid {
 
 	private String getPid() {
 		try {
-			String jvmName = resolveJvmName();
-			return jvmName.split("@")[0];
+			return Long.toString(ProcessHandle.current().pid());
 		}
 		catch (Throwable ex) {
 			return null;
 		}
-	}
-
-	private String resolveJvmName() {
-		long startTime = System.currentTimeMillis();
-		String jvmName = ManagementFactory.getRuntimeMXBean().getName();
-		long elapsed = System.currentTimeMillis() - startTime;
-		if (elapsed > JVM_NAME_RESOLVE_THRESHOLD) {
-			logger.warn(LogMessage.of(() -> {
-				StringBuilder warning = new StringBuilder();
-				warning.append("ManagementFactory.getRuntimeMXBean().getName() took ");
-				warning.append(elapsed);
-				warning.append(" milliseconds to respond.");
-				warning.append(" This may be due to slow host name resolution.");
-				warning.append(" Please verify your network configuration");
-				if (System.getProperty("os.name").toLowerCase().contains("mac")) {
-					warning.append(" (macOS machines may need to add entries to /etc/hosts)");
-				}
-				warning.append(".");
-				return warning;
-			}));
-		}
-		return jvmName;
 	}
 
 	@Override
@@ -94,8 +62,8 @@ public class ApplicationPid {
 		if (obj == this) {
 			return true;
 		}
-		if (obj instanceof ApplicationPid) {
-			return ObjectUtils.nullSafeEquals(this.pid, ((ApplicationPid) obj).pid);
+		if (obj instanceof ApplicationPid other) {
+			return ObjectUtils.nullSafeEquals(this.pid, other.pid);
 		}
 		return false;
 	}

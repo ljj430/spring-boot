@@ -38,9 +38,6 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
-import io.spring.javaformat.config.IndentationStyle;
-import io.spring.javaformat.config.JavaBaseline;
-import io.spring.javaformat.config.JavaFormatConfig;
 import io.spring.javaformat.formatter.FileEdit;
 import io.spring.javaformat.formatter.FileFormatter;
 import org.gradle.api.DefaultTask;
@@ -101,20 +98,6 @@ import org.springframework.util.Assert;
  * @author Phillip Webb
  */
 public class MavenPluginPlugin implements Plugin<Project> {
-
-	private static final JavaFormatConfig FORMATTER_CONFIG = new JavaFormatConfig() {
-
-		@Override
-		public JavaBaseline getJavaBaseline() {
-			return JavaBaseline.V8;
-		}
-
-		@Override
-		public IndentationStyle getIndentationStyle() {
-			return IndentationStyle.TABS;
-		}
-
-	};
 
 	@Override
 	public void apply(Project project) {
@@ -190,7 +173,7 @@ public class MavenPluginPlugin implements Plugin<Project> {
 	private MavenExec createGenerateHelpMojoTask(Project project, File helpMojoDir) {
 		MavenExec task = project.getTasks().create("generateHelpMojo", MavenExec.class);
 		task.setProjectDir(helpMojoDir);
-		task.args("org.apache.maven.plugins:maven-plugin-plugin:3.6.0:helpmojo");
+		task.args("org.apache.maven.plugins:maven-plugin-plugin:3.6.1:helpmojo");
 		task.getOutputs().dir(new File(helpMojoDir, "target/generated-sources/plugin"));
 		return task;
 	}
@@ -257,7 +240,7 @@ public class MavenPluginPlugin implements Plugin<Project> {
 
 	private MavenExec createGeneratePluginDescriptorTask(Project project, File mavenDir) {
 		MavenExec generatePluginDescriptor = project.getTasks().create("generatePluginDescriptor", MavenExec.class);
-		generatePluginDescriptor.args("org.apache.maven.plugins:maven-plugin-plugin:3.6.0:descriptor");
+		generatePluginDescriptor.args("org.apache.maven.plugins:maven-plugin-plugin:3.6.1:descriptor");
 		generatePluginDescriptor.getOutputs().dir(new File(mavenDir, "target/classes/META-INF/maven"));
 		generatePluginDescriptor.getInputs()
 			.dir(new File(mavenDir, "target/classes/org"))
@@ -327,7 +310,7 @@ public class MavenPluginPlugin implements Plugin<Project> {
 
 		@TaskAction
 		void syncAndFormat() {
-			FileFormatter formatter = new FileFormatter(FORMATTER_CONFIG);
+			FileFormatter formatter = new FileFormatter();
 			for (File output : this.generator.getOutputs().getFiles()) {
 				formatter.formatFiles(getProject().fileTree(output), StandardCharsets.UTF_8)
 					.forEach((edit) -> save(output, edit));
@@ -339,7 +322,7 @@ public class MavenPluginPlugin implements Plugin<Project> {
 			Path outputLocation = this.outputDir.toPath().resolve(relativePath);
 			try {
 				Files.createDirectories(outputLocation.getParent());
-				Files.write(outputLocation, edit.getFormattedContent().getBytes(StandardCharsets.UTF_8));
+				Files.writeString(outputLocation, edit.getFormattedContent());
 			}
 			catch (Exception ex) {
 				throw new TaskExecutionException(this, ex);
@@ -404,9 +387,7 @@ public class MavenPluginPlugin implements Plugin<Project> {
 		@TaskAction
 		public void createRepository() {
 			for (ResolvedArtifactResult result : this.runtimeClasspath.getIncoming().getArtifacts()) {
-				if (result.getId().getComponentIdentifier() instanceof ModuleComponentIdentifier) {
-					ModuleComponentIdentifier identifier = (ModuleComponentIdentifier) result.getId()
-						.getComponentIdentifier();
+				if (result.getId().getComponentIdentifier() instanceof ModuleComponentIdentifier identifier) {
 					String fileName = result.getFile()
 						.getName()
 						.replace(identifier.getVersion() + "-" + identifier.getVersion(), identifier.getVersion());
@@ -482,6 +463,8 @@ public class MavenPluginPlugin implements Plugin<Project> {
 			effectiveBom.property("spring-framework.version", versions::setProperty);
 			effectiveBom.property("jakarta-servlet.version", versions::setProperty);
 			effectiveBom.property("kotlin.version", versions::setProperty);
+			effectiveBom.property("assertj.version", versions::setProperty);
+			effectiveBom.property("junit-jupiter.version", versions::setProperty);
 			return versions;
 		}
 
