@@ -16,6 +16,7 @@
 
 package org.springframework.boot.autoconfigure.mongo;
 
+import java.util.Arrays;
 import java.util.List;
 
 import com.mongodb.MongoClientSettings;
@@ -23,8 +24,6 @@ import com.mongodb.MongoCredential;
 import com.mongodb.ServerAddress;
 import org.bson.UuidRepresentation;
 import org.junit.jupiter.api.Test;
-
-import org.springframework.mock.env.MockEnvironment;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -36,8 +35,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 class MongoPropertiesClientSettingsBuilderCustomizerTests {
 
 	private final MongoProperties properties = new MongoProperties();
-
-	private final MockEnvironment environment = new MockEnvironment();
 
 	@Test
 	void portCanBeCustomized() {
@@ -55,6 +52,18 @@ class MongoPropertiesClientSettingsBuilderCustomizerTests {
 		List<ServerAddress> allAddresses = getAllAddresses(settings);
 		assertThat(allAddresses).hasSize(1);
 		assertServerAddress(allAddresses.get(0), "mongo.example.com", 27017);
+	}
+
+	@Test
+	void additionalHostCanBeAdded() {
+		this.properties.setHost("mongo.example.com");
+		this.properties.setAdditionalHosts(Arrays.asList("mongo.example.com:33", "mongo.example2.com"));
+		MongoClientSettings settings = customizeSettings();
+		List<ServerAddress> allAddresses = getAllAddresses(settings);
+		assertThat(allAddresses).hasSize(3);
+		assertServerAddress(allAddresses.get(0), "mongo.example.com", 27017);
+		assertServerAddress(allAddresses.get(1), "mongo.example.com", 33);
+		assertServerAddress(allAddresses.get(2), "mongo.example2.com", 27017);
 	}
 
 	@Test
@@ -142,16 +151,6 @@ class MongoPropertiesClientSettingsBuilderCustomizerTests {
 	}
 
 	@Test
-	void uriIsIgnoredInEmbeddedMode() {
-		this.properties.setUri("mongodb://mongo.example.com:1234/mydb");
-		this.environment.setProperty("local.mongo.port", "4000");
-		MongoClientSettings settings = customizeSettings();
-		List<ServerAddress> allAddresses = getAllAddresses(settings);
-		assertThat(allAddresses).hasSize(1);
-		assertServerAddress(allAddresses.get(0), "localhost", 4000);
-	}
-
-	@Test
 	void uriOverridesUsernameAndPassword() {
 		this.properties.setUri("mongodb://127.0.0.1:1234/mydb");
 		this.properties.setUsername("user");
@@ -191,7 +190,7 @@ class MongoPropertiesClientSettingsBuilderCustomizerTests {
 
 	private MongoClientSettings customizeSettings() {
 		MongoClientSettings.Builder settings = MongoClientSettings.builder();
-		new MongoPropertiesClientSettingsBuilderCustomizer(this.properties, this.environment).customize(settings);
+		new MongoPropertiesClientSettingsBuilderCustomizer(this.properties).customize(settings);
 		return settings.build();
 	}
 

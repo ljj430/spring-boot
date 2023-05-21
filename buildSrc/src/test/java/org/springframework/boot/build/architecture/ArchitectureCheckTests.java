@@ -45,7 +45,7 @@ class ArchitectureCheckTests {
 	@Test
 	void whenPackagesAreTangledTaskFailsAndWritesAReport() throws Exception {
 		prepareTask("tangled", (architectureCheck) -> {
-			assertThatExceptionOfType(GradleException.class).isThrownBy(() -> architectureCheck.checkArchitecture());
+			assertThatExceptionOfType(GradleException.class).isThrownBy(architectureCheck::checkArchitecture);
 			assertThat(failureReport(architectureCheck).length()).isGreaterThan(0);
 		});
 	}
@@ -65,7 +65,7 @@ class ArchitectureCheckTests {
 	@Test
 	void whenBeanPostProcessorBeanMethodIsNotStaticTaskFailsAndWritesAReport() throws Exception {
 		prepareTask("bpp/nonstatic", (architectureCheck) -> {
-			assertThatExceptionOfType(GradleException.class).isThrownBy(() -> architectureCheck.checkArchitecture());
+			assertThatExceptionOfType(GradleException.class).isThrownBy(architectureCheck::checkArchitecture);
 			assertThat(failureReport(architectureCheck).length()).isGreaterThan(0);
 		});
 	}
@@ -73,7 +73,7 @@ class ArchitectureCheckTests {
 	@Test
 	void whenBeanPostProcessorBeanMethodIsStaticAndHasUnsafeParametersTaskFailsAndWritesAReport() throws Exception {
 		prepareTask("bpp/unsafeparameters", (architectureCheck) -> {
-			assertThatExceptionOfType(GradleException.class).isThrownBy(() -> architectureCheck.checkArchitecture());
+			assertThatExceptionOfType(GradleException.class).isThrownBy(architectureCheck::checkArchitecture);
 			assertThat(failureReport(architectureCheck).length()).isGreaterThan(0);
 		});
 	}
@@ -99,7 +99,7 @@ class ArchitectureCheckTests {
 	@Test
 	void whenBeanFactoryPostProcessorBeanMethodIsNotStaticTaskFailsAndWritesAReport() throws Exception {
 		prepareTask("bfpp/nonstatic", (architectureCheck) -> {
-			assertThatExceptionOfType(GradleException.class).isThrownBy(() -> architectureCheck.checkArchitecture());
+			assertThatExceptionOfType(GradleException.class).isThrownBy(architectureCheck::checkArchitecture);
 			assertThat(failureReport(architectureCheck).length()).isGreaterThan(0);
 		});
 	}
@@ -107,7 +107,7 @@ class ArchitectureCheckTests {
 	@Test
 	void whenBeanFactoryPostProcessorBeanMethodIsStaticAndHasParametersTaskFailsAndWritesAReport() throws Exception {
 		prepareTask("bfpp/parameters", (architectureCheck) -> {
-			assertThatExceptionOfType(GradleException.class).isThrownBy(() -> architectureCheck.checkArchitecture());
+			assertThatExceptionOfType(GradleException.class).isThrownBy(architectureCheck::checkArchitecture);
 			assertThat(failureReport(architectureCheck).length()).isGreaterThan(0);
 		});
 	}
