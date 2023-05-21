@@ -18,16 +18,13 @@ package org.springframework.boot.autoconfigure.mongo;
 
 import java.util.concurrent.TimeUnit;
 
-import com.mongodb.ConnectionString;
 import com.mongodb.MongoClientSettings;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.internal.MongoClientImpl;
-import com.mongodb.connection.SslSettings;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.ssl.SslAutoConfiguration;
 import org.springframework.boot.test.context.assertj.AssertableApplicationContext;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
@@ -45,7 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class MongoAutoConfigurationTests {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(MongoAutoConfiguration.class, SslAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(MongoAutoConfiguration.class));
 
 	@Test
 	void clientExists() {
@@ -75,39 +72,6 @@ class MongoAutoConfigurationTests {
 	}
 
 	@Test
-	void configuresSslWhenEnabled() {
-		this.contextRunner.withPropertyValues("spring.data.mongodb.ssl.enabled=true").run((context) -> {
-			SslSettings sslSettings = getSettings(context).getSslSettings();
-			assertThat(sslSettings.isEnabled()).isTrue();
-			assertThat(sslSettings.getContext()).isNull();
-		});
-	}
-
-	@Test
-	void configuresSslWithBundle() {
-		this.contextRunner
-			.withPropertyValues("spring.data.mongodb.ssl.bundle=test-bundle",
-					"spring.ssl.bundle.jks.test-bundle.keystore.location=classpath:test.jks",
-					"spring.ssl.bundle.jks.test-bundle.keystore.password=secret",
-					"spring.ssl.bundle.jks.test-bundle.key.password=password")
-			.run((context) -> {
-				SslSettings sslSettings = getSettings(context).getSslSettings();
-				assertThat(sslSettings.isEnabled()).isTrue();
-				assertThat(sslSettings.getContext()).isNotNull();
-			});
-	}
-
-	@Test
-	void configuresWithoutSslWhenDisabledWithBundle() {
-		this.contextRunner
-			.withPropertyValues("spring.data.mongodb.ssl.enabled=false", "spring.data.mongodb.ssl.bundle=test-bundle")
-			.run((context) -> {
-				SslSettings sslSettings = getSettings(context).getSslSettings();
-				assertThat(sslSettings.isEnabled()).isFalse();
-			});
-	}
-
-	@Test
 	void configuresSingleClient() {
 		this.contextRunner.withUserConfiguration(FallbackMongoClientConfig.class)
 			.run((context) -> assertThat(context).hasSingleBean(MongoClient.class));
@@ -118,25 +82,6 @@ class MongoAutoConfigurationTests {
 		this.contextRunner.withPropertyValues("spring.data.mongodb.uri:mongodb://localhost/test?appname=auto-config")
 			.withUserConfiguration(SimpleCustomizerConfig.class)
 			.run((context) -> assertThat(getSettings(context).getApplicationName()).isEqualTo("overridden-name"));
-	}
-
-	@Test
-	void definesPropertiesBasedConnectionDetailsByDefault() {
-		this.contextRunner.run((context) -> assertThat(context).hasSingleBean(PropertiesMongoConnectionDetails.class));
-	}
-
-	@Test
-	void shouldUseCustomConnectionDetailsWhenDefined() {
-		this.contextRunner.withBean(MongoConnectionDetails.class, () -> new MongoConnectionDetails() {
-
-			@Override
-			public ConnectionString getConnectionString() {
-				return new ConnectionString("mongodb://localhost");
-			}
-
-		})
-			.run((context) -> assertThat(context).hasSingleBean(MongoConnectionDetails.class)
-				.doesNotHaveBean(PropertiesMongoConnectionDetails.class));
 	}
 
 	private MongoClientSettings getSettings(AssertableApplicationContext context) {

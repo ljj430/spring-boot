@@ -41,8 +41,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
-import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
+import org.slf4j.impl.StaticLoggerBinder;
 
 import org.springframework.boot.DefaultBootstrapContext;
 import org.springframework.boot.SpringApplication;
@@ -101,7 +101,7 @@ class LoggingApplicationListenerTests {
 
 	private final LoggingApplicationListener listener = new LoggingApplicationListener();
 
-	private final LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
+	private final LoggerContext loggerContext = (LoggerContext) StaticLoggerBinder.getSingleton().getLoggerFactory();
 
 	private final ch.qos.logback.classic.Logger logger = this.loggerContext.getLogger(getClass());
 
@@ -155,7 +155,7 @@ class LoggingApplicationListenerTests {
 		assertThat(this.output).contains("Hello world");
 		assertThat(this.output).doesNotContain("???");
 		assertThat(this.output).contains("[junit-");
-		assertThat(new File(this.tempDir + "/spring.log")).doesNotExist();
+		assertThat(new File(this.tempDir + "/spring.log").exists()).isFalse();
 	}
 
 	@Test
@@ -191,7 +191,7 @@ class LoggingApplicationListenerTests {
 		this.listener.initialize(this.context.getEnvironment(), this.context.getClassLoader());
 		this.logger.info("Hello world");
 		assertThat(this.output).contains("Hello world").doesNotContain("???");
-		assertThat(new File(this.tempDir.toFile(), "/spring.log")).doesNotExist();
+		assertThat(new File(this.tempDir.toFile(), "/spring.log").exists()).isFalse();
 	}
 
 	@Test
@@ -200,7 +200,7 @@ class LoggingApplicationListenerTests {
 		this.listener.initialize(this.context.getEnvironment(), this.context.getClassLoader());
 		this.logger.info("Hello world");
 		assertThat(this.output).contains("Hello world").doesNotContain("???");
-		assertThat(new File(this.tempDir.toFile(), "/spring.log")).doesNotExist();
+		assertThat(new File(this.tempDir.toFile(), "/spring.log").exists()).isFalse();
 	}
 
 	@Test

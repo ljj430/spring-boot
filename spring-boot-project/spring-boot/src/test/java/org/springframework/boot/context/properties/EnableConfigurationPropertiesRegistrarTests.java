@@ -61,7 +61,7 @@ class EnableConfigurationPropertiesRegistrarTests {
 	}
 
 	@Test
-	void constructorBoundPropertiesShouldRegisterConfigurationPropertiesBeanDefinition() {
+	void typeWithConstructorBindingShouldRegisterConfigurationPropertiesBeanDefinition() {
 		register(TestConfiguration.class);
 		BeanDefinition definition = this.beanFactory
 			.getBeanDefinition("bar-" + getClass().getName() + "$BarProperties");
@@ -137,6 +137,7 @@ class EnableConfigurationPropertiesRegistrarTests {
 
 	}
 
+	@ConstructorBinding
 	@ConfigurationProperties(prefix = "bar")
 	static class BarProperties {
 

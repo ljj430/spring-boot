@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,7 +56,7 @@ class FileUtilsTests {
 		file.createNewFile();
 		new File(this.originDirectory, "logback.xml").createNewFile();
 		FileUtils.removeDuplicatesFromOutputDirectory(this.outputDirectory, this.originDirectory);
-		assertThat(file).doesNotExist();
+		assertThat(file.exists()).isFalse();
 	}
 
 	@Test
@@ -67,7 +67,7 @@ class FileUtilsTests {
 		file.createNewFile();
 		new File(this.originDirectory, "sub/logback.xml").createNewFile();
 		FileUtils.removeDuplicatesFromOutputDirectory(this.outputDirectory, this.originDirectory);
-		assertThat(file).doesNotExist();
+		assertThat(file.exists()).isFalse();
 	}
 
 	@Test
@@ -78,7 +78,7 @@ class FileUtilsTests {
 		file.createNewFile();
 		new File(this.originDirectory, "sub/different.xml").createNewFile();
 		FileUtils.removeDuplicatesFromOutputDirectory(this.outputDirectory, this.originDirectory);
-		assertThat(file).exists();
+		assertThat(file.exists()).isTrue();
 	}
 
 	@Test
@@ -87,7 +87,7 @@ class FileUtilsTests {
 		file.createNewFile();
 		new File(this.originDirectory, "different.xml").createNewFile();
 		FileUtils.removeDuplicatesFromOutputDirectory(this.outputDirectory, this.originDirectory);
-		assertThat(file).exists();
+		assertThat(file.exists()).isTrue();
 	}
 
 	@Test

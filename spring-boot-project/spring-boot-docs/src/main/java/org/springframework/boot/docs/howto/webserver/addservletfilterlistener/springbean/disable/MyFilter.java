@@ -16,7 +16,7 @@
 
 package org.springframework.boot.docs.howto.webserver.addservletfilterlistener.springbean.disable;
 
-import jakarta.servlet.Filter;
+import javax.servlet.Filter;
 
 public abstract class MyFilter implements Filter {
 

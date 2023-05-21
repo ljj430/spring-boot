@@ -89,7 +89,7 @@ public class JavaLoggingSystem extends AbstractLoggingSystem {
 			loadConfiguration(getPackagedConfigFile("logging-file.properties"), logFile);
 		}
 		else {
-			loadConfiguration(getPackagedConfigFile("logging.properties"), null);
+			loadConfiguration(getPackagedConfigFile("logging.properties"), logFile);
 		}
 	}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,7 @@
 
 package org.springframework.boot.env;
 
-import java.util.function.Supplier;
-
+import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.boot.SpringApplication;
@@ -34,8 +33,8 @@ import static org.mockito.Mockito.mock;
  */
 class RandomValuePropertySourceEnvironmentPostProcessorTests {
 
-	private final RandomValuePropertySourceEnvironmentPostProcessor postProcessor = new RandomValuePropertySourceEnvironmentPostProcessor(
-			Supplier::get);
+	private RandomValuePropertySourceEnvironmentPostProcessor postProcessor = new RandomValuePropertySourceEnvironmentPostProcessor(
+			LogFactory.getLog(getClass()));
 
 	@Test
 	void getOrderIsBeforeConfigData() {

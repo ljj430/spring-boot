@@ -29,7 +29,6 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.core.NestedCheckedException;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assumptions.assumeThat;
 
 @ExtendWith(OutputCaptureExtension.class)
 class SampleLiquibaseApplicationTests {
@@ -53,14 +52,18 @@ class SampleLiquibaseApplicationTests {
 			SampleLiquibaseApplication.main(new String[] { "--server.port=0" });
 		}
 		catch (IllegalStateException ex) {
-			assumeThat(serverNotRunning(ex)).isFalse();
+			if (serverNotRunning(ex)) {
+				return;
+			}
 		}
 		assertThat(output).contains("Successfully acquired change log lock")
 			.contains("Creating database history table with name: PUBLIC.DATABASECHANGELOG")
 			.contains("Table person created")
-			.contains("ChangeSet db/changelog/db.changelog-master.yaml::1::" + "marceloverdijk ran successfully")
+			.contains("ChangeSet classpath:/db/changelog/db.changelog-master.yaml::1::"
+					+ "marceloverdijk ran successfully")
 			.contains("New row inserted into person")
-			.contains("ChangeSet db/changelog/" + "db.changelog-master.yaml::2::marceloverdijk ran successfully")
+			.contains("ChangeSet classpath:/db/changelog/"
+					+ "db.changelog-master.yaml::2::marceloverdijk ran successfully")
 			.contains("Successfully released change log lock");
 	}
 

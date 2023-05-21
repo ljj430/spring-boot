@@ -16,7 +16,7 @@
 
 package org.springframework.boot.docs.features.testing.springbootapplications.autoconfiguredwebservices.client
 
-import jakarta.xml.bind.annotation.XmlRootElement
+import javax.xml.bind.annotation.XmlRootElement
 
 @XmlRootElement(name = "request")
 class Request
