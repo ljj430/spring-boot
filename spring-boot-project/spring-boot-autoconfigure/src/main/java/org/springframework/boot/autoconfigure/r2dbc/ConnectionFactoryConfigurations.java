@@ -17,7 +17,6 @@
 package org.springframework.boot.autoconfigure.r2dbc;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import io.r2dbc.pool.ConnectionPool;
 import io.r2dbc.pool.ConnectionPoolConfiguration;
@@ -91,7 +90,7 @@ abstract class ConnectionFactoryConfigurations {
 			ConnectionPool connectionFactory(R2dbcProperties properties, ResourceLoader resourceLoader,
 					ObjectProvider<ConnectionFactoryOptionsBuilderCustomizer> customizers) {
 				ConnectionFactory connectionFactory = createConnectionFactory(properties,
-						resourceLoader.getClassLoader(), customizers.orderedStream().collect(Collectors.toList()));
+						resourceLoader.getClassLoader(), customizers.orderedStream().toList());
 				R2dbcProperties.Pool pool = properties.getPool();
 				PropertyMapper map = PropertyMapper.get().alwaysApplyingWhenNonNull();
 				ConnectionPoolConfiguration.Builder builder = ConnectionPoolConfiguration.builder(connectionFactory);
@@ -120,7 +119,7 @@ abstract class ConnectionFactoryConfigurations {
 		ConnectionFactory connectionFactory(R2dbcProperties properties, ResourceLoader resourceLoader,
 				ObjectProvider<ConnectionFactoryOptionsBuilderCustomizer> customizers) {
 			return createConnectionFactory(properties, resourceLoader.getClassLoader(),
-					customizers.orderedStream().collect(Collectors.toList()));
+					customizers.orderedStream().toList());
 		}
 
 	}

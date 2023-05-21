@@ -22,7 +22,6 @@ import java.util.List;
 import javax.sql.DataSource;
 
 import org.flywaydb.core.api.MigrationState;
-import org.flywaydb.core.api.MigrationType;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.boot.actuate.flyway.FlywayEndpoint;
@@ -78,8 +77,7 @@ class FlywayEndpointDocumentationTests extends MockMvcEndpointDocumentationTests
 					.optional(),
 				fieldWithPath("state")
 					.description("State of the migration. (" + describeEnumValues(MigrationState.class) + ")"),
-				fieldWithPath("type")
-					.description("Type of the migration. (" + describeEnumValues(MigrationType.class) + ")"),
+				fieldWithPath("type").description("Type of the migration."),
 				fieldWithPath("version").description("Version of the database after applying the migration, if any.")
 					.optional());
 	}
