@@ -29,7 +29,6 @@ import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactor
 import org.springframework.boot.web.servlet.context.AnnotationConfigServletWebServerApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpStatus;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 /**
@@ -43,11 +42,7 @@ class JerseyEndpointRequestIntegrationTests extends AbstractEndpointRequestInteg
 	void toLinksWhenApplicationPathSetShouldMatch() {
 		getContextRunner().withPropertyValues("spring.jersey.application-path=/admin").run((context) -> {
 			WebTestClient webTestClient = getWebTestClient(context);
-			webTestClient.get()
-				.uri("/admin/actuator/")
-				.exchange()
-				.expectStatus()
-				.isEqualTo(expectedStatusWithTrailingSlash());
+			webTestClient.get().uri("/admin/actuator/").exchange().expectStatus().isOk();
 			webTestClient.get().uri("/admin/actuator").exchange().expectStatus().isOk();
 		});
 	}
@@ -122,11 +117,6 @@ class JerseyEndpointRequestIntegrationTests extends AbstractEndpointRequestInteg
 					.expectStatus()
 					.isOk();
 			});
-	}
-
-	@Override
-	protected HttpStatus expectedStatusWithTrailingSlash() {
-		return HttpStatus.OK;
 	}
 
 	@Override

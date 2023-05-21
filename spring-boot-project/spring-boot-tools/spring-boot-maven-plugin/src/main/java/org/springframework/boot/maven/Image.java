@@ -19,6 +19,7 @@ package org.springframework.boot.maven;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.apache.maven.artifact.Artifact;
 
@@ -72,10 +73,6 @@ public class Image {
 	CacheInfo buildCache;
 
 	CacheInfo launchCache;
-
-	String createdDate;
-
-	String applicationDirectory;
 
 	/**
 	 * The name of the created image.
@@ -177,30 +174,6 @@ public class Image {
 		this.network = network;
 	}
 
-	/**
-	 * Returns the created date for the image.
-	 * @return the created date
-	 */
-	public String getCreatedDate() {
-		return this.createdDate;
-	}
-
-	public void setCreatedDate(String createdDate) {
-		this.createdDate = createdDate;
-	}
-
-	/**
-	 * Returns the application content directory for the image.
-	 * @return the application directory
-	 */
-	public String getApplicationDirectory() {
-		return this.applicationDirectory;
-	}
-
-	public void setApplicationDirectory(String applicationDirectory) {
-		this.applicationDirectory = applicationDirectory;
-	}
-
 	BuildRequest getBuildRequest(Artifact artifact, Function<Owner, TarArchive> applicationContent) {
 		return customize(BuildRequest.of(getOrDeduceName(artifact), applicationContent));
 	}
@@ -234,26 +207,21 @@ public class Image {
 			request = request.withPublish(this.publish);
 		}
 		if (!CollectionUtils.isEmpty(this.buildpacks)) {
-			request = request.withBuildpacks(this.buildpacks.stream().map(BuildpackReference::of).toList());
+			request = request
+				.withBuildpacks(this.buildpacks.stream().map(BuildpackReference::of).collect(Collectors.toList()));
 		}
 		if (!CollectionUtils.isEmpty(this.bindings)) {
-			request = request.withBindings(this.bindings.stream().map(Binding::of).toList());
+			request = request.withBindings(this.bindings.stream().map(Binding::of).collect(Collectors.toList()));
 		}
 		request = request.withNetwork(this.network);
 		if (!CollectionUtils.isEmpty(this.tags)) {
-			request = request.withTags(this.tags.stream().map(ImageReference::of).toList());
+			request = request.withTags(this.tags.stream().map(ImageReference::of).collect(Collectors.toList()));
 		}
 		if (this.buildCache != null) {
 			request = request.withBuildCache(this.buildCache.asCache());
 		}
 		if (this.launchCache != null) {
 			request = request.withLaunchCache(this.launchCache.asCache());
-		}
-		if (StringUtils.hasText(this.createdDate)) {
-			request = request.withCreatedDate(this.createdDate);
-		}
-		if (StringUtils.hasText(this.applicationDirectory)) {
-			request = request.withApplicationDirectory(this.applicationDirectory);
 		}
 		return request;
 	}

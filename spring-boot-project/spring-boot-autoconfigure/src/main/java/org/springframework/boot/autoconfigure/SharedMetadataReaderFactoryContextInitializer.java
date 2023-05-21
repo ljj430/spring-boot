@@ -18,13 +18,11 @@ package org.springframework.boot.autoconfigure;
 
 import java.util.function.Supplier;
 
-import org.springframework.aot.AotDetector;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.MutablePropertyValues;
 import org.springframework.beans.factory.BeanClassLoaderAware;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
-import org.springframework.beans.factory.aot.BeanRegistrationExcludeFilter;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
@@ -33,7 +31,6 @@ import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProcessor;
-import org.springframework.beans.factory.support.RegisteredBean;
 import org.springframework.boot.type.classreading.ConcurrentReferenceCachingMetadataReaderFactory;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ApplicationListener;
@@ -54,17 +51,14 @@ import org.springframework.core.type.classreading.MetadataReaderFactory;
  * @author Phillip Webb
  * @author Dave Syer
  */
-class SharedMetadataReaderFactoryContextInitializer implements
-		ApplicationContextInitializer<ConfigurableApplicationContext>, Ordered, BeanRegistrationExcludeFilter {
+class SharedMetadataReaderFactoryContextInitializer
+		implements ApplicationContextInitializer<ConfigurableApplicationContext>, Ordered {
 
 	public static final String BEAN_NAME = "org.springframework.boot.autoconfigure."
 			+ "internalCachingMetadataReaderFactory";
 
 	@Override
 	public void initialize(ConfigurableApplicationContext applicationContext) {
-		if (AotDetector.useGeneratedArtifacts()) {
-			return;
-		}
 		BeanFactoryPostProcessor postProcessor = new CachingMetadataReaderFactoryPostProcessor(applicationContext);
 		applicationContext.addBeanFactoryPostProcessor(postProcessor);
 	}
@@ -72,11 +66,6 @@ class SharedMetadataReaderFactoryContextInitializer implements
 	@Override
 	public int getOrder() {
 		return 0;
-	}
-
-	@Override
-	public boolean isExcludedFromAotProcessing(RegisteredBean registeredBean) {
-		return BEAN_NAME.equals(registeredBean.getBeanName());
 	}
 
 	/**
@@ -128,8 +117,8 @@ class SharedMetadataReaderFactoryContextInitializer implements
 		}
 
 		private void configureConfigurationClassPostProcessor(BeanDefinition definition) {
-			if (definition instanceof AbstractBeanDefinition abstractBeanDefinition) {
-				configureConfigurationClassPostProcessor(abstractBeanDefinition);
+			if (definition instanceof AbstractBeanDefinition) {
+				configureConfigurationClassPostProcessor((AbstractBeanDefinition) definition);
 				return;
 			}
 			configureConfigurationClassPostProcessor(definition.getPropertyValues());
@@ -170,8 +159,8 @@ class SharedMetadataReaderFactoryContextInitializer implements
 		@Override
 		public Object get() {
 			Object instance = this.instanceSupplier.get();
-			if (instance instanceof ConfigurationClassPostProcessor postProcessor) {
-				configureConfigurationClassPostProcessor(postProcessor);
+			if (instance instanceof ConfigurationClassPostProcessor) {
+				configureConfigurationClassPostProcessor((ConfigurationClassPostProcessor) instance);
 			}
 			return instance;
 		}

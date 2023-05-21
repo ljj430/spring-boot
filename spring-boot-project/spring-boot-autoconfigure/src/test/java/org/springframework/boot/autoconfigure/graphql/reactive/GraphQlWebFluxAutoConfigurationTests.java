@@ -23,8 +23,6 @@ import java.util.function.Consumer;
 import graphql.schema.idl.TypeRuntimeWiring;
 import org.junit.jupiter.api.Test;
 
-import org.springframework.aot.hint.RuntimeHints;
-import org.springframework.aot.hint.predicate.RuntimeHintsPredicates;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.graphql.GraphQlAutoConfiguration;
 import org.springframework.boot.autoconfigure.graphql.GraphQlTestDataFetchers;
@@ -86,7 +84,7 @@ class GraphQlWebFluxAutoConfigurationTests {
 				.expectStatus()
 				.isOk()
 				.expectHeader()
-				.contentType(MediaType.APPLICATION_GRAPHQL_RESPONSE_VALUE)
+				.contentType("application/json")
 				.expectBody()
 				.jsonPath("data.bookById.name")
 				.isEqualTo("GraphQL for beginners");
@@ -207,20 +205,13 @@ class GraphQlWebFluxAutoConfigurationTests {
 		});
 	}
 
-	@Test
-	void shouldRegisterHints() {
-		RuntimeHints hints = new RuntimeHints();
-		new GraphQlWebFluxAutoConfiguration.GraphiQlResourceHints().registerHints(hints, getClass().getClassLoader());
-		assertThat(RuntimeHintsPredicates.resource().forResource("graphiql/index.html")).accepts(hints);
-	}
-
 	private void testWithWebClient(Consumer<WebTestClient> consumer) {
 		this.contextRunner.run((context) -> {
 			WebTestClient client = WebTestClient.bindToApplicationContext(context)
 				.configureClient()
 				.defaultHeaders((headers) -> {
 					headers.setContentType(MediaType.APPLICATION_JSON);
-					headers.setAccept(Collections.singletonList(MediaType.APPLICATION_GRAPHQL_RESPONSE));
+					headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
 				})
 				.baseUrl(BASE_URL)
 				.build();

@@ -16,6 +16,8 @@
 
 package org.springframework.boot.actuate.autoconfigure.scheduling;
 
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.actuate.autoconfigure.endpoint.condition.ConditionalOnAvailableEndpoint;
 import org.springframework.boot.actuate.scheduling.ScheduledTasksEndpoint;
@@ -38,7 +40,7 @@ public class ScheduledTasksEndpointAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public ScheduledTasksEndpoint scheduledTasksEndpoint(ObjectProvider<ScheduledTaskHolder> holders) {
-		return new ScheduledTasksEndpoint(holders.orderedStream().toList());
+		return new ScheduledTasksEndpoint(holders.orderedStream().collect(Collectors.toList()));
 	}
 
 }

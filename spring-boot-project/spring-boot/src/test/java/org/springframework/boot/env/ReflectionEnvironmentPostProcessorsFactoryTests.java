@@ -125,7 +125,7 @@ class ReflectionEnvironmentPostProcessorsFactoryTests {
 
 	class EnvironmentPostProcessorsFactoryAssert {
 
-		private final EnvironmentPostProcessorsFactory factory;
+		private EnvironmentPostProcessorsFactory factory;
 
 		EnvironmentPostProcessorsFactoryAssert(EnvironmentPostProcessorsFactory factory) {
 			this.factory = factory;

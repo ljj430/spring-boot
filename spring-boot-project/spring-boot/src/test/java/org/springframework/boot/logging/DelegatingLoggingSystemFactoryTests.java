@@ -33,7 +33,7 @@ import static org.mockito.Mockito.mock;
  */
 class DelegatingLoggingSystemFactoryTests {
 
-	private final ClassLoader classLoader = getClass().getClassLoader();
+	private ClassLoader classLoader = getClass().getClassLoader();
 
 	@Test
 	void getLoggingSystemWhenDelegatesFunctionIsNullReturnsNull() {

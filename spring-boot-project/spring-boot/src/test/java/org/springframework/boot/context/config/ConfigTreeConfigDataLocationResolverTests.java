@@ -36,10 +36,10 @@ import static org.mockito.Mockito.mock;
  */
 class ConfigTreeConfigDataLocationResolverTests {
 
-	private final ConfigTreeConfigDataLocationResolver resolver = new ConfigTreeConfigDataLocationResolver(
+	private ConfigTreeConfigDataLocationResolver resolver = new ConfigTreeConfigDataLocationResolver(
 			new DefaultResourceLoader());
 
-	private final ConfigDataLocationResolverContext context = mock(ConfigDataLocationResolverContext.class);
+	private ConfigDataLocationResolverContext context = mock(ConfigDataLocationResolverContext.class);
 
 	@TempDir
 	File temp;
@@ -59,7 +59,7 @@ class ConfigTreeConfigDataLocationResolverTests {
 	void resolveReturnsConfigVolumeMountLocation() {
 		List<ConfigTreeConfigDataResource> locations = this.resolver.resolve(this.context,
 				ConfigDataLocation.of("configtree:/etc/config/"));
-		assertThat(locations).hasSize(1);
+		assertThat(locations.size()).isEqualTo(1);
 		assertThat(locations).extracting(Object::toString)
 			.containsExactly("config tree [" + new File("/etc/config").getAbsolutePath() + "]");
 	}
@@ -74,7 +74,7 @@ class ConfigTreeConfigDataLocationResolverTests {
 		FileCopyUtils.copy("test".getBytes(), new File(directoryB, "boot"));
 		List<ConfigTreeConfigDataResource> locations = this.resolver.resolve(this.context,
 				ConfigDataLocation.of("configtree:" + this.temp.getAbsolutePath() + "/*/"));
-		assertThat(locations).hasSize(2);
+		assertThat(locations.size()).isEqualTo(2);
 		assertThat(locations).extracting(Object::toString)
 			.containsExactly("config tree [" + directoryA.getAbsolutePath() + "]",
 					"config tree [" + directoryB.getAbsolutePath() + "]");

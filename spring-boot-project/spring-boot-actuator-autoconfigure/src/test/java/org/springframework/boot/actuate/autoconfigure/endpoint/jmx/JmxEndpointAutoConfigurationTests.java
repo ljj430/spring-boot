@@ -82,8 +82,7 @@ class JmxEndpointAutoConfigurationTests {
 	@Test
 	void jmxEndpointWithCustomEndpointObjectNameFactory() {
 		EndpointObjectNameFactory factory = mock(EndpointObjectNameFactory.class);
-		this.contextRunner
-			.withPropertyValues("spring.jmx.enabled=true", "management.endpoints.jmx.exposure.include=test")
+		this.contextRunner.withPropertyValues("spring.jmx.enabled=true")
 			.with(mockMBeanServer())
 			.withBean(EndpointObjectNameFactory.class, () -> factory)
 			.run((context) -> {
@@ -101,7 +100,7 @@ class JmxEndpointAutoConfigurationTests {
 			.willReturn(new HashSet<>(Arrays.asList(new ObjectName("test:test=test"))));
 		ArgumentCaptor<ObjectName> objectName = ArgumentCaptor.forClass(ObjectName.class);
 		ApplicationContextRunner jmxEnabledContextRunner = this.contextRunner
-			.withPropertyValues("spring.jmx.enabled=true", "management.endpoints.jmx.exposure.include=test");
+			.withPropertyValues("spring.jmx.enabled=true");
 		jmxEnabledContextRunner.with(mockMBeanServer()).run((parent) -> {
 			jmxEnabledContextRunner.withParent(parent).run(NO_OPERATION);
 			jmxEnabledContextRunner.withParent(parent).run(NO_OPERATION);

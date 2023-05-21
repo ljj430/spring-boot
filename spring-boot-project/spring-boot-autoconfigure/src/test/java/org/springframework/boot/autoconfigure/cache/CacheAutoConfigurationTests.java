@@ -33,6 +33,7 @@ import com.hazelcast.cache.impl.HazelcastServerCachingProvider;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.spring.cache.HazelcastCacheManager;
+import net.sf.ehcache.Status;
 import org.cache2k.extra.spring.SpringCache2kCacheManager;
 import org.infinispan.configuration.cache.ConfigurationBuilder;
 import org.infinispan.jcache.embedded.JCachingProvider;
@@ -133,9 +134,7 @@ class CacheAutoConfigurationTests extends AbstractCacheAutoConfigurationTests {
 			.withPropertyValues("spring.cache.type=foobar")
 			.run((context) -> assertThat(context).getFailure()
 				.isInstanceOf(BeanCreationException.class)
-				.rootCause()
-				.hasMessageContaining("No enum constant")
-				.hasMessageContaining("foobar"));
+				.hasMessageContaining("Failed to bind properties under 'spring.cache.type'"));
 	}
 
 	@Test
@@ -707,7 +706,7 @@ class CacheAutoConfigurationTests extends AbstractCacheAutoConfigurationTests {
 				Cache foo = manager.getCache("foo");
 				foo.get("1");
 				// See next tests: no spec given so stats should be disabled
-				assertThat(((CaffeineCache) foo).getNativeCache().stats().missCount()).isZero();
+				assertThat(((CaffeineCache) foo).getNativeCache().stats().missCount()).isEqualTo(0L);
 			});
 	}
 
@@ -762,7 +761,7 @@ class CacheAutoConfigurationTests extends AbstractCacheAutoConfigurationTests {
 		assertThat(manager.getCacheNames()).containsOnly("foo", "bar");
 		Cache foo = manager.getCache("foo");
 		foo.get("1");
-		assertThat(((CaffeineCache) foo).getNativeCache().stats().missCount()).isOne();
+		assertThat(((CaffeineCache) foo).getNativeCache().stats().missCount()).isEqualTo(1L);
 	}
 
 	private CouchbaseCacheConfiguration getDefaultCouchbaseCacheConfiguration(CouchbaseCacheManager cacheManager) {
@@ -922,6 +921,20 @@ class CacheAutoConfigurationTests extends AbstractCacheAutoConfigurationTests {
 
 	@Configuration(proxyBeanMethods = false)
 	@EnableCaching
+	static class EhCacheCustomCacheManager {
+
+		@Bean
+		net.sf.ehcache.CacheManager customEhCacheCacheManager() {
+			net.sf.ehcache.CacheManager cacheManager = mock(net.sf.ehcache.CacheManager.class);
+			given(cacheManager.getStatus()).willReturn(Status.STATUS_ALIVE);
+			given(cacheManager.getCacheNames()).willReturn(new String[0]);
+			return cacheManager;
+		}
+
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	@EnableCaching
 	static class HazelcastCustomHazelcastInstance {
 
 		@Bean
@@ -1036,8 +1049,8 @@ class CacheAutoConfigurationTests extends AbstractCacheAutoConfigurationTests {
 
 		@Override
 		public Object postProcessAfterInitialization(Object bean, String beanName) {
-			if (bean instanceof CacheManager cacheManager) {
-				this.cacheManagers.add(cacheManager);
+			if (bean instanceof CacheManager) {
+				this.cacheManagers.add((CacheManager) bean);
 				return new SimpleCacheManager();
 			}
 			return bean;

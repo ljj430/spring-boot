@@ -304,8 +304,8 @@ public final class ConnectionFactoryBuilder {
 			if (type.isInstance(object)) {
 				return type.cast(object);
 			}
-			if (object instanceof String string) {
-				return converter.apply(string);
+			if (object instanceof String) {
+				return converter.apply((String) object);
 			}
 			throw new IllegalArgumentException("Cannot convert '" + object + "' to " + type.getName());
 		}

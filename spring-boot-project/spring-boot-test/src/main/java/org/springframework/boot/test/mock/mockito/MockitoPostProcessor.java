@@ -95,11 +95,11 @@ public class MockitoPostProcessor implements InstantiationAwareBeanPostProcessor
 
 	private final MockitoBeans mockitoBeans = new MockitoBeans();
 
-	private final Map<Definition, String> beanNameRegistry = new HashMap<>();
+	private Map<Definition, String> beanNameRegistry = new HashMap<>();
 
-	private final Map<Field, String> fieldRegistry = new HashMap<>();
+	private Map<Field, String> fieldRegistry = new HashMap<>();
 
-	private final Map<String, SpyDefinition> spies = new HashMap<>();
+	private Map<String, SpyDefinition> spies = new HashMap<>();
 
 	/**
 	 * Create a new {@link MockitoPostProcessor} instance with the given initial
@@ -163,11 +163,11 @@ public class MockitoPostProcessor implements InstantiationAwareBeanPostProcessor
 
 	private void register(ConfigurableListableBeanFactory beanFactory, BeanDefinitionRegistry registry,
 			Definition definition, Field field) {
-		if (definition instanceof MockDefinition mockDefinition) {
-			registerMock(beanFactory, registry, mockDefinition, field);
+		if (definition instanceof MockDefinition) {
+			registerMock(beanFactory, registry, (MockDefinition) definition, field);
 		}
-		else if (definition instanceof SpyDefinition spyDefinition) {
-			registerSpy(beanFactory, registry, spyDefinition, field);
+		else if (definition instanceof SpyDefinition) {
+			registerSpy(beanFactory, registry, (SpyDefinition) definition, field);
 		}
 	}
 

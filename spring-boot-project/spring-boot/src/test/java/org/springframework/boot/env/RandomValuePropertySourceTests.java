@@ -40,7 +40,7 @@ import static org.mockito.Mockito.spy;
  */
 class RandomValuePropertySourceTests {
 
-	private final RandomValuePropertySource source = new RandomValuePropertySource();
+	private RandomValuePropertySource source = new RandomValuePropertySource();
 
 	@Test
 	void getPropertyWhenNotRandomReturnsNull() {
@@ -69,8 +69,8 @@ class RandomValuePropertySourceTests {
 	void getPropertyWhenIntRangeReturnsValue() {
 		Integer value = (Integer) this.source.getProperty("random.int[4,10]");
 		assertThat(value).isNotNull();
-		assertThat(value).isGreaterThanOrEqualTo(4);
-		assertThat(value).isLessThan(10);
+		assertThat(value >= 4).isTrue();
+		assertThat(value < 10).isTrue();
 	}
 
 	@Test
@@ -82,8 +82,8 @@ class RandomValuePropertySourceTests {
 	@Test
 	void intRangeWhenLowerBoundNegative() {
 		Integer value = (Integer) this.source.getProperty("random.int[-4,4]");
-		assertThat(value).isGreaterThanOrEqualTo(-4);
-		assertThat(value).isLessThan(4);
+		assertThat(value >= -4).isTrue();
+		assertThat(value < 4).isTrue();
 	}
 
 	@Test
@@ -125,8 +125,8 @@ class RandomValuePropertySourceTests {
 	@Test
 	void longRangeWhenLowerBoundNegative() {
 		Long value = (Long) this.source.getProperty("random.long[-4,4]");
-		assertThat(value).isGreaterThanOrEqualTo(-4);
-		assertThat(value).isLessThan(4);
+		assertThat(value >= -4).isTrue();
+		assertThat(value < 4).isTrue();
 	}
 
 	@Test

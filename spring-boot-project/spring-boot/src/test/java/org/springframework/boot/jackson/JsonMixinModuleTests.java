@@ -19,6 +19,7 @@ package org.springframework.boot.jackson;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -54,8 +55,6 @@ class JsonMixinModuleTests {
 	}
 
 	@Test
-	@Deprecated(since = "3.0.0", forRemoval = true)
-	@SuppressWarnings("removal")
 	void createWhenContextIsNullShouldThrowException() {
 		assertThatIllegalArgumentException().isThrownBy(() -> new JsonMixinModule(null, Collections.emptyList()))
 			.withMessageContaining("Context must not be null");
@@ -93,18 +92,12 @@ class JsonMixinModuleTests {
 
 	private void load(Class<?>... basePackageClasses) {
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
-		context.registerBean(JsonMixinModule.class, () -> createJsonMixinModule(context, basePackageClasses));
+		List<String> basePackages = Arrays.stream(basePackageClasses)
+			.map(ClassUtils::getPackageName)
+			.collect(Collectors.toList());
+		context.registerBean(JsonMixinModule.class, () -> new JsonMixinModule(context, basePackages));
 		context.refresh();
 		this.context = context;
-	}
-
-	private JsonMixinModule createJsonMixinModule(AnnotationConfigApplicationContext context,
-			Class<?>... basePackageClasses) {
-		List<String> basePackages = Arrays.stream(basePackageClasses).map(ClassUtils::getPackageName).toList();
-		JsonMixinModuleEntries entries = JsonMixinModuleEntries.scan(context, basePackages);
-		JsonMixinModule jsonMixinModule = new JsonMixinModule();
-		jsonMixinModule.registerEntries(entries, context.getClassLoader());
-		return jsonMixinModule;
 	}
 
 	private void assertMixIn(Module module, Name value, String expectedJson) throws Exception {

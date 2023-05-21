@@ -16,8 +16,9 @@
 
 package org.springframework.boot.autoconfigure.websocket.reactive;
 
-import jakarta.servlet.Servlet;
-import jakarta.websocket.server.ServerContainer;
+import javax.servlet.Servlet;
+import javax.websocket.server.ServerContainer;
+
 import org.apache.catalina.startup.Tomcat;
 import org.apache.tomcat.websocket.server.WsSci;
 
