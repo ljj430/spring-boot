@@ -109,13 +109,13 @@ public class Handler extends URLStreamHandler {
 			return (connection != null) ? connection : openFallbackHandlerConnection(url);
 		}
 		catch (Exception ex) {
-			if (reason instanceof IOException) {
+			if (reason instanceof IOException ioException) {
 				log(false, "Unable to open fallback handler", ex);
-				throw (IOException) reason;
+				throw ioException;
 			}
 			log(true, "Unable to open fallback handler", ex);
-			if (reason instanceof RuntimeException) {
-				throw (RuntimeException) reason;
+			if (reason instanceof RuntimeException runtimeException) {
+				throw runtimeException;
 			}
 			throw new IllegalStateException(reason);
 		}
