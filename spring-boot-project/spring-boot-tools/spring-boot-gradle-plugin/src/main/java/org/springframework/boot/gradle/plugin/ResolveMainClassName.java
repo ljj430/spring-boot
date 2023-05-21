@@ -18,12 +18,10 @@ package org.springframework.boot.gradle.plugin;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Objects;
-import java.util.concurrent.Callable;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.InvalidUserDataException;
@@ -33,8 +31,6 @@ import org.gradle.api.Transformer;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.RegularFile;
 import org.gradle.api.file.RegularFileProperty;
-import org.gradle.api.plugins.BasePlugin;
-import org.gradle.api.plugins.JavaApplication;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Classpath;
@@ -42,10 +38,8 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
-import org.gradle.api.tasks.TaskProvider;
 import org.gradle.work.DisableCachingByDefault;
 
-import org.springframework.boot.gradle.dsl.SpringBootExtension;
 import org.springframework.boot.loader.tools.MainClassFinder;
 
 /**
@@ -127,8 +121,8 @@ public class ResolveMainClassName extends DefaultTask {
 		File outputFile = this.outputFile.getAsFile().get();
 		outputFile.getParentFile().mkdirs();
 		String mainClassName = resolveMainClassName();
-		Files.write(outputFile.toPath(), mainClassName.getBytes(StandardCharsets.UTF_8), StandardOpenOption.WRITE,
-				StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+		Files.writeString(outputFile.toPath(), mainClassName, StandardOpenOption.WRITE, StandardOpenOption.CREATE,
+				StandardOpenOption.TRUNCATE_EXISTING);
 	}
 
 	private String resolveMainClassName() {
@@ -158,37 +152,6 @@ public class ResolveMainClassName extends DefaultTask {
 		return this.outputFile.map(new ClassNameReader());
 	}
 
-	static TaskProvider<ResolveMainClassName> registerForTask(String taskName, Project project,
-			Callable<FileCollection> classpath) {
-		TaskProvider<ResolveMainClassName> resolveMainClassNameProvider = project.getTasks()
-			.register(taskName + "MainClassName", ResolveMainClassName.class, (resolveMainClassName) -> {
-				resolveMainClassName
-					.setDescription("Resolves the name of the application's main class for the " + taskName + " task.");
-				resolveMainClassName.setGroup(BasePlugin.BUILD_GROUP);
-				resolveMainClassName.setClasspath(classpath);
-				resolveMainClassName.getConfiguredMainClassName().convention(project.provider(() -> {
-					String javaApplicationMainClass = getJavaApplicationMainClass(project);
-					if (javaApplicationMainClass != null) {
-						return javaApplicationMainClass;
-					}
-					SpringBootExtension springBootExtension = project.getExtensions()
-						.findByType(SpringBootExtension.class);
-					return springBootExtension.getMainClass().getOrNull();
-				}));
-				resolveMainClassName.getOutputFile()
-					.set(project.getLayout().getBuildDirectory().file(taskName + "MainClassName"));
-			});
-		return resolveMainClassNameProvider;
-	}
-
-	private static String getJavaApplicationMainClass(Project project) {
-		JavaApplication javaApplication = project.getExtensions().findByType(JavaApplication.class);
-		if (javaApplication == null) {
-			return null;
-		}
-		return javaApplication.getMainClass().getOrNull();
-	}
-
 	private static final class ClassNameReader implements Transformer<String, RegularFile> {
 
 		@Override
@@ -199,7 +162,7 @@ public class ResolveMainClassName extends DefaultTask {
 			}
 			Path output = file.getAsFile().toPath();
 			try {
-				return new String(Files.readAllBytes(output), StandardCharsets.UTF_8);
+				return Files.readString(output);
 			}
 			catch (IOException ex) {
 				throw new RuntimeException("Failed to read main class name from '" + output + "'");

@@ -20,14 +20,17 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.aot.hint.MemberCategory;
+import org.springframework.aot.hint.RuntimeHints;
+import org.springframework.aot.hint.predicate.RuntimeHintsPredicates;
 import org.springframework.boot.actuate.endpoint.EndpointId;
 import org.springframework.boot.actuate.endpoint.annotation.DiscoveredEndpoint;
 import org.springframework.boot.actuate.endpoint.annotation.Endpoint;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
+import org.springframework.boot.actuate.endpoint.web.annotation.ControllerEndpointDiscoverer.ControllerEndpointDiscovererRuntimeHints;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.validation.ValidationAutoConfiguration;
 import org.springframework.boot.test.context.assertj.AssertableApplicationContext;
@@ -45,6 +48,7 @@ import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
  *
  * @author Phillip Webb
  * @author Stephane Nicoll
+ * @author Moritz Halbritter
  */
 class ControllerEndpointDiscovererTests {
 
@@ -113,9 +117,7 @@ class ControllerEndpointDiscovererTests {
 		this.contextRunner.withUserConfiguration(WithRegularEndpointConfiguration.class)
 			.run(assertDiscoverer((discoverer) -> {
 				Collection<ExposableControllerEndpoint> endpoints = discoverer.getEndpoints();
-				List<EndpointId> ids = endpoints.stream()
-					.map(ExposableControllerEndpoint::getEndpointId)
-					.collect(Collectors.toList());
+				List<EndpointId> ids = endpoints.stream().map(ExposableControllerEndpoint::getEndpointId).toList();
 				assertThat(ids).containsOnly(EndpointId.of("testcontroller"), EndpointId.of("testrestcontroller"));
 			}));
 	}
@@ -125,6 +127,16 @@ class ControllerEndpointDiscovererTests {
 		this.contextRunner.withUserConfiguration(TestControllerWithOperation.class)
 			.run(assertDiscoverer((discoverer) -> assertThatIllegalStateException().isThrownBy(discoverer::getEndpoints)
 				.withMessageContaining("ControllerEndpoints must not declare operations")));
+	}
+
+	@Test
+	void shouldRegisterHints() {
+		RuntimeHints runtimeHints = new RuntimeHints();
+		new ControllerEndpointDiscovererRuntimeHints().registerHints(runtimeHints, getClass().getClassLoader());
+		assertThat(RuntimeHintsPredicates.reflection()
+			.onType(ControllerEndpointFilter.class)
+			.withMemberCategories(MemberCategory.INVOKE_DECLARED_CONSTRUCTORS)).accepts(runtimeHints);
+
 	}
 
 	private ContextConsumer<AssertableApplicationContext> assertDiscoverer(

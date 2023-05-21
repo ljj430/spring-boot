@@ -19,6 +19,10 @@ package org.springframework.boot.actuate.autoconfigure.cloudfoundry;
 import java.util.Collection;
 import java.util.List;
 
+import org.springframework.aot.hint.MemberCategory;
+import org.springframework.aot.hint.RuntimeHints;
+import org.springframework.aot.hint.RuntimeHintsRegistrar;
+import org.springframework.boot.actuate.autoconfigure.cloudfoundry.CloudFoundryWebEndpointDiscoverer.CloudFoundryWebEndpointDiscovererRuntimeHints;
 import org.springframework.boot.actuate.endpoint.EndpointFilter;
 import org.springframework.boot.actuate.endpoint.invoke.OperationInvokerAdvisor;
 import org.springframework.boot.actuate.endpoint.invoke.ParameterValueMapper;
@@ -29,6 +33,7 @@ import org.springframework.boot.actuate.endpoint.web.annotation.EndpointWebExten
 import org.springframework.boot.actuate.endpoint.web.annotation.WebEndpointDiscoverer;
 import org.springframework.boot.actuate.health.HealthEndpoint;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.ImportRuntimeHints;
 import org.springframework.core.annotation.MergedAnnotations;
 
 /**
@@ -38,6 +43,7 @@ import org.springframework.core.annotation.MergedAnnotations;
  * @author Madhura Bhave
  * @since 2.0.0
  */
+@ImportRuntimeHints(CloudFoundryWebEndpointDiscovererRuntimeHints.class)
 public class CloudFoundryWebEndpointDiscoverer extends WebEndpointDiscoverer {
 
 	/**
@@ -76,6 +82,16 @@ public class CloudFoundryWebEndpointDiscoverer extends WebEndpointDiscoverer {
 
 	private boolean isCloudFoundryHealthEndpointExtension(Class<?> extensionBeanType) {
 		return MergedAnnotations.from(extensionBeanType).isPresent(EndpointCloudFoundryExtension.class);
+	}
+
+	static class CloudFoundryWebEndpointDiscovererRuntimeHints implements RuntimeHintsRegistrar {
+
+		@Override
+		public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
+			hints.reflection()
+				.registerType(CloudFoundryEndpointFilter.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS);
+		}
+
 	}
 
 }
