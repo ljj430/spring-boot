@@ -132,9 +132,8 @@ public abstract class AbstractNestedCondition extends SpringBootCondition implem
 
 		private void validateMemberCondition(Condition condition, ConfigurationPhase nestedPhase,
 				String nestedClassName) {
-			if (nestedPhase == ConfigurationPhase.PARSE_CONFIGURATION
-					&& condition instanceof ConfigurationCondition configurationCondition) {
-				ConfigurationPhase memberPhase = configurationCondition.getConfigurationPhase();
+			if (nestedPhase == ConfigurationPhase.PARSE_CONFIGURATION && condition instanceof ConfigurationCondition) {
+				ConfigurationPhase memberPhase = ((ConfigurationCondition) condition).getConfigurationPhase();
 				if (memberPhase == ConfigurationPhase.REGISTER_BEAN) {
 					throw new IllegalStateException("Nested condition " + nestedClassName + " uses a configuration "
 							+ "phase that is inappropriate for " + condition.getClass());
@@ -191,8 +190,8 @@ public abstract class AbstractNestedCondition extends SpringBootCondition implem
 		}
 
 		private ConditionOutcome getConditionOutcome(AnnotationMetadata metadata, Condition condition) {
-			if (condition instanceof SpringBootCondition springBootCondition) {
-				return springBootCondition.getMatchOutcome(this.context, metadata);
+			if (condition instanceof SpringBootCondition) {
+				return ((SpringBootCondition) condition).getMatchOutcome(this.context, metadata);
 			}
 			return new ConditionOutcome(condition.matches(this.context, metadata), ConditionMessage.empty());
 		}

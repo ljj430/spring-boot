@@ -16,8 +16,12 @@
 
 package org.springframework.boot.autoconfigureprocessor;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
 import javax.annotation.processing.SupportedAnnotationTypes;
 
@@ -25,7 +29,6 @@ import javax.annotation.processing.SupportedAnnotationTypes;
  * Version of {@link AutoConfigureAnnotationProcessor} used for testing.
  *
  * @author Madhura Bhave
- * @author Scott Frederick
  */
 @SupportedAnnotationTypes({ "org.springframework.boot.autoconfigureprocessor.TestConditionalOnClass",
 		"org.springframework.boot.autoconfigureprocessor.TestConditionalOnBean",
@@ -37,7 +40,10 @@ import javax.annotation.processing.SupportedAnnotationTypes;
 		"org.springframework.boot.autoconfigureprocessor.TestAutoConfiguration" })
 public class TestAutoConfigureAnnotationProcessor extends AutoConfigureAnnotationProcessor {
 
-	public TestAutoConfigureAnnotationProcessor() {
+	private final File outputLocation;
+
+	public TestAutoConfigureAnnotationProcessor(File outputLocation) {
+		this.outputLocation = outputLocation;
 	}
 
 	@Override
@@ -61,6 +67,22 @@ public class TestAutoConfigureAnnotationProcessor extends AutoConfigureAnnotatio
 		generators.add(PropertyGenerator.of(annotationPackage, "AutoConfigureOrder")
 			.withAnnotation("TestAutoConfigureOrder", ValueExtractor.allFrom("value")));
 		return generators;
+	}
+
+	public Properties getWrittenProperties() throws IOException {
+		File file = getWrittenFile();
+		if (!file.exists()) {
+			return null;
+		}
+		try (FileInputStream inputStream = new FileInputStream(file)) {
+			Properties properties = new Properties();
+			properties.load(inputStream);
+			return properties;
+		}
+	}
+
+	public File getWrittenFile() {
+		return new File(this.outputLocation, PROPERTIES_PATH);
 	}
 
 }

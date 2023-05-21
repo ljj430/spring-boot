@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,12 +28,14 @@ import org.springframework.boot.autoconfigure.condition.SearchStrategy;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.EnableMBeanExport;
+import org.springframework.context.annotation.MBeanExportConfiguration.SpecificPlatform;
 import org.springframework.context.annotation.Primary;
 import org.springframework.jmx.export.MBeanExporter;
 import org.springframework.jmx.export.annotation.AnnotationJmxAttributeSource;
 import org.springframework.jmx.export.annotation.AnnotationMBeanExporter;
 import org.springframework.jmx.export.naming.ObjectNamingStrategy;
 import org.springframework.jmx.support.MBeanServerFactoryBean;
+import org.springframework.jmx.support.RegistrationPolicy;
 import org.springframework.util.StringUtils;
 
 /**
@@ -66,7 +68,7 @@ public class JmxAutoConfiguration {
 	@ConditionalOnMissingBean(value = MBeanExporter.class, search = SearchStrategy.CURRENT)
 	public AnnotationMBeanExporter mbeanExporter(ObjectNamingStrategy namingStrategy, BeanFactory beanFactory) {
 		AnnotationMBeanExporter exporter = new AnnotationMBeanExporter();
-		exporter.setRegistrationPolicy(this.properties.getRegistrationPolicy());
+		exporter.setRegistrationPolicy(RegistrationPolicy.FAIL_ON_EXISTING);
 		exporter.setNamingStrategy(namingStrategy);
 		String serverBean = this.properties.getServer();
 		if (StringUtils.hasLength(serverBean)) {
@@ -91,6 +93,10 @@ public class JmxAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public MBeanServer mbeanServer() {
+		SpecificPlatform platform = SpecificPlatform.get();
+		if (platform != null) {
+			return platform.getMBeanServer();
+		}
 		MBeanServerFactoryBean factory = new MBeanServerFactoryBean();
 		factory.setLocateExistingServerIfPossible(true);
 		factory.afterPropertiesSet();

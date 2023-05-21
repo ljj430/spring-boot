@@ -19,11 +19,9 @@ package org.springframework.boot.autoconfigure.mongo;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.mongodb.ConnectionString;
 import com.mongodb.MongoClientSettings;
 import com.mongodb.ReadPreference;
 import com.mongodb.connection.AsynchronousSocketChannelStreamFactoryFactory;
-import com.mongodb.connection.SslSettings;
 import com.mongodb.connection.StreamFactory;
 import com.mongodb.connection.StreamFactoryFactory;
 import com.mongodb.connection.netty.NettyStreamFactoryFactory;
@@ -33,7 +31,6 @@ import io.netty.channel.EventLoopGroup;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.ssl.SslAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -54,7 +51,7 @@ import static org.mockito.Mockito.mock;
 class MongoReactiveAutoConfigurationTests {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(MongoReactiveAutoConfiguration.class, SslAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(MongoReactiveAutoConfiguration.class));
 
 	@Test
 	void clientExists() {
@@ -89,39 +86,6 @@ class MongoReactiveAutoConfigurationTests {
 	}
 
 	@Test
-	void configuresSslWhenEnabled() {
-		this.contextRunner.withPropertyValues("spring.data.mongodb.ssl.enabled=true").run((context) -> {
-			SslSettings sslSettings = getSettings(context).getSslSettings();
-			assertThat(sslSettings.isEnabled()).isTrue();
-			assertThat(sslSettings.getContext()).isNull();
-		});
-	}
-
-	@Test
-	void configuresSslWithBundle() {
-		this.contextRunner
-			.withPropertyValues("spring.data.mongodb.ssl.bundle=test-bundle",
-					"spring.ssl.bundle.jks.test-bundle.keystore.location=classpath:test.jks",
-					"spring.ssl.bundle.jks.test-bundle.keystore.password=secret",
-					"spring.ssl.bundle.jks.test-bundle.key.password=password")
-			.run((context) -> {
-				SslSettings sslSettings = getSettings(context).getSslSettings();
-				assertThat(sslSettings.isEnabled()).isTrue();
-				assertThat(sslSettings.getContext()).isNotNull();
-			});
-	}
-
-	@Test
-	void configuresWithoutSslWhenDisabledWithBundle() {
-		this.contextRunner
-			.withPropertyValues("spring.data.mongodb.ssl.enabled=false", "spring.data.mongodb.ssl.bundle=test-bundle")
-			.run((context) -> {
-				SslSettings sslSettings = getSettings(context).getSslSettings();
-				assertThat(sslSettings.isEnabled()).isFalse();
-			});
-	}
-
-	@Test
 	void nettyStreamFactoryFactoryIsConfiguredAutomatically() {
 		AtomicReference<EventLoopGroup> eventLoopGroupReference = new AtomicReference<>();
 		this.contextRunner.run((context) -> {
@@ -145,25 +109,6 @@ class MongoReactiveAutoConfigurationTests {
 				assertThat(settings.getApplicationName()).isEqualTo("overridden-name");
 				assertThat(settings.getStreamFactoryFactory()).isEqualTo(SimpleCustomizerConfig.streamFactoryFactory);
 			});
-	}
-
-	@Test
-	void definesPropertiesBasedConnectionDetailsByDefault() {
-		this.contextRunner.run((context) -> assertThat(context).hasSingleBean(PropertiesMongoConnectionDetails.class));
-	}
-
-	@Test
-	void shouldUseCustomConnectionDetailsWhenDefined() {
-		this.contextRunner.withBean(MongoConnectionDetails.class, () -> new MongoConnectionDetails() {
-
-			@Override
-			public ConnectionString getConnectionString() {
-				return new ConnectionString("mongodb://localhost");
-			}
-
-		})
-			.run((context) -> assertThat(context).hasSingleBean(MongoConnectionDetails.class)
-				.doesNotHaveBean(PropertiesMongoConnectionDetails.class));
 	}
 
 	private MongoClientSettings getSettings(ApplicationContext context) {

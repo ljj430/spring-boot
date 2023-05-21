@@ -23,7 +23,6 @@ import io.micrometer.core.instrument.Tag;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.client.ClientHttpRequest;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.mock.http.client.MockClientHttpResponse;
@@ -38,8 +37,6 @@ import static org.mockito.Mockito.mock;
  * @author Nishant Raut
  * @author Brian Clozel
  */
-@SuppressWarnings({ "removal" })
-@Deprecated(since = "3.0.0", forRemoval = true)
 class RestTemplateExchangeTagsTests {
 
 	@Test
@@ -86,7 +83,7 @@ class RestTemplateExchangeTagsTests {
 	@Test
 	void outcomeTagIsUnknownWhenResponseThrowsIOException() throws Exception {
 		ClientHttpResponse response = mock(ClientHttpResponse.class);
-		given(response.getStatusCode()).willThrow(IOException.class);
+		given(response.getRawStatusCode()).willThrow(IOException.class);
 		Tag tag = RestTemplateExchangeTags.outcome(response);
 		assertThat(tag.getValue()).isEqualTo("UNKNOWN");
 	}
@@ -94,7 +91,7 @@ class RestTemplateExchangeTagsTests {
 	@Test
 	void outcomeTagIsClientErrorWhenResponseIsNonStandardInClientSeries() throws IOException {
 		ClientHttpResponse response = mock(ClientHttpResponse.class);
-		given(response.getStatusCode()).willReturn(HttpStatusCode.valueOf(490));
+		given(response.getRawStatusCode()).willReturn(490);
 		Tag tag = RestTemplateExchangeTags.outcome(response);
 		assertThat(tag.getValue()).isEqualTo("CLIENT_ERROR");
 	}
@@ -102,7 +99,7 @@ class RestTemplateExchangeTagsTests {
 	@Test
 	void outcomeTagIsUnknownWhenResponseStatusIsInUnknownSeries() throws IOException {
 		ClientHttpResponse response = mock(ClientHttpResponse.class);
-		given(response.getStatusCode()).willReturn(HttpStatusCode.valueOf(701));
+		given(response.getRawStatusCode()).willReturn(701);
 		Tag tag = RestTemplateExchangeTags.outcome(response);
 		assertThat(tag.getValue()).isEqualTo("UNKNOWN");
 	}

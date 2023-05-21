@@ -16,11 +16,8 @@
 
 package org.springframework.boot.actuate.context.properties;
 
-import java.util.Collections;
-
 import org.junit.jupiter.api.BeforeEach;
 
-import org.springframework.boot.actuate.endpoint.Show;
 import org.springframework.boot.actuate.endpoint.web.test.WebEndpointTest;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -106,13 +103,13 @@ class ConfigurationPropertiesReportEndpointWebIntegrationTests {
 
 		@Bean
 		ConfigurationPropertiesReportEndpoint endpoint() {
-			return new ConfigurationPropertiesReportEndpoint(Collections.emptyList(), null);
+			return new ConfigurationPropertiesReportEndpoint();
 		}
 
 		@Bean
 		ConfigurationPropertiesReportEndpointWebExtension endpointWebExtension(
 				ConfigurationPropertiesReportEndpoint endpoint) {
-			return new ConfigurationPropertiesReportEndpointWebExtension(endpoint, Show.ALWAYS, Collections.emptySet());
+			return new ConfigurationPropertiesReportEndpointWebExtension(endpoint);
 		}
 
 		@Bean

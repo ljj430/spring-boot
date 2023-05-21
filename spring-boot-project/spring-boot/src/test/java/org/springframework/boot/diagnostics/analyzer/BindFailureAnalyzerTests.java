@@ -21,7 +21,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import jakarta.validation.constraints.Min;
+import javax.validation.constraints.Min;
+
 import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.BeanCreationException;

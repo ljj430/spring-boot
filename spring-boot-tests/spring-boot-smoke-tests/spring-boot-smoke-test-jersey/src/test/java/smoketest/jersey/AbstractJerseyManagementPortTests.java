@@ -16,8 +16,9 @@
 
 package smoketest.jersey;
 
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+
 import org.junit.jupiter.api.Test;
 import smoketest.jersey.AbstractJerseyManagementPortTests.ResourceConfigConfiguration;
 

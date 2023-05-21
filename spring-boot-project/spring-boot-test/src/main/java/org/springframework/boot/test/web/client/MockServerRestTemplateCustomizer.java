@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,14 +19,11 @@ package org.springframework.boot.test.web.client;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Supplier;
 
 import org.springframework.beans.BeanUtils;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.boot.web.client.RestTemplateCustomizer;
-import org.springframework.http.client.BufferingClientHttpRequestFactory;
 import org.springframework.test.web.client.MockRestServiceServer;
-import org.springframework.test.web.client.MockRestServiceServer.MockRestServiceServerBuilder;
 import org.springframework.test.web.client.RequestExpectationManager;
 import org.springframework.test.web.client.SimpleRequestExpectationManager;
 import org.springframework.util.Assert;
@@ -50,46 +47,27 @@ import org.springframework.web.client.RestTemplate;
  * the related server.
  *
  * @author Phillip Webb
- * @author Moritz Halbritter
- * @author Chinmoy Chakraborty
  * @since 1.4.0
  * @see #getServer()
  * @see #getServer(RestTemplate)
  */
 public class MockServerRestTemplateCustomizer implements RestTemplateCustomizer {
 
-	private final Map<RestTemplate, RequestExpectationManager> expectationManagers = new ConcurrentHashMap<>();
+	private Map<RestTemplate, RequestExpectationManager> expectationManagers = new ConcurrentHashMap<>();
 
-	private final Map<RestTemplate, MockRestServiceServer> servers = new ConcurrentHashMap<>();
+	private Map<RestTemplate, MockRestServiceServer> servers = new ConcurrentHashMap<>();
 
-	private final Supplier<? extends RequestExpectationManager> expectationManagerSupplier;
+	private final Class<? extends RequestExpectationManager> expectationManager;
 
 	private boolean detectRootUri = true;
 
-	private boolean bufferContent = false;
-
 	public MockServerRestTemplateCustomizer() {
-		this(SimpleRequestExpectationManager::new);
+		this.expectationManager = SimpleRequestExpectationManager.class;
 	}
 
-	/**
-	 * Crate a new {@link MockServerRestTemplateCustomizer} instance.
-	 * @param expectationManager the expectation manager class to use
-	 */
 	public MockServerRestTemplateCustomizer(Class<? extends RequestExpectationManager> expectationManager) {
-		this(() -> BeanUtils.instantiateClass(expectationManager));
 		Assert.notNull(expectationManager, "ExpectationManager must not be null");
-	}
-
-	/**
-	 * Crate a new {@link MockServerRestTemplateCustomizer} instance.
-	 * @param expectationManagerSupplier a supplier that provides the
-	 * {@link RequestExpectationManager} to use
-	 * @since 3.0.0
-	 */
-	public MockServerRestTemplateCustomizer(Supplier<? extends RequestExpectationManager> expectationManagerSupplier) {
-		Assert.notNull(expectationManagerSupplier, "ExpectationManagerSupplier must not be null");
-		this.expectationManagerSupplier = expectationManagerSupplier;
+		this.expectationManager = expectationManager;
 	}
 
 	/**
@@ -101,34 +79,19 @@ public class MockServerRestTemplateCustomizer implements RestTemplateCustomizer 
 		this.detectRootUri = detectRootUri;
 	}
 
-	/**
-	 * Set if the {@link BufferingClientHttpRequestFactory} wrapper should be used to
-	 * buffer the input and output streams, and for example, allow multiple reads of the
-	 * response body.
-	 * @param bufferContent if request and response content should be buffered
-	 * @since 3.1.0
-	 */
-	public void setBufferContent(boolean bufferContent) {
-		this.bufferContent = bufferContent;
-	}
-
 	@Override
 	public void customize(RestTemplate restTemplate) {
 		RequestExpectationManager expectationManager = createExpectationManager();
 		if (this.detectRootUri) {
 			expectationManager = RootUriRequestExpectationManager.forRestTemplate(restTemplate, expectationManager);
 		}
-		MockRestServiceServerBuilder serverBuilder = MockRestServiceServer.bindTo(restTemplate);
-		if (this.bufferContent) {
-			serverBuilder.bufferContent();
-		}
-		MockRestServiceServer server = serverBuilder.build(expectationManager);
+		MockRestServiceServer server = MockRestServiceServer.bindTo(restTemplate).build(expectationManager);
 		this.expectationManagers.put(restTemplate, expectationManager);
 		this.servers.put(restTemplate, server);
 	}
 
 	protected RequestExpectationManager createExpectationManager() {
-		return this.expectationManagerSupplier.get();
+		return BeanUtils.instantiateClass(this.expectationManager);
 	}
 
 	public MockRestServiceServer getServer() {

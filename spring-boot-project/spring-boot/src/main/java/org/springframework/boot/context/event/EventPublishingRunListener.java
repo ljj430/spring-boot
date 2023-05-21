@@ -28,7 +28,6 @@ import org.springframework.boot.availability.AvailabilityChangeEvent;
 import org.springframework.boot.availability.LivenessState;
 import org.springframework.boot.availability.ReadinessState;
 import org.springframework.context.ApplicationContextAware;
-import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.event.ApplicationEventMulticaster;
@@ -50,8 +49,9 @@ import org.springframework.util.ErrorHandler;
  * @author Artsiom Yudovin
  * @author Brian Clozel
  * @author Chris Bono
+ * @since 1.0.0
  */
-class EventPublishingRunListener implements SpringApplicationRunListener, Ordered {
+public class EventPublishingRunListener implements SpringApplicationRunListener, Ordered {
 
 	private final SpringApplication application;
 
@@ -59,10 +59,13 @@ class EventPublishingRunListener implements SpringApplicationRunListener, Ordere
 
 	private final SimpleApplicationEventMulticaster initialMulticaster;
 
-	EventPublishingRunListener(SpringApplication application, String[] args) {
+	public EventPublishingRunListener(SpringApplication application, String[] args) {
 		this.application = application;
 		this.args = args;
 		this.initialMulticaster = new SimpleApplicationEventMulticaster();
+		for (ApplicationListener<?> listener : application.getListeners()) {
+			this.initialMulticaster.addApplicationListener(listener);
+		}
 	}
 
 	@Override
@@ -72,30 +75,32 @@ class EventPublishingRunListener implements SpringApplicationRunListener, Ordere
 
 	@Override
 	public void starting(ConfigurableBootstrapContext bootstrapContext) {
-		multicastInitialEvent(new ApplicationStartingEvent(bootstrapContext, this.application, this.args));
+		this.initialMulticaster
+			.multicastEvent(new ApplicationStartingEvent(bootstrapContext, this.application, this.args));
 	}
 
 	@Override
 	public void environmentPrepared(ConfigurableBootstrapContext bootstrapContext,
 			ConfigurableEnvironment environment) {
-		multicastInitialEvent(
+		this.initialMulticaster.multicastEvent(
 				new ApplicationEnvironmentPreparedEvent(bootstrapContext, this.application, this.args, environment));
 	}
 
 	@Override
 	public void contextPrepared(ConfigurableApplicationContext context) {
-		multicastInitialEvent(new ApplicationContextInitializedEvent(this.application, this.args, context));
+		this.initialMulticaster
+			.multicastEvent(new ApplicationContextInitializedEvent(this.application, this.args, context));
 	}
 
 	@Override
 	public void contextLoaded(ConfigurableApplicationContext context) {
 		for (ApplicationListener<?> listener : this.application.getListeners()) {
-			if (listener instanceof ApplicationContextAware contextAware) {
-				contextAware.setApplicationContext(context);
+			if (listener instanceof ApplicationContextAware) {
+				((ApplicationContextAware) listener).setApplicationContext(context);
 			}
 			context.addApplicationListener(listener);
 		}
-		multicastInitialEvent(new ApplicationPreparedEvent(this.application, this.args, context));
+		this.initialMulticaster.multicastEvent(new ApplicationPreparedEvent(this.application, this.args, context));
 	}
 
 	@Override
@@ -121,23 +126,15 @@ class EventPublishingRunListener implements SpringApplicationRunListener, Ordere
 		else {
 			// An inactive context may not have a multicaster so we use our multicaster to
 			// call all the context's listeners instead
-			if (context instanceof AbstractApplicationContext abstractApplicationContext) {
-				for (ApplicationListener<?> listener : abstractApplicationContext.getApplicationListeners()) {
+			if (context instanceof AbstractApplicationContext) {
+				for (ApplicationListener<?> listener : ((AbstractApplicationContext) context)
+					.getApplicationListeners()) {
 					this.initialMulticaster.addApplicationListener(listener);
 				}
 			}
 			this.initialMulticaster.setErrorHandler(new LoggingErrorHandler());
 			this.initialMulticaster.multicastEvent(event);
 		}
-	}
-
-	private void multicastInitialEvent(ApplicationEvent event) {
-		refreshApplicationListeners();
-		this.initialMulticaster.multicastEvent(event);
-	}
-
-	private void refreshApplicationListeners() {
-		this.application.getListeners().forEach(this.initialMulticaster::addApplicationListener);
 	}
 
 	private static class LoggingErrorHandler implements ErrorHandler {

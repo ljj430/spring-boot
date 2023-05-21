@@ -720,17 +720,15 @@ The example in the previous section can be rewritten in an immutable fashion as 
 
 include::code:MyProperties[]
 
-In this setup, the presence of a single parameterized constructor implies that constructor binding should be used.
-This means that the binder will find a constructor with the parameters that you wish to have bound.
-If your class has multiple constructors, the `@ConstructorBinding` annotation can be used to specify which constructor to use for constructor binding.
-To opt out of constructor binding for a class with a single parameterized constructor, the constructor must be annotated with `@Autowired`.
-Constructor binding can be used with records.
-Unless your record has multiple constructors, there is no need to use `@ConstructorBinding`.
+In this setup, the `@ConstructorBinding` annotation is used to indicate that constructor binding should be used.
+This means that the binder will expect to find a constructor with the parameters that you wish to have bound.
+If you are using Java 16 or later, constructor binding can be used with records.
+In this case, unless your record has multiple constructors, there is no need to use `@ConstructorBinding`.
 
-Nested members of a constructor bound class (such as `Security` in the example above) will also be bound through their constructor.
+Nested members of a `@ConstructorBinding` class (such as `Security` in the example above) will also be bound through their constructor.
 
-Default values can be specified using `@DefaultValue` on constructor parameters and record components.
-The conversion service will be applied to coerce the annotation's `String` value to the target type of a missing property.
+Default values can be specified using `@DefaultValue` on a constructor parameter or, when using Java 16 or later, a record component.
+The conversion service will be applied to coerce the `String` value to the target type of a missing property.
 
 Referring to the previous example, if no properties are bound to `Security`, the `MyProperties` instance will contain a `null` value for `security`.
 To make it contain a non-null instance of `Security` even when no properties are bound to it (when using Kotlin, this will require the `username` and `password` parameters of `Security` to be declared as nullable as they do not have default values), use an empty `@DefaultValue` annotation:
@@ -740,8 +738,7 @@ include::code:nonnull/MyProperties[tag=*]
 NOTE: To use constructor binding the class must be enabled using `@EnableConfigurationProperties` or configuration property scanning.
 You cannot use constructor binding with beans that are created by the regular Spring mechanisms (for example `@Component` beans, beans created by using `@Bean` methods or beans loaded by using `@Import`)
 
-NOTE: To use constructor binding in a native image the class must be compiled with `-parameters`.
-This will happen automatically if you use Spring Boot's Gradle plugin or if you use Maven and `spring-boot-starter-parent`.
+TIP: If you have more than one constructor for your class you can also use `@ConstructorBinding` directly on the constructor that should be bound.
 
 NOTE: The use of `java.util.Optional` with `@ConfigurationProperties` is not recommended as it is primarily intended for use as a return type.
 As such, it is not well-suited to configuration property injection.
@@ -1138,7 +1135,7 @@ Doing so gives a transparent upgrade path while supporting a much richer format.
 [[features.external-config.typesafe-configuration-properties.validation]]
 ==== @ConfigurationProperties Validation
 Spring Boot attempts to validate `@ConfigurationProperties` classes whenever they are annotated with Spring's `@Validated` annotation.
-You can use JSR-303 `jakarta.validation` constraint annotations directly on your configuration class.
+You can use JSR-303 `javax.validation` constraint annotations directly on your configuration class.
 To do so, ensure that a compliant JSR-303 implementation is on your classpath and then add constraint annotations to your fields, as shown in the following example:
 
 include::code:MyProperties[]

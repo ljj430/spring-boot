@@ -58,14 +58,15 @@ class CassandraAutoConfigurationWithPasswordAuthenticationIntegrationTests {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(CassandraAutoConfiguration.class))
 		.withPropertyValues(
-				"spring.cassandra.contact-points:" + cassandra.getHost() + ":" + cassandra.getFirstMappedPort(),
-				"spring.cassandra.local-datacenter=datacenter1", "spring.cassandra.connection.connect-timeout=60s",
-				"spring.cassandra.connection.init-query-timeout=60s", "spring.cassandra.request.timeout=60s");
+				"spring.data.cassandra.contact-points:" + cassandra.getHost() + ":" + cassandra.getFirstMappedPort(),
+				"spring.data.cassandra.local-datacenter=datacenter1",
+				"spring.data.cassandra.connection.connect-timeout=60s",
+				"spring.data.cassandra.connection.init-query-timeout=60s", "spring.data.cassandra.request.timeout=60s");
 
 	@Test
 	void authenticationWithValidUsernameAndPassword() {
 		this.contextRunner
-			.withPropertyValues("spring.cassandra.username=cassandra", "spring.cassandra.password=cassandra")
+			.withPropertyValues("spring.data.cassandra.username=cassandra", "spring.data.cassandra.password=cassandra")
 			.run((context) -> {
 				SimpleStatement select = SimpleStatement.newInstance("SELECT release_version FROM system.local")
 					.setConsistencyLevel(ConsistencyLevel.LOCAL_ONE);
@@ -76,7 +77,8 @@ class CassandraAutoConfigurationWithPasswordAuthenticationIntegrationTests {
 	@Test
 	void authenticationWithInvalidCredentials() {
 		this.contextRunner
-			.withPropertyValues("spring.cassandra.username=not-a-user", "spring.cassandra.password=invalid-password")
+			.withPropertyValues("spring.data.cassandra.username=not-a-user",
+					"spring.data.cassandra.password=invalid-password")
 			.run((context) -> assertThatThrownBy(() -> context.getBean(CqlSession.class))
 				.hasMessageContaining("Authentication error"));
 	}
@@ -85,11 +87,11 @@ class CassandraAutoConfigurationWithPasswordAuthenticationIntegrationTests {
 
 		@Override
 		protected void containerIsCreated(String containerId) {
-			String config = copyFileFromContainer("/etc/cassandra/cassandra.yaml",
+			String config = this.copyFileFromContainer("/etc/cassandra/cassandra.yaml",
 					(stream) -> StreamUtils.copyToString(stream, StandardCharsets.UTF_8));
 			String updatedConfig = config.replace("authenticator: AllowAllAuthenticator",
 					"authenticator: PasswordAuthenticator");
-			copyFileToContainer(Transferable.of(updatedConfig.getBytes(StandardCharsets.UTF_8)),
+			this.copyFileToContainer(Transferable.of(updatedConfig.getBytes(StandardCharsets.UTF_8)),
 					"/etc/cassandra/cassandra.yaml");
 		}
 

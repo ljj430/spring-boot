@@ -18,11 +18,13 @@ package org.springframework.boot.autoconfigure.security.servlet;
 
 import java.util.EnumSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import jakarta.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.boot.autoconfigure.security.StaticResourceLocation;
 import org.springframework.boot.autoconfigure.web.servlet.DispatcherServletPath;
@@ -132,11 +134,11 @@ public final class StaticResourceRequest {
 
 		@Override
 		protected void initialized(Supplier<DispatcherServletPath> dispatcherServletPath) {
-			this.delegate = new OrRequestMatcher(getDelegateMatchers(dispatcherServletPath.get()).toList());
+			this.delegate = new OrRequestMatcher(getDelegateMatchers(dispatcherServletPath.get()));
 		}
 
-		private Stream<RequestMatcher> getDelegateMatchers(DispatcherServletPath dispatcherServletPath) {
-			return getPatterns(dispatcherServletPath).map(AntPathRequestMatcher::new);
+		private List<RequestMatcher> getDelegateMatchers(DispatcherServletPath dispatcherServletPath) {
+			return getPatterns(dispatcherServletPath).map(AntPathRequestMatcher::new).collect(Collectors.toList());
 		}
 
 		private Stream<String> getPatterns(DispatcherServletPath dispatcherServletPath) {
