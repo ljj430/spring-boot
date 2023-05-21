@@ -25,6 +25,7 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.BasePlugin;
+import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.plugins.WarPlugin;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
@@ -73,13 +74,17 @@ class WarPluginAction implements PluginApplicationAction {
 			.getByName(SpringBootPlugin.DEVELOPMENT_ONLY_CONFIGURATION_NAME);
 		Configuration productionRuntimeClasspath = project.getConfigurations()
 			.getByName(SpringBootPlugin.PRODUCTION_RUNTIME_CLASSPATH_CONFIGURATION_NAME);
-		Callable<FileCollection> classpath = () -> sourceSets(project).getByName(SourceSet.MAIN_SOURCE_SET_NAME)
-			.getRuntimeClasspath()
+		SourceSet mainSourceSet = project.getExtensions()
+			.getByType(SourceSetContainer.class)
+			.getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+		Configuration runtimeClasspath = project.getConfigurations()
+			.getByName(mainSourceSet.getRuntimeClasspathConfigurationName());
+		Callable<FileCollection> classpath = () -> mainSourceSet.getRuntimeClasspath()
 			.minus(providedRuntimeConfiguration(project))
 			.minus((developmentOnly.minus(productionRuntimeClasspath)))
 			.filter(new JarTypeFileSpec());
-		TaskProvider<ResolveMainClassName> resolveMainClassName = ResolveMainClassName
-			.registerForTask(SpringBootPlugin.BOOT_WAR_TASK_NAME, project, classpath);
+		TaskProvider<ResolveMainClassName> resolveMainClassName = project.getTasks()
+			.named(SpringBootPlugin.RESOLVE_MAIN_CLASS_NAME_TASK_NAME, ResolveMainClassName.class);
 		TaskProvider<BootWar> bootWarProvider = project.getTasks()
 			.register(SpringBootPlugin.BOOT_WAR_TASK_NAME, BootWar.class, (bootWar) -> {
 				bootWar.setGroup(BasePlugin.BUILD_GROUP);
@@ -92,14 +97,12 @@ class WarPluginAction implements PluginApplicationAction {
 				bootWar.getMainClass()
 					.convention(resolveMainClassName.flatMap((resolver) -> manifestStartClass.isPresent()
 							? manifestStartClass : resolveMainClassName.get().readMainClassName()));
+				bootWar.getTargetJavaVersion()
+					.set(project.provider(() -> javaPluginExtension(project).getTargetCompatibility()));
+				bootWar.resolvedArtifacts(runtimeClasspath.getIncoming().getArtifacts().getResolvedArtifacts());
 			});
 		bootWarProvider.map(War::getClasspath);
 		return bootWarProvider;
-	}
-
-	@SuppressWarnings("deprecation")
-	private SourceSetContainer sourceSets(Project project) {
-		return project.getConvention().getPlugin(org.gradle.api.plugins.JavaPluginConvention.class).getSourceSets();
 	}
 
 	private FileCollection providedRuntimeConfiguration(Project project) {
@@ -115,6 +118,10 @@ class WarPluginAction implements PluginApplicationAction {
 
 	private void configureArtifactPublication(TaskProvider<BootWar> bootWar) {
 		this.singlePublishedArtifact.addWarCandidate(bootWar);
+	}
+
+	private JavaPluginExtension javaPluginExtension(Project project) {
+		return project.getExtensions().getByType(JavaPluginExtension.class);
 	}
 
 }

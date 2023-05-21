@@ -37,6 +37,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Andy Wilkinson
  */
+@SuppressWarnings("removal")
+@Deprecated(since = "3.0.0", forRemoval = true)
 class DefaultWebFluxTagsProviderTests {
 
 	@Test
@@ -72,7 +74,7 @@ class DefaultWebFluxTagsProviderTests {
 
 		@Override
 		public Iterable<Tag> httpRequestTags(ServerWebExchange exchange, Throwable ex) {
-			return this.tagNames.stream().map((name) -> Tag.of(name, "value")).collect(Collectors.toList());
+			return this.tagNames.stream().map((name) -> Tag.of(name, "value")).toList();
 		}
 
 	}

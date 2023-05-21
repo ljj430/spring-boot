@@ -60,7 +60,7 @@ class MongoMetricsAutoConfigurationTests {
 			.withConfiguration(AutoConfigurations.of(MongoAutoConfiguration.class))
 			.run((context) -> {
 				assertThat(context).hasSingleBean(MongoMetricsCommandListener.class);
-				assertThat(getActualMongoClientSettingsUsedToConstructClient(context)).isNotNull()
+				assertThat(getActualMongoClientSettingsUsedToConstructClient(context))
 					.extracting(MongoClientSettings::getCommandListeners)
 					.asList()
 					.containsExactly(context.getBean(MongoMetricsCommandListener.class));
@@ -166,7 +166,7 @@ class MongoMetricsAutoConfigurationTests {
 	private ContextConsumer<AssertableApplicationContext> assertThatMetricsCommandListenerNotAdded() {
 		return (context) -> {
 			assertThat(context).doesNotHaveBean(MongoMetricsCommandListener.class);
-			assertThat(getActualMongoClientSettingsUsedToConstructClient(context)).isNotNull()
+			assertThat(getActualMongoClientSettingsUsedToConstructClient(context))
 				.extracting(MongoClientSettings::getCommandListeners)
 				.asList()
 				.isEmpty();

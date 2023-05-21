@@ -32,34 +32,19 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class ActiveMQPropertiesTests {
 
-	private static final String DEFAULT_EMBEDDED_BROKER_URL = "vm://localhost?broker.persistent=false";
-
 	private static final String DEFAULT_NETWORK_BROKER_URL = "tcp://localhost:61616";
 
 	private final ActiveMQProperties properties = new ActiveMQProperties();
 
 	@Test
-	void getBrokerUrlIsInMemoryByDefault() {
-		assertThat(createFactory(this.properties).determineBrokerUrl()).isEqualTo(DEFAULT_EMBEDDED_BROKER_URL);
-	}
-
-	@Test
-	void getBrokerUrlUseExplicitBrokerUrl() {
-		this.properties.setBrokerUrl("vm://foo-bar");
-		assertThat(createFactory(this.properties).determineBrokerUrl()).isEqualTo("vm://foo-bar");
-	}
-
-	@Test
-	void getBrokerUrlWithInMemorySetToFalse() {
-		this.properties.setInMemory(false);
+	void getBrokerUrlIsLocalhostByDefault() {
 		assertThat(createFactory(this.properties).determineBrokerUrl()).isEqualTo(DEFAULT_NETWORK_BROKER_URL);
 	}
 
 	@Test
-	void getExplicitBrokerUrlAlwaysWins() {
-		this.properties.setBrokerUrl("vm://foo-bar");
-		this.properties.setInMemory(false);
-		assertThat(createFactory(this.properties).determineBrokerUrl()).isEqualTo("vm://foo-bar");
+	void getBrokerUrlUseExplicitBrokerUrl() {
+		this.properties.setBrokerUrl("tcp://activemq.example.com:71717");
+		assertThat(createFactory(this.properties).determineBrokerUrl()).isEqualTo("tcp://activemq.example.com:71717");
 	}
 
 	@Test

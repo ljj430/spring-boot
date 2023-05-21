@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,7 @@
 
 package org.springframework.boot.autoconfigure.jms.activemq;
 
-import javax.jms.ConnectionFactory;
-
+import jakarta.jms.ConnectionFactory;
 import org.apache.activemq.ActiveMQConnectionFactory;
 
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -32,12 +31,11 @@ import org.springframework.context.annotation.Import;
 
 /**
  * {@link EnableAutoConfiguration Auto-configuration} to integrate with an ActiveMQ
- * broker. Validates that the classpath contain the necessary classes before starting an
- * embedded broker.
+ * broker.
  *
  * @author Stephane Nicoll
  * @author Phillip Webb
- * @since 1.1.0
+ * @since 3.1.0
  */
 @AutoConfiguration(before = JmsAutoConfiguration.class, after = JndiConnectionFactoryAutoConfiguration.class)
 @ConditionalOnClass({ ConnectionFactory.class, ActiveMQConnectionFactory.class })

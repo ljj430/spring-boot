@@ -58,6 +58,9 @@ do as they were designed before this was clarified.
 | https://camunda.org/[Camunda BPM]
 | https://github.com/camunda/camunda-bpm-spring-boot-starter
 
+| https://casdoor.org/[Casdoor]
+| https://github.com/casdoor/casdoor-spring-boot-starter
+
 | Charon reverse proxy
 | https://github.com/mkopylec/charon-spring-boot-starter
 
@@ -87,6 +90,9 @@ do as they were designed before this was clarified.
 
 | ErroREST exception handler
 | https://github.com/mkopylec/errorest-spring-boot-starter
+
+| Error Handling Spring Boot Starter
+| https://github.com/wimdeblauwe/error-handling-spring-boot-starter
 
 | https://societe-generale.github.io/failover/[Failover]
 | https://github.com/societe-generale/failover
@@ -123,9 +129,6 @@ do as they were designed before this was clarified.
 
 | https://www.ibm.com/products/mq[IBM MQ]
 | https://github.com/ibm-messaging/mq-jms-spring
-
-| https://infinispan.org/[Infinispan]
-| https://github.com/infinispan/infinispan-spring-boot
 
 | https://github.com/neuland/jade4j[Jade Templates] (Jade4J)
 | https://github.com/domix/jade4j-spring-boot-starter
@@ -231,6 +234,9 @@ do as they were designed before this was clarified.
 
 | https://github.com/structurizr/java[Structurizr]
 | https://github.com/Catalysts/structurizr-extensions
+
+| https://www.torproject.org/[Tor]
+| https://github.com/theborakompanioni/tor-spring-boot-starter
 
 | https://vaadin.com/[Vaadin]
 | https://github.com/vaadin/platform/tree/master/vaadin-spring-boot-starter

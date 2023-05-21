@@ -19,7 +19,6 @@ package org.springframework.boot.actuate.neo4j;
 import java.time.Duration;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.OS;
 import org.testcontainers.containers.Neo4jContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -30,7 +29,6 @@ import org.springframework.boot.actuate.health.Status;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.neo4j.Neo4jAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.testsupport.junit.DisabledOnOs;
 import org.springframework.boot.testsupport.testcontainers.DockerImageNames;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -46,9 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @SpringBootTest
 @Testcontainers(disabledWithoutDocker = true)
-@DisabledOnOs(os = { OS.LINUX, OS.MAC }, architecture = "aarch64",
-		disabledReason = "The Neo4j image has no ARM support")
-public class Neo4jReactiveHealthIndicatorIntegrationTests {
+class Neo4jReactiveHealthIndicatorIntegrationTests {
 
 	// gh-33428
 

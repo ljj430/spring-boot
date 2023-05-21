@@ -19,6 +19,7 @@ package org.springframework.boot.autoconfigure.web.embedded;
 import java.time.Duration;
 
 import io.netty.channel.ChannelOption;
+import reactor.netty.http.server.HttpRequestDecoderSpec;
 
 import org.springframework.boot.autoconfigure.web.ServerProperties;
 import org.springframework.boot.cloud.CloudPlatform;
@@ -56,17 +57,14 @@ public class NettyWebServerFactoryCustomizer
 	@Override
 	public void customize(NettyReactiveWebServerFactory factory) {
 		factory.setUseForwardHeaders(getOrDeduceUseForwardHeaders());
-		PropertyMapper propertyMapper = PropertyMapper.get().alwaysApplyingWhenNonNull();
+		PropertyMapper map = PropertyMapper.get().alwaysApplyingWhenNonNull();
 		ServerProperties.Netty nettyProperties = this.serverProperties.getNetty();
-		propertyMapper.from(nettyProperties::getConnectionTimeout)
-			.whenNonNull()
+		map.from(nettyProperties::getConnectionTimeout)
 			.to((connectionTimeout) -> customizeConnectionTimeout(factory, connectionTimeout));
-		propertyMapper.from(nettyProperties::getIdleTimeout)
-			.whenNonNull()
-			.to((idleTimeout) -> customizeIdleTimeout(factory, idleTimeout));
-		propertyMapper.from(nettyProperties::getMaxKeepAliveRequests)
+		map.from(nettyProperties::getIdleTimeout).to((idleTimeout) -> customizeIdleTimeout(factory, idleTimeout));
+		map.from(nettyProperties::getMaxKeepAliveRequests)
 			.to((maxKeepAliveRequests) -> customizeMaxKeepAliveRequests(factory, maxKeepAliveRequests));
-		customizeRequestDecoder(factory, propertyMapper);
+		customizeRequestDecoder(factory, map);
 	}
 
 	private boolean getOrDeduceUseForwardHeaders() {
@@ -84,14 +82,12 @@ public class NettyWebServerFactoryCustomizer
 
 	private void customizeRequestDecoder(NettyReactiveWebServerFactory factory, PropertyMapper propertyMapper) {
 		factory.addServerCustomizers((httpServer) -> httpServer.httpRequestDecoder((httpRequestDecoderSpec) -> {
-			propertyMapper.from(this.serverProperties.getMaxHttpHeaderSize())
+			propertyMapper.from(this.serverProperties.getMaxHttpRequestHeaderSize())
 				.whenNonNull()
 				.to((maxHttpRequestHeader) -> httpRequestDecoderSpec
 					.maxHeaderSize((int) maxHttpRequestHeader.toBytes()));
 			ServerProperties.Netty nettyProperties = this.serverProperties.getNetty();
-			propertyMapper.from(nettyProperties.getMaxChunkSize())
-				.whenNonNull()
-				.to((maxChunkSize) -> httpRequestDecoderSpec.maxChunkSize((int) maxChunkSize.toBytes()));
+			maxChunkSize(propertyMapper, httpRequestDecoderSpec, nettyProperties);
 			propertyMapper.from(nettyProperties.getMaxInitialLineLength())
 				.whenNonNull()
 				.to((maxInitialLineLength) -> httpRequestDecoderSpec
@@ -108,6 +104,14 @@ public class NettyWebServerFactoryCustomizer
 				.to(httpRequestDecoderSpec::validateHeaders);
 			return httpRequestDecoderSpec;
 		}));
+	}
+
+	@SuppressWarnings({ "deprecation", "removal" })
+	private void maxChunkSize(PropertyMapper propertyMapper, HttpRequestDecoderSpec httpRequestDecoderSpec,
+			ServerProperties.Netty nettyProperties) {
+		propertyMapper.from(nettyProperties.getMaxChunkSize())
+			.whenNonNull()
+			.to((maxChunkSize) -> httpRequestDecoderSpec.maxChunkSize((int) maxChunkSize.toBytes()));
 	}
 
 	private void customizeIdleTimeout(NettyReactiveWebServerFactory factory, Duration idleTimeout) {

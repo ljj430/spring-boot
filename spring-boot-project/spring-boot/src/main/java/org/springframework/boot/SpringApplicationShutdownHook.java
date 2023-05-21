@@ -16,7 +16,6 @@
 
 package org.springframework.boot;
 
-import java.security.AccessControlException;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashSet;
@@ -85,12 +84,7 @@ class SpringApplicationShutdownHook implements Runnable {
 	}
 
 	void addRuntimeShutdownHook() {
-		try {
-			Runtime.getRuntime().addShutdownHook(new Thread(this, "SpringApplicationShutdownHook"));
-		}
-		catch (AccessControlException ex) {
-			// Not allowed in some environments
-		}
+		Runtime.getRuntime().addShutdownHook(new Thread(this, "SpringApplicationShutdownHook"));
 	}
 
 	void deregisterFailedApplicationContext(ConfigurableApplicationContext applicationContext) {
@@ -169,13 +163,14 @@ class SpringApplicationShutdownHook implements Runnable {
 	/**
 	 * The handler actions for this shutdown hook.
 	 */
-	private class Handlers implements SpringApplicationShutdownHandlers {
+	private class Handlers implements SpringApplicationShutdownHandlers, Runnable {
 
 		private final Set<Runnable> actions = Collections.newSetFromMap(new IdentityHashMap<>());
 
 		@Override
 		public void add(Runnable action) {
 			Assert.notNull(action, "Action must not be null");
+			addRuntimeShutdownHookIfNecessary();
 			synchronized (SpringApplicationShutdownHook.class) {
 				assertNotInProgress();
 				this.actions.add(action);
@@ -193,6 +188,12 @@ class SpringApplicationShutdownHook implements Runnable {
 
 		Set<Runnable> getActions() {
 			return this.actions;
+		}
+
+		@Override
+		public void run() {
+			SpringApplicationShutdownHook.this.run();
+			SpringApplicationShutdownHook.this.reset();
 		}
 
 	}

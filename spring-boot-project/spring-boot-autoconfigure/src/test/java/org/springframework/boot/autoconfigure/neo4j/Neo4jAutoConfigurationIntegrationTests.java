@@ -19,7 +19,6 @@ package org.springframework.boot.autoconfigure.neo4j;
 import java.time.Duration;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.OS;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
@@ -31,7 +30,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.testsupport.junit.DisabledOnOs;
 import org.springframework.boot.testsupport.testcontainers.DockerImageNames;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -47,8 +45,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @SpringBootTest
 @Testcontainers(disabledWithoutDocker = true)
-@DisabledOnOs(os = { OS.LINUX, OS.MAC }, architecture = "aarch64",
-		disabledReason = "The Neo4j image has no ARM support")
 class Neo4jAutoConfigurationIntegrationTests {
 
 	@Container
