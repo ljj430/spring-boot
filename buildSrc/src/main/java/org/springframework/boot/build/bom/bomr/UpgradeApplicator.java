@@ -17,7 +17,6 @@
 package org.springframework.boot.build.bom.bomr;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -42,7 +41,7 @@ class UpgradeApplicator {
 	}
 
 	Path apply(Upgrade upgrade) throws IOException {
-		String buildFileContents = new String(Files.readAllBytes(this.buildFile), StandardCharsets.UTF_8);
+		String buildFileContents = Files.readString(this.buildFile);
 		Matcher matcher = Pattern.compile("library\\(\"" + upgrade.getLibrary().getName() + "\", \"(.+)\"\\)")
 			.matcher(buildFileContents);
 		if (!matcher.find()) {
@@ -68,7 +67,7 @@ class UpgradeApplicator {
 
 	private void updateGradleProperties(Upgrade upgrade, String version) throws IOException {
 		String property = version.substring(2, version.length() - 1);
-		String gradlePropertiesContents = new String(Files.readAllBytes(this.gradleProperties), StandardCharsets.UTF_8);
+		String gradlePropertiesContents = Files.readString(this.gradleProperties);
 		String modified = gradlePropertiesContents.replace(
 				property + "=" + upgrade.getLibrary().getVersion().getVersion(), property + "=" + upgrade.getVersion());
 		overwrite(this.gradleProperties, modified);
@@ -82,8 +81,7 @@ class UpgradeApplicator {
 	}
 
 	private void overwrite(Path target, String content) throws IOException {
-		Files.write(target, content.getBytes(StandardCharsets.UTF_8), StandardOpenOption.WRITE,
-				StandardOpenOption.TRUNCATE_EXISTING);
+		Files.writeString(target, content, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
 	}
 
 }

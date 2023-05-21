@@ -42,7 +42,7 @@ import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.awaitility.Awaitility;
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.util.StringContentProvider;
+import org.eclipse.jetty.client.util.StringRequestContent;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.junit.jupiter.api.AfterEach;
@@ -77,6 +77,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
@@ -211,7 +212,7 @@ public abstract class AbstractReactiveWebServerFactoryTests {
 	}
 
 	protected void assertThatSslWithInvalidAliasCallFails(ThrowingCallable call) {
-		assertThatThrownBy(call).hasStackTraceContaining("Keystore does not contain specified alias 'test-alias-404'");
+		assertThatThrownBy(call).hasStackTraceContaining("Keystore does not contain alias 'test-alias-404'");
 	}
 
 	protected ReactorClientHttpConnector buildTrustAllSslConnector() {
@@ -400,8 +401,8 @@ public abstract class AbstractReactiveWebServerFactoryTests {
 
 	@Test
 	void whenSslIsEnabledAndNoKeyStoreIsConfiguredThenServerFailsToStart() {
-		assertThatThrownBy(() -> testBasicSslWithKeyStore(null, null))
-			.hasMessageContaining("Could not load key store 'null'");
+		assertThatIllegalStateException().isThrownBy(() -> testBasicSslWithKeyStore(null, null))
+			.withMessageContaining("SSL is enabled but no trust material is configured");
 	}
 
 	@Test
@@ -543,7 +544,7 @@ public abstract class AbstractReactiveWebServerFactoryTests {
 		client.start();
 		try {
 			ContentResponse response = client.POST("http://localhost:" + this.webServer.getPort())
-				.content(new StringContentProvider("Hello World"), "text/plain")
+				.body(new StringRequestContent("text/plain", "Hello World"))
 				.send();
 			assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
 			assertThat(response.getContentAsString()).isEqualTo("Hello World");
@@ -633,15 +634,12 @@ public abstract class AbstractReactiveWebServerFactoryTests {
 
 	protected final void doWithBlockedPort(BlockedPortAction action) throws Exception {
 		ServerSocket serverSocket = new ServerSocket();
-		int blockedPort = doWithRetry(() -> {
-			serverSocket.bind(null);
-			return serverSocket.getLocalPort();
-		});
-		try {
+		try (serverSocket) {
+			int blockedPort = doWithRetry(() -> {
+				serverSocket.bind(null);
+				return serverSocket.getLocalPort();
+			});
 			action.run(blockedPort);
-		}
-		finally {
-			serverSocket.close();
 		}
 	}
 
@@ -711,8 +709,7 @@ public abstract class AbstractReactiveWebServerFactoryTests {
 
 		@Override
 		public void channelRead(ChannelHandlerContext ctx, Object msg) {
-			if (msg instanceof HttpResponse) {
-				HttpResponse response = (HttpResponse) msg;
+			if (msg instanceof HttpResponse response) {
 				boolean compressed = response.headers().contains(HttpHeaderNames.CONTENT_ENCODING, "gzip", true);
 				if (compressed) {
 					response.headers().set("X-Test-Compressed", "true");

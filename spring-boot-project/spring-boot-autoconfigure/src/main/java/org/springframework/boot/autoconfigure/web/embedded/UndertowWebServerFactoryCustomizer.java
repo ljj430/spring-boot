@@ -78,7 +78,7 @@ public class UndertowWebServerFactoryCustomizer
 		PropertyMapper map = PropertyMapper.get().alwaysApplyingWhenNonNull();
 		ServerOptions options = new ServerOptions(factory);
 		ServerProperties properties = this.serverProperties;
-		map.from(properties::getMaxHttpHeaderSize)
+		map.from(properties::getMaxHttpRequestHeaderSize)
 			.asInt(DataSize::toBytes)
 			.when(this::isPositive)
 			.to(options.option(UndertowOptions.MAX_HEADER_SIZE));
@@ -87,7 +87,6 @@ public class UndertowWebServerFactoryCustomizer
 		map.from(this::getOrDeduceUseForwardHeaders).to(factory::setUseForwardHeaders);
 	}
 
-	@SuppressWarnings("deprecation")
 	private void mapUndertowProperties(ConfigurableUndertowWebServerFactory factory, ServerOptions serverOptions) {
 		PropertyMapper map = PropertyMapper.get().alwaysApplyingWhenNonNull();
 		Undertow properties = this.serverProperties.getUndertow();
@@ -103,7 +102,7 @@ public class UndertowWebServerFactoryCustomizer
 		map.from(properties::getMaxParameters).to(serverOptions.option(UndertowOptions.MAX_PARAMETERS));
 		map.from(properties::getMaxHeaders).to(serverOptions.option(UndertowOptions.MAX_HEADERS));
 		map.from(properties::getMaxCookies).to(serverOptions.option(UndertowOptions.MAX_COOKIES));
-		map.from(properties::isAllowEncodedSlash).to(serverOptions.option(UndertowOptions.ALLOW_ENCODED_SLASH));
+		mapSlashProperties(properties, serverOptions);
 		map.from(properties::isDecodeUrl).to(serverOptions.option(UndertowOptions.DECODE_URL));
 		map.from(properties::getUrlCharset).as(Charset::name).to(serverOptions.option(UndertowOptions.URL_CHARSET));
 		map.from(properties::isAlwaysSetKeepAlive).to(serverOptions.option(UndertowOptions.ALWAYS_SET_KEEP_ALIVE));
@@ -113,6 +112,14 @@ public class UndertowWebServerFactoryCustomizer
 		map.from(properties.getOptions()::getServer).to(serverOptions.forEach(serverOptions::option));
 		SocketOptions socketOptions = new SocketOptions(factory);
 		map.from(properties.getOptions()::getSocket).to(socketOptions.forEach(socketOptions::option));
+	}
+
+	@SuppressWarnings({ "deprecation", "removal" })
+	private void mapSlashProperties(Undertow properties, ServerOptions serverOptions) {
+		PropertyMapper map = PropertyMapper.get().alwaysApplyingWhenNonNull();
+		map.from(properties::isAllowEncodedSlash).to(serverOptions.option(UndertowOptions.ALLOW_ENCODED_SLASH));
+		map.from(properties::getDecodeSlash).to(serverOptions.option(UndertowOptions.DECODE_SLASH));
+
 	}
 
 	private boolean isPositive(Number value) {

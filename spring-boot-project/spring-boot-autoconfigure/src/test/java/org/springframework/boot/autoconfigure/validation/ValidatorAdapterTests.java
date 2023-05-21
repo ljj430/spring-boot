@@ -18,8 +18,7 @@ package org.springframework.boot.autoconfigure.validation;
 
 import java.util.HashMap;
 
-import javax.validation.constraints.Min;
-
+import jakarta.validation.constraints.Min;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.boot.test.context.FilteredClassLoader;
@@ -54,7 +53,7 @@ class ValidatorAdapterTests {
 			assertThat(wrapper.supports(SampleData.class)).isTrue();
 			MapBindingResult errors = new MapBindingResult(new HashMap<String, Object>(), "test");
 			wrapper.validate(new SampleData(40), errors);
-			assertThat(errors.getErrorCount()).isEqualTo(1);
+			assertThat(errors.getErrorCount()).isOne();
 		});
 	}
 
@@ -85,7 +84,7 @@ class ValidatorAdapterTests {
 	@Test
 	void wrapperWhenValidationProviderNotPresentShouldNotThrowException() {
 		ClassPathResource hibernateValidator = new ClassPathResource(
-				"META-INF/services/javax.validation.spi.ValidationProvider");
+				"META-INF/services/jakarta.validation.spi.ValidationProvider");
 		this.contextRunner
 			.withClassLoader(new FilteredClassLoader(FilteredClassLoader.ClassPathResourceFilter.of(hibernateValidator),
 					FilteredClassLoader.PackageFilter.of("org.hibernate.validator")))
@@ -134,7 +133,7 @@ class ValidatorAdapterTests {
 	static class SampleData {
 
 		@Min(42)
-		private int counter;
+		private final int counter;
 
 		SampleData(int counter) {
 			this.counter = counter;
