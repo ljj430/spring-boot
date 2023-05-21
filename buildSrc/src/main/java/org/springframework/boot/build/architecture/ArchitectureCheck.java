@@ -18,6 +18,7 @@ package org.springframework.boot.build.architecture;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
@@ -85,8 +86,8 @@ public abstract class ArchitectureCheck extends DefaultTask {
 				report.append(violation.getFailureReport().toString());
 				report.append(String.format("%n"));
 			}
-			Files.writeString(outputFile.toPath(), report.toString(), StandardOpenOption.CREATE,
-					StandardOpenOption.TRUNCATE_EXISTING);
+			Files.write(outputFile.toPath(), report.toString().getBytes(StandardCharsets.UTF_8),
+					StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 			throw new GradleException("Architecture check failed. See '" + outputFile + "' for details.");
 		}
 		else {
@@ -117,7 +118,7 @@ public abstract class ArchitectureCheck extends DefaultTask {
 			.not(Predicates.assignableTo("org.springframework.beans.factory.ObjectProvider")
 				.or(Predicates.assignableTo("org.springframework.context.ApplicationContext"))
 				.or(Predicates.assignableTo("org.springframework.core.env.Environment")));
-		return new ArchCondition<>("not have parameters that will cause eager initialization") {
+		return new ArchCondition<JavaMethod>("not have parameters that will cause eager initialization") {
 
 			@Override
 			public void check(JavaMethod item, ConditionEvents events) {
@@ -148,7 +149,7 @@ public abstract class ArchitectureCheck extends DefaultTask {
 	}
 
 	private ArchCondition<JavaMethod> haveNoParameters() {
-		return new ArchCondition<>("have no parameters") {
+		return new ArchCondition<JavaMethod>("have no parameters") {
 
 			@Override
 			public void check(JavaMethod item, ConditionEvents events) {

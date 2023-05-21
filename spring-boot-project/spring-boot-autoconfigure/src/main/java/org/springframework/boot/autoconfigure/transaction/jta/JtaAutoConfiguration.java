@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,9 +37,9 @@ import org.springframework.context.annotation.Import;
  */
 @AutoConfiguration(before = { XADataSourceAutoConfiguration.class, ActiveMQAutoConfiguration.class,
 		ArtemisAutoConfiguration.class, HibernateJpaAutoConfiguration.class, TransactionAutoConfiguration.class })
-@ConditionalOnClass(jakarta.transaction.Transaction.class)
+@ConditionalOnClass(javax.transaction.Transaction.class)
 @ConditionalOnProperty(prefix = "spring.jta", value = "enabled", matchIfMissing = true)
-@Import(JndiJtaConfiguration.class)
+@Import({ JndiJtaConfiguration.class, AtomikosJtaConfiguration.class })
 public class JtaAutoConfiguration {
 
 }

@@ -24,10 +24,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.SortedMap;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -49,7 +49,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.entry;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.assertArg;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.BDDMockito.given;
@@ -187,9 +186,9 @@ class MapBinderTests {
 		source.put("foo", "bar");
 		this.sources.add(source);
 		Map<String, Object> result = this.binder.bind("", Bindable.mapOf(String.class, Object.class)).get();
-		assertThat(result).containsEntry("commit", Collections.singletonMap("id", "abcdefg"));
-		assertThat(result).containsEntry("branch", "master");
-		assertThat(result).containsEntry("foo", "bar");
+		assertThat(result.get("commit")).isEqualTo(Collections.singletonMap("id", "abcdefg"));
+		assertThat(result.get("branch")).isEqualTo("master");
+		assertThat(result.get("foo")).isEqualTo("bar");
 	}
 
 	@Test
@@ -245,7 +244,7 @@ class MapBinderTests {
 		existing.put("baz", 1001);
 		Bindable<Map<String, Integer>> target = STRING_INTEGER_MAP.withExistingValue(existing);
 		Map<String, Integer> result = this.binder.bind("foo", target).get();
-		assertThat(result).isInstanceOf(HashMap.class);
+		assertThat(result).isExactlyInstanceOf(HashMap.class);
 		assertThat(result).hasSize(2);
 		assertThat(result).containsEntry("bar", 1);
 		assertThat(result).containsEntry("baz", 1001);
@@ -254,10 +253,10 @@ class MapBinderTests {
 	@Test
 	void bindToMapShouldRespectMapType() {
 		this.sources.add(new MockConfigurationPropertySource("foo.bar", "1"));
-		ResolvableType type = ResolvableType.forClassWithGenerics(SortedMap.class, String.class, Integer.class);
+		ResolvableType type = ResolvableType.forClassWithGenerics(HashMap.class, String.class, Integer.class);
 		Object defaultMap = this.binder.bind("foo", STRING_INTEGER_MAP).get();
 		Object customMap = this.binder.bind("foo", Bindable.of(type)).get();
-		assertThat(customMap).isInstanceOf(SortedMap.class).isNotInstanceOf(defaultMap.getClass());
+		assertThat(customMap).isExactlyInstanceOf(HashMap.class).isNotInstanceOf(defaultMap.getClass());
 	}
 
 	@Test
@@ -349,9 +348,11 @@ class MapBinderTests {
 		Bindable<Map<String, String[]>> target = STRING_ARRAY_MAP;
 		this.binder.bind("foo", target, handler);
 		InOrder ordered = inOrder(handler);
+		ArgumentCaptor<String[]> array = ArgumentCaptor.forClass(String[].class);
 		ordered.verify(handler)
 			.onSuccess(eq(ConfigurationPropertyName.of("foo.bar")), eq(Bindable.of(String[].class)), any(),
-					assertArg((array) -> assertThat((String[]) array).containsExactly("a", "b", "c")));
+					array.capture());
+		assertThat(array.getValue()).containsExactly("a", "b", "c");
 		ordered.verify(handler).onSuccess(eq(ConfigurationPropertyName.of("foo")), eq(target), any(), isA(Map.class));
 	}
 
@@ -365,7 +366,7 @@ class MapBinderTests {
 		source.put("foo.bar[2].value", "c");
 		this.sources.add(source);
 		Map<String, List<JavaBean>> map = this.binder.bind("foo", target).get();
-		List<String> values = map.get("bar").stream().map(JavaBean::getValue).toList();
+		List<String> values = map.get("bar").stream().map(JavaBean::getValue).collect(Collectors.toList());
 		assertThat(values).containsExactly("a", "b", "c");
 
 	}
@@ -430,7 +431,7 @@ class MapBinderTests {
 		mockSource.put("foo.bar.baz[2].value", "c");
 		this.sources.add(mockSource);
 		Map<String, List<JavaBean>> map = this.binder.bind("foo", target).get();
-		List<String> values = map.get("bar.baz").stream().map(JavaBean::getValue).toList();
+		List<String> values = map.get("bar.baz").stream().map(JavaBean::getValue).collect(Collectors.toList());
 		assertThat(values).containsExactly("a", "b", "c");
 	}
 
@@ -504,8 +505,8 @@ class MapBinderTests {
 		source.put("foo", "a,b");
 		this.sources.add(source);
 		Map<String, String> map = binder.bind("foo", STRING_STRING_MAP).get();
-		assertThat(map).containsKey("a");
-		assertThat(map).containsKey("b");
+		assertThat(map.get("a")).isNotNull();
+		assertThat(map.get("b")).isNotNull();
 	}
 
 	@Test
@@ -520,8 +521,8 @@ class MapBinderTests {
 		source.put("foo.b", "b");
 		this.sources.add(source);
 		Map<String, String> map = binder.bind("foo", STRING_STRING_MAP).get();
-		assertThat(map).containsEntry("a", "a");
-		assertThat(map).containsEntry("b", "b");
+		assertThat(map.get("a")).isEqualTo("a");
+		assertThat(map.get("b")).isEqualTo("b");
 	}
 
 	@Test
@@ -651,7 +652,7 @@ class MapBinderTests {
 
 	static class NestableFoo {
 
-		private final Map<String, NestableFoo> foos = new LinkedHashMap<>();
+		private Map<String, NestableFoo> foos = new LinkedHashMap<>();
 
 		private String value;
 
@@ -703,7 +704,7 @@ class MapBinderTests {
 
 	static class ExampleCustomWithDefaultConstructorBean {
 
-		private final MyCustomWithDefaultConstructorMap items = new MyCustomWithDefaultConstructorMap();
+		private MyCustomWithDefaultConstructorMap items = new MyCustomWithDefaultConstructorMap();
 
 		MyCustomWithDefaultConstructorMap getItems() {
 			return this.items;

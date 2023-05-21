@@ -18,7 +18,8 @@ package org.springframework.boot.autoconfigure.jms.activemq;
 
 import java.util.stream.Collectors;
 
-import jakarta.jms.ConnectionFactory;
+import javax.jms.ConnectionFactory;
+
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.commons.pool2.PooledObject;
 import org.messaginghub.pooled.jms.JmsPoolConnectionFactory;

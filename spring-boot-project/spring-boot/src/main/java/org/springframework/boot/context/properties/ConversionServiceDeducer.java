@@ -51,8 +51,8 @@ class ConversionServiceDeducer {
 			return Collections.singletonList(this.applicationContext
 				.getBean(ConfigurableApplicationContext.CONVERSION_SERVICE_BEAN_NAME, ConversionService.class));
 		}
-		if (this.applicationContext instanceof ConfigurableApplicationContext configurableContext) {
-			return getConversionServices(configurableContext);
+		if (this.applicationContext instanceof ConfigurableApplicationContext) {
+			return getConversionServices((ConfigurableApplicationContext) this.applicationContext);
 		}
 		return null;
 	}

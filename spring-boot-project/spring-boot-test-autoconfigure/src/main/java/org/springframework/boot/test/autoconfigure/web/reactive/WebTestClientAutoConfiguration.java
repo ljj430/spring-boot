@@ -17,6 +17,7 @@
 package org.springframework.boot.test.autoconfigure.web.reactive;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -70,7 +71,8 @@ public class WebTestClientAutoConfiguration {
 	@ConfigurationProperties(prefix = "spring.test.webtestclient")
 	public SpringBootWebTestClientBuilderCustomizer springBootWebTestClientBuilderCustomizer(
 			ObjectProvider<CodecCustomizer> codecCustomizers) {
-		return new SpringBootWebTestClientBuilderCustomizer(codecCustomizers.orderedStream().toList());
+		return new SpringBootWebTestClientBuilderCustomizer(
+				codecCustomizers.orderedStream().collect(Collectors.toList()));
 	}
 
 }

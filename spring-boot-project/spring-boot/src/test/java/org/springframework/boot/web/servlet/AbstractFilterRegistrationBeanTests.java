@@ -23,18 +23,17 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 
-import jakarta.servlet.DispatcherType;
-import jakarta.servlet.Filter;
-import jakarta.servlet.FilterRegistration;
-import jakarta.servlet.ServletContext;
+import javax.servlet.DispatcherType;
+import javax.servlet.Filter;
+import javax.servlet.FilterRegistration;
+import javax.servlet.ServletContext;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -96,7 +95,6 @@ abstract class AbstractFilterRegistrationBeanTests {
 
 	@Test
 	void specificName() throws Exception {
-		given(this.servletContext.addFilter(anyString(), any(Filter.class))).willReturn(this.registration);
 		AbstractFilterRegistrationBean<?> bean = createFilterRegistrationBean();
 		bean.setName("specificName");
 		bean.onStartup(this.servletContext);
@@ -105,7 +103,6 @@ abstract class AbstractFilterRegistrationBeanTests {
 
 	@Test
 	void deducedName() throws Exception {
-		given(this.servletContext.addFilter(anyString(), any(Filter.class))).willReturn(this.registration);
 		AbstractFilterRegistrationBean<?> bean = createFilterRegistrationBean();
 		bean.onStartup(this.servletContext);
 		then(this.servletContext).should().addFilter(eq("mockFilter"), getExpectedFilter());
@@ -200,29 +197,6 @@ abstract class AbstractFilterRegistrationBeanTests {
 		bean.setDispatcherTypes(types);
 		bean.onStartup(this.servletContext);
 		then(this.registration).should().addMappingForUrlPatterns(types, false, "/*");
-	}
-
-	@Test
-	void failsWithDoubleRegistration() {
-		assertThatThrownBy(() -> {
-			AbstractFilterRegistrationBean<?> bean = createFilterRegistrationBean();
-			bean.setName("double-registration");
-			given(this.servletContext.addFilter(anyString(), any(Filter.class))).willReturn(null);
-			bean.onStartup(this.servletContext);
-		}).isInstanceOf(IllegalStateException.class)
-			.hasMessage(
-					"Failed to register 'filter double-registration' on the servlet context. Possibly already registered?");
-	}
-
-	@Test
-	void doesntFailIfDoubleRegistrationIsIgnored() {
-		assertThatCode(() -> {
-			AbstractFilterRegistrationBean<?> bean = createFilterRegistrationBean();
-			bean.setName("double-registration");
-			given(this.servletContext.addFilter(anyString(), any(Filter.class))).willReturn(null);
-			bean.setIgnoreRegistrationFailure(true);
-			bean.onStartup(this.servletContext);
-		}).doesNotThrowAnyException();
 	}
 
 	protected abstract Filter getExpectedFilter();

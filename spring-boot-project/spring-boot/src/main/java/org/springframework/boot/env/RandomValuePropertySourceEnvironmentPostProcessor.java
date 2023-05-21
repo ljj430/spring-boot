@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package org.springframework.boot.env;
 import org.apache.commons.logging.Log;
 
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.logging.DeferredLogFactory;
 import org.springframework.core.Ordered;
 import org.springframework.core.env.ConfigurableEnvironment;
 
@@ -40,11 +39,10 @@ public class RandomValuePropertySourceEnvironmentPostProcessor implements Enviro
 
 	/**
 	 * Create a new {@link RandomValuePropertySourceEnvironmentPostProcessor} instance.
-	 * @param logFactory the log factory to use
-	 * @since 3.0.0
+	 * @param logger the logger to use
 	 */
-	public RandomValuePropertySourceEnvironmentPostProcessor(DeferredLogFactory logFactory) {
-		this.logger = logFactory.getLog(RandomValuePropertySourceEnvironmentPostProcessor.class);
+	public RandomValuePropertySourceEnvironmentPostProcessor(Log logger) {
+		this.logger = logger;
 	}
 
 	@Override

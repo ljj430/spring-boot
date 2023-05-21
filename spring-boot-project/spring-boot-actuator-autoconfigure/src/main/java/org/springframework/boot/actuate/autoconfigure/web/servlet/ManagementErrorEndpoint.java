@@ -76,27 +76,36 @@ public class ManagementErrorEndpoint {
 	}
 
 	private boolean includeStackTrace(ServletWebRequest request) {
-		return switch (this.errorProperties.getIncludeStacktrace()) {
-			case ALWAYS -> true;
-			case ON_PARAM -> getBooleanParameter(request, "trace");
-			default -> false;
-		};
+		switch (this.errorProperties.getIncludeStacktrace()) {
+			case ALWAYS:
+				return true;
+			case ON_PARAM:
+				return getBooleanParameter(request, "trace");
+			default:
+				return false;
+		}
 	}
 
 	private boolean includeMessage(ServletWebRequest request) {
-		return switch (this.errorProperties.getIncludeMessage()) {
-			case ALWAYS -> true;
-			case ON_PARAM -> getBooleanParameter(request, "message");
-			default -> false;
-		};
+		switch (this.errorProperties.getIncludeMessage()) {
+			case ALWAYS:
+				return true;
+			case ON_PARAM:
+				return getBooleanParameter(request, "message");
+			default:
+				return false;
+		}
 	}
 
 	private boolean includeBindingErrors(ServletWebRequest request) {
-		return switch (this.errorProperties.getIncludeBindingErrors()) {
-			case ALWAYS -> true;
-			case ON_PARAM -> getBooleanParameter(request, "errors");
-			default -> false;
-		};
+		switch (this.errorProperties.getIncludeBindingErrors()) {
+			case ALWAYS:
+				return true;
+			case ON_PARAM:
+				return getBooleanParameter(request, "errors");
+			default:
+				return false;
+		}
 	}
 
 	protected boolean getBooleanParameter(ServletWebRequest request, String parameterName) {

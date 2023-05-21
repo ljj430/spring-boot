@@ -58,7 +58,7 @@ public class PropertiesMergingResourceTransformer implements ReproducibleResourc
 	}
 
 	@Override
-	@Deprecated(since = "2.4.0", forRemoval = false)
+	@Deprecated
 	public void processResource(String resource, InputStream inputStream, List<Relocator> relocators)
 			throws IOException {
 		processResource(resource, inputStream, relocators, 0);

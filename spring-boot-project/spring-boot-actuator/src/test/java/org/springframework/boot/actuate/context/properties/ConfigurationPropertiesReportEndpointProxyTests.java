@@ -16,16 +16,14 @@
 
 package org.springframework.boot.actuate.context.properties;
 
-import java.util.Collections;
 import java.util.Map;
 
 import javax.sql.DataSource;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.boot.actuate.context.properties.ConfigurationPropertiesReportEndpoint.ApplicationConfigurationProperties;
 import org.springframework.boot.actuate.context.properties.ConfigurationPropertiesReportEndpoint.ConfigurationPropertiesBeanDescriptor;
-import org.springframework.boot.actuate.context.properties.ConfigurationPropertiesReportEndpoint.ConfigurationPropertiesDescriptor;
-import org.springframework.boot.actuate.endpoint.Show;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -59,7 +57,7 @@ class ConfigurationPropertiesReportEndpointProxyTests {
 		ApplicationContextRunner contextRunner = new ApplicationContextRunner().withUserConfiguration(Config.class,
 				SqlExecutor.class);
 		contextRunner.run((context) -> {
-			ConfigurationPropertiesDescriptor applicationProperties = context
+			ApplicationConfigurationProperties applicationProperties = context
 				.getBean(ConfigurationPropertiesReportEndpoint.class)
 				.configurationProperties();
 			assertThat(applicationProperties.getContexts()
@@ -79,7 +77,7 @@ class ConfigurationPropertiesReportEndpointProxyTests {
 			.withUserConfiguration(ValidatedConfiguration.class)
 			.withPropertyValues("validated.name=baz");
 		contextRunner.run((context) -> {
-			ConfigurationPropertiesDescriptor applicationProperties = context
+			ApplicationConfigurationProperties applicationProperties = context
 				.getBean(ConfigurationPropertiesReportEndpoint.class)
 				.configurationProperties();
 			Map<String, Object> properties = applicationProperties.getContexts()
@@ -90,7 +88,7 @@ class ConfigurationPropertiesReportEndpointProxyTests {
 				.map(ConfigurationPropertiesBeanDescriptor::getProperties)
 				.findFirst()
 				.get();
-			assertThat(properties).containsEntry("name", "baz");
+			assertThat(properties.get("name")).isEqualTo("baz");
 		});
 	}
 
@@ -101,7 +99,7 @@ class ConfigurationPropertiesReportEndpointProxyTests {
 
 		@Bean
 		ConfigurationPropertiesReportEndpoint endpoint() {
-			return new ConfigurationPropertiesReportEndpoint(Collections.emptyList(), Show.ALWAYS);
+			return new ConfigurationPropertiesReportEndpoint();
 		}
 
 		@Bean

@@ -18,9 +18,9 @@ package org.springframework.boot.web.servlet;
 
 import java.util.Map;
 
-import jakarta.servlet.MultipartConfigElement;
-import jakarta.servlet.annotation.MultipartConfig;
-import jakarta.servlet.annotation.WebServlet;
+import javax.servlet.MultipartConfigElement;
+import javax.servlet.annotation.MultipartConfig;
+import javax.servlet.annotation.WebServlet;
 
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinition;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,11 +55,11 @@ public class InspectedContent implements Content {
 
 	@Override
 	public void writeTo(OutputStream outputStream) throws IOException {
-		if (this.content instanceof byte[] bytes) {
-			FileCopyUtils.copy(bytes, outputStream);
+		if (this.content instanceof byte[]) {
+			FileCopyUtils.copy((byte[]) this.content, outputStream);
 		}
-		else if (this.content instanceof File file) {
-			InputStream inputStream = new FileInputStream(file);
+		else if (this.content instanceof File) {
+			InputStream inputStream = new FileInputStream((File) this.content);
 			FileCopyUtils.copy(inputStream, outputStream);
 		}
 		else {
@@ -103,8 +103,11 @@ public class InspectedContent implements Content {
 	public static InspectedContent of(IOConsumer<OutputStream> writer, Inspector... inspectors) throws IOException {
 		Assert.notNull(writer, "Writer must not be null");
 		InspectingOutputStream outputStream = new InspectingOutputStream(inspectors);
-		try (outputStream) {
+		try {
 			writer.accept(outputStream);
+		}
+		finally {
+			outputStream.close();
 		}
 		return new InspectedContent(outputStream.getSize(), outputStream.getContent());
 	}

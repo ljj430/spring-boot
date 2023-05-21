@@ -69,8 +69,8 @@ public class RSocketPortInfoApplicationContextInitializer
 		}
 
 		private void setPortProperty(ApplicationContext context, int port) {
-			if (context instanceof ConfigurableApplicationContext configurableContext) {
-				setPortProperty(configurableContext.getEnvironment(), port);
+			if (context instanceof ConfigurableApplicationContext) {
+				setPortProperty(((ConfigurableApplicationContext) context).getEnvironment(), port);
 			}
 			if (context.getParent() != null) {
 				setPortProperty(context.getParent(), port);
