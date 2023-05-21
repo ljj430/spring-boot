@@ -163,14 +163,13 @@ class SpringApplicationShutdownHook implements Runnable {
 	/**
 	 * The handler actions for this shutdown hook.
 	 */
-	private class Handlers implements SpringApplicationShutdownHandlers, Runnable {
+	private class Handlers implements SpringApplicationShutdownHandlers {
 
 		private final Set<Runnable> actions = Collections.newSetFromMap(new IdentityHashMap<>());
 
 		@Override
 		public void add(Runnable action) {
 			Assert.notNull(action, "Action must not be null");
-			addRuntimeShutdownHookIfNecessary();
 			synchronized (SpringApplicationShutdownHook.class) {
 				assertNotInProgress();
 				this.actions.add(action);
@@ -188,12 +187,6 @@ class SpringApplicationShutdownHook implements Runnable {
 
 		Set<Runnable> getActions() {
 			return this.actions;
-		}
-
-		@Override
-		public void run() {
-			SpringApplicationShutdownHook.this.run();
-			SpringApplicationShutdownHook.this.reset();
 		}
 
 	}

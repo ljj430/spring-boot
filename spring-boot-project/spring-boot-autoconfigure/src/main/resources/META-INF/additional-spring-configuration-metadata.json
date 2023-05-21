@@ -263,10 +263,6 @@
       "defaultValue": "immediate"
     },
     {
-      "name": "server.ssl.bundle",
-      "description": "The name of a configured SSL bundle."
-    },
-    {
       "name": "server.ssl.certificate",
       "description": "Path to a PEM-encoded SSL certificate file."
     },
@@ -541,14 +537,6 @@
     {
       "name": "spring.cassandra.request.timeout",
       "defaultValue": "2s"
-    },
-    {
-      "name": "spring.cassandra.ssl",
-      "type": "java.lang.Boolean",
-      "deprecation": {
-        "replacement": "spring.cassandra.ssl.enabled",
-        "level": "error"
-      }
     },
     {
       "name": "spring.couchbase.bootstrap-hosts",
@@ -913,7 +901,7 @@
       "name": "spring.data.cassandra.ssl",
       "type": "java.lang.Boolean",
       "deprecation": {
-        "replacement": "spring.cassandra.ssl.enabled",
+        "replacement": "spring.cassandra.ssl",
         "level": "error"
       }
     },
@@ -2648,10 +2636,6 @@
       }
     },
     {
-      "name": "spring.rsocket.server.ssl.bundle",
-      "description": "The name of a configured SSL bundle."
-    },
-    {
       "name": "spring.rsocket.server.ssl.certificate",
       "description": "Path to a PEM-encoded SSL certificate file."
     },
@@ -3090,10 +3074,6 @@
           "name": "any"
         }
       ]
-    },
-    {
-      "name": "spring.jmx.registration-policy",
-      "defaultValue": "fail-on-existing"
     },
     {
       "name": "spring.jmx.server",

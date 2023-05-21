@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,11 +31,10 @@ import org.springframework.boot.autoconfigure.security.saml2.Saml2RelyingPartyAu
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.annotation.Order;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.util.ClassUtils;
-
-import static org.springframework.security.config.Customizer.withDefaults;
 
 /**
  * {@link EnableAutoConfiguration Auto-configuration} for Spring Security when actuator is
@@ -64,10 +63,10 @@ public class ManagementWebSecurityAutoConfiguration {
 			requests.anyRequest().authenticated();
 		});
 		if (ClassUtils.isPresent("org.springframework.web.servlet.DispatcherServlet", null)) {
-			http.cors(withDefaults());
+			http.cors();
 		}
-		http.formLogin(withDefaults());
-		http.httpBasic(withDefaults());
+		http.formLogin(Customizer.withDefaults());
+		http.httpBasic(Customizer.withDefaults());
 		return http.build();
 	}
 

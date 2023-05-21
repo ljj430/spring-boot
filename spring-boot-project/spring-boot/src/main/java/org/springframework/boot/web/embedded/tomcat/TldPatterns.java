@@ -125,6 +125,7 @@ final class TldPatterns {
 		skipPatterns.add("xmlParserAPIs-*.jar");
 		skipPatterns.add("xmlParserAPIs.jar");
 		skipPatterns.add("xom-*.jar");
+
 		TOMCAT_SKIP = Collections.unmodifiableSet(skipPatterns);
 	}
 

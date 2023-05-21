@@ -23,8 +23,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 
-import static org.springframework.security.config.Customizer.withDefaults;
-
 /**
  * Tests for error page when a stateless session creation policy is used.
  *
@@ -51,7 +49,7 @@ class NoSessionErrorPageTests extends AbstractErrorPageTests {
 					requests.requestMatchers("/public/**").permitAll();
 					requests.anyRequest().authenticated();
 				});
-			http.httpBasic(withDefaults());
+			http.httpBasic();
 			return http.build();
 		}
 

@@ -16,16 +16,13 @@
 
 package org.springframework.boot.cli.command.init;
 
-import org.apache.hc.client5.http.classic.methods.HttpGet;
-import org.apache.hc.core5.http.ClassicHttpResponse;
-import org.apache.hc.core5.http.HttpHost;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isA;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -94,9 +91,9 @@ class InitializrServiceTests extends AbstractHttpClientMockTests {
 	@Test
 	void generateProjectNoContent() throws Exception {
 		mockSuccessfulMetadataGet(false);
-		ClassicHttpResponse response = mock(ClassicHttpResponse.class);
+		CloseableHttpResponse response = mock(CloseableHttpResponse.class);
 		mockStatus(response, 500);
-		given(this.http.executeOpen(any(HttpHost.class), isA(HttpGet.class), isNull())).willReturn(response);
+		given(this.http.execute(isA(HttpGet.class))).willReturn(response);
 		ProjectGenerationRequest request = new ProjectGenerationRequest();
 		assertThatExceptionOfType(ReportableException.class).isThrownBy(() -> this.invoker.generate(request))
 			.withMessageContaining("No content received from server");
@@ -113,10 +110,10 @@ class InitializrServiceTests extends AbstractHttpClientMockTests {
 
 	@Test
 	void loadMetadataInvalidJson() throws Exception {
-		ClassicHttpResponse response = mock(ClassicHttpResponse.class);
+		CloseableHttpResponse response = mock(CloseableHttpResponse.class);
 		mockHttpEntity(response, "Foo-Bar-Not-JSON".getBytes(), "application/json");
 		mockStatus(response, 200);
-		given(this.http.executeOpen(any(HttpHost.class), isA(HttpGet.class), isNull())).willReturn(response);
+		given(this.http.execute(isA(HttpGet.class))).willReturn(response);
 		ProjectGenerationRequest request = new ProjectGenerationRequest();
 		assertThatExceptionOfType(ReportableException.class).isThrownBy(() -> this.invoker.generate(request))
 			.withMessageContaining("Invalid content received from server");
@@ -124,9 +121,9 @@ class InitializrServiceTests extends AbstractHttpClientMockTests {
 
 	@Test
 	void loadMetadataNoContent() throws Exception {
-		ClassicHttpResponse response = mock(ClassicHttpResponse.class);
+		CloseableHttpResponse response = mock(CloseableHttpResponse.class);
 		mockStatus(response, 500);
-		given(this.http.executeOpen(any(HttpHost.class), isA(HttpGet.class), isNull())).willReturn(response);
+		given(this.http.execute(isA(HttpGet.class))).willReturn(response);
 		ProjectGenerationRequest request = new ProjectGenerationRequest();
 		assertThatExceptionOfType(ReportableException.class).isThrownBy(() -> this.invoker.generate(request))
 			.withMessageContaining("No content received from server");
