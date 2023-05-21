@@ -30,9 +30,10 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import jakarta.servlet.Filter;
-import jakarta.servlet.MultipartConfigElement;
-import jakarta.servlet.Servlet;
+import javax.servlet.Filter;
+import javax.servlet.MultipartConfigElement;
+import javax.servlet.Servlet;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -73,7 +74,7 @@ public class ServletContextInitializerBeans extends AbstractCollection<ServletCo
 
 	private final List<Class<? extends ServletContextInitializer>> initializerTypes;
 
-	private final List<ServletContextInitializer> sortedList;
+	private List<ServletContextInitializer> sortedList;
 
 	@SafeVarargs
 	@SuppressWarnings("varargs")
@@ -84,10 +85,11 @@ public class ServletContextInitializerBeans extends AbstractCollection<ServletCo
 				: Collections.singletonList(ServletContextInitializer.class);
 		addServletContextInitializerBeans(beanFactory);
 		addAdaptableBeans(beanFactory);
-		this.sortedList = this.initializers.values()
+		List<ServletContextInitializer> sortedInitializers = this.initializers.values()
 			.stream()
 			.flatMap((value) -> value.stream().sorted(AnnotationAwareOrderComparator.INSTANCE))
-			.toList();
+			.collect(Collectors.toList());
+		this.sortedList = Collections.unmodifiableList(sortedInitializers);
 		logMappings(this.initializers);
 	}
 
@@ -140,7 +142,8 @@ public class ServletContextInitializerBeans extends AbstractCollection<ServletCo
 	}
 
 	private String getResourceDescription(String beanName, ListableBeanFactory beanFactory) {
-		if (beanFactory instanceof BeanDefinitionRegistry registry) {
+		if (beanFactory instanceof BeanDefinitionRegistry) {
+			BeanDefinitionRegistry registry = (BeanDefinitionRegistry) beanFactory;
 			return registry.getBeanDefinition(beanName).getResourceDescription();
 		}
 		return "unknown";

@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.gradle.api.internal.tasks.userinput.UserInputHandler;
 
@@ -51,7 +52,7 @@ public final class InteractiveUpgradeResolver implements UpgradeResolver {
 		}
 		List<LibraryWithVersionOptions> libraryUpdates = this.libraryUpdateResolver
 			.findLibraryUpdates(librariesToUpgrade, librariesByName);
-		return libraryUpdates.stream().map(this::resolveUpgrade).filter(Objects::nonNull).toList();
+		return libraryUpdates.stream().map(this::resolveUpgrade).filter(Objects::nonNull).collect(Collectors.toList());
 	}
 
 	private Upgrade resolveUpgrade(LibraryWithVersionOptions libraryWithVersionOptions) {

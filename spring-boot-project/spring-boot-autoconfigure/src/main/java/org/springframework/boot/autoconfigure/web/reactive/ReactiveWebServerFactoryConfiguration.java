@@ -16,6 +16,8 @@
 
 package org.springframework.boot.autoconfigure.web.reactive;
 
+import java.util.stream.Collectors;
+
 import io.undertow.Undertow;
 import org.eclipse.jetty.servlet.ServletHolder;
 import reactor.netty.http.server.HttpServer;
@@ -66,7 +68,7 @@ abstract class ReactiveWebServerFactoryConfiguration {
 			NettyReactiveWebServerFactory serverFactory = new NettyReactiveWebServerFactory();
 			serverFactory.setResourceFactory(resourceFactory);
 			routes.orderedStream().forEach(serverFactory::addRouteProviders);
-			serverFactory.getServerCustomizers().addAll(serverCustomizers.orderedStream().toList());
+			serverFactory.getServerCustomizers().addAll(serverCustomizers.orderedStream().collect(Collectors.toList()));
 			return serverFactory;
 		}
 
@@ -83,9 +85,12 @@ abstract class ReactiveWebServerFactoryConfiguration {
 				ObjectProvider<TomcatContextCustomizer> contextCustomizers,
 				ObjectProvider<TomcatProtocolHandlerCustomizer<?>> protocolHandlerCustomizers) {
 			TomcatReactiveWebServerFactory factory = new TomcatReactiveWebServerFactory();
-			factory.getTomcatConnectorCustomizers().addAll(connectorCustomizers.orderedStream().toList());
-			factory.getTomcatContextCustomizers().addAll(contextCustomizers.orderedStream().toList());
-			factory.getTomcatProtocolHandlerCustomizers().addAll(protocolHandlerCustomizers.orderedStream().toList());
+			factory.getTomcatConnectorCustomizers()
+				.addAll(connectorCustomizers.orderedStream().collect(Collectors.toList()));
+			factory.getTomcatContextCustomizers()
+				.addAll(contextCustomizers.orderedStream().collect(Collectors.toList()));
+			factory.getTomcatProtocolHandlerCustomizers()
+				.addAll(protocolHandlerCustomizers.orderedStream().collect(Collectors.toList()));
 			return factory;
 		}
 
@@ -106,7 +111,7 @@ abstract class ReactiveWebServerFactoryConfiguration {
 		JettyReactiveWebServerFactory jettyReactiveWebServerFactory(JettyResourceFactory resourceFactory,
 				ObjectProvider<JettyServerCustomizer> serverCustomizers) {
 			JettyReactiveWebServerFactory serverFactory = new JettyReactiveWebServerFactory();
-			serverFactory.getServerCustomizers().addAll(serverCustomizers.orderedStream().toList());
+			serverFactory.getServerCustomizers().addAll(serverCustomizers.orderedStream().collect(Collectors.toList()));
 			serverFactory.setResourceFactory(resourceFactory);
 			return serverFactory;
 		}
@@ -122,7 +127,7 @@ abstract class ReactiveWebServerFactoryConfiguration {
 		UndertowReactiveWebServerFactory undertowReactiveWebServerFactory(
 				ObjectProvider<UndertowBuilderCustomizer> builderCustomizers) {
 			UndertowReactiveWebServerFactory factory = new UndertowReactiveWebServerFactory();
-			factory.getBuilderCustomizers().addAll(builderCustomizers.orderedStream().toList());
+			factory.getBuilderCustomizers().addAll(builderCustomizers.orderedStream().collect(Collectors.toList()));
 			return factory;
 		}
 

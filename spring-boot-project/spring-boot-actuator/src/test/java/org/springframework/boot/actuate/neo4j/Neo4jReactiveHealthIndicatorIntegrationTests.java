@@ -44,7 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @SpringBootTest
 @Testcontainers(disabledWithoutDocker = true)
-class Neo4jReactiveHealthIndicatorIntegrationTests {
+public class Neo4jReactiveHealthIndicatorIntegrationTests {
 
 	// gh-33428
 

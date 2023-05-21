@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,8 @@
 
 package org.springframework.boot.test.context;
 
-import jakarta.servlet.ServletContext;
+import javax.servlet.ServletContext;
+
 import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,7 +71,7 @@ abstract class AbstractSpringBootTestWebServerWebEnvironmentTests {
 
 	@Test
 	void runAndTestHttpEndpoint() {
-		assertThat(this.port).isNotEqualTo(8080).isNotZero();
+		assertThat(this.port).isNotEqualTo(8080).isNotEqualTo(0);
 		String body = new RestTemplate().getForObject("http://localhost:" + this.port + "/", String.class);
 		assertThat(body).isEqualTo("Hello World");
 	}

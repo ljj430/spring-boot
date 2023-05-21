@@ -43,7 +43,6 @@ import static org.mockito.Mockito.mock;
  * @author Mark Paluch
  * @author Artsiom Yudovin
  * @author Scott Frederick
- * @author Mortiz Halbritter
  */
 abstract class MongoClientFactorySupportTests<T> {
 
@@ -109,6 +108,10 @@ abstract class MongoClientFactorySupportTests<T> {
 		context.refresh();
 		MongoProperties properties = context.getBean(MongoProperties.class);
 		assertThat(properties.isAutoIndexCreation()).isTrue();
+	}
+
+	protected T createMongoClient() {
+		return createMongoClient(null, MongoClientSettings.builder().build());
 	}
 
 	protected T createMongoClient(MongoClientSettings settings) {

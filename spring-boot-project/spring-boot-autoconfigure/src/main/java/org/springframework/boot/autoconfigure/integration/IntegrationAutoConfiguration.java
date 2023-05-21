@@ -49,9 +49,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.integration.config.EnableIntegration;
 import org.springframework.integration.config.EnableIntegrationManagement;
-import org.springframework.integration.config.IntegrationComponentScanRegistrar;
 import org.springframework.integration.config.IntegrationManagementConfigurer;
 import org.springframework.integration.context.IntegrationContextUtils;
+import org.springframework.integration.gateway.GatewayProxyFactoryBean;
 import org.springframework.integration.jdbc.store.JdbcMessageStore;
 import org.springframework.integration.jmx.config.EnableIntegrationMBeanExport;
 import org.springframework.integration.monitor.IntegrationMBeanExporter;
@@ -151,9 +151,9 @@ public class IntegrationAutoConfiguration {
 		}
 
 		private Trigger createPeriodicTrigger(Duration period, Duration initialDelay, boolean fixedRate) {
-			PeriodicTrigger trigger = new PeriodicTrigger(period);
+			PeriodicTrigger trigger = new PeriodicTrigger(period.toMillis());
 			if (initialDelay != null) {
-				trigger.setInitialDelay(initialDelay);
+				trigger.setInitialDelay(initialDelay.toMillis());
 			}
 			trigger.setFixedRate(fixedRate);
 			return trigger;
@@ -211,8 +211,7 @@ public class IntegrationAutoConfiguration {
 
 		@Configuration(proxyBeanMethods = false)
 		@EnableIntegrationManagement(
-				defaultLoggingEnabled = "${spring.integration.management.default-logging-enabled:true}",
-				observationPatterns = "${spring.integration.management.observation-patterns:}")
+				defaultLoggingEnabled = "${spring.integration.management.default-logging-enabled:true}")
 		protected static class EnableIntegrationManagementConfiguration {
 
 		}
@@ -223,7 +222,7 @@ public class IntegrationAutoConfiguration {
 	 * Integration component scan configuration.
 	 */
 	@Configuration(proxyBeanMethods = false)
-	@ConditionalOnMissingBean(IntegrationComponentScanRegistrar.class)
+	@ConditionalOnMissingBean(GatewayProxyFactoryBean.class)
 	@Import(IntegrationAutoConfigurationScanRegistrar.class)
 	protected static class IntegrationComponentScanConfiguration {
 
@@ -239,7 +238,9 @@ public class IntegrationAutoConfiguration {
 	protected static class IntegrationJdbcConfiguration {
 
 		@Bean
-		@ConditionalOnMissingBean(IntegrationDataSourceScriptDatabaseInitializer.class)
+		@SuppressWarnings("deprecation")
+		@ConditionalOnMissingBean({ IntegrationDataSourceScriptDatabaseInitializer.class,
+				IntegrationDataSourceInitializer.class })
 		public IntegrationDataSourceScriptDatabaseInitializer integrationDataSourceInitializer(DataSource dataSource,
 				IntegrationProperties properties) {
 			return new IntegrationDataSourceScriptDatabaseInitializer(dataSource, properties.getJdbc());

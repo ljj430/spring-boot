@@ -31,8 +31,8 @@ import org.springframework.boot.actuate.audit.InMemoryAuditEventRepository;
 import org.springframework.boot.actuate.autoconfigure.endpoint.EndpointAutoConfiguration;
 import org.springframework.boot.actuate.autoconfigure.endpoint.jmx.JmxEndpointAutoConfiguration;
 import org.springframework.boot.actuate.autoconfigure.health.HealthContributorAutoConfiguration;
-import org.springframework.boot.actuate.autoconfigure.web.exchanges.HttpExchangesAutoConfiguration;
-import org.springframework.boot.actuate.web.exchanges.InMemoryHttpExchangeRepository;
+import org.springframework.boot.actuate.autoconfigure.trace.http.HttpTraceAutoConfiguration;
+import org.springframework.boot.actuate.trace.http.InMemoryHttpTraceRepository;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.jmx.JmxAutoConfiguration;
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
@@ -53,28 +53,28 @@ class JmxEndpointIntegrationTests {
 	private final WebApplicationContextRunner contextRunner = new WebApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(JmxAutoConfiguration.class, EndpointAutoConfiguration.class,
 				JmxEndpointAutoConfiguration.class, HealthContributorAutoConfiguration.class,
-				HttpExchangesAutoConfiguration.class))
-		.withUserConfiguration(HttpExchangeRepositoryConfiguration.class, AuditEventRepositoryConfiguration.class)
+				HttpTraceAutoConfiguration.class))
+		.withUserConfiguration(HttpTraceRepositoryConfiguration.class, AuditEventRepositoryConfiguration.class)
 		.withPropertyValues("spring.jmx.enabled=true")
 		.withConfiguration(AutoConfigurations.of(EndpointAutoConfigurationClasses.ALL));
 
 	@Test
-	void jmxEndpointsExposeHealthByDefault() {
+	void jmxEndpointsAreExposed() {
 		this.contextRunner.run((context) -> {
 			MBeanServer mBeanServer = context.getBean(MBeanServer.class);
-			checkEndpointMBeans(mBeanServer, new String[] { "health" }, new String[] { "beans", "conditions",
-					"configprops", "env", "info", "mappings", "threaddump", "httpexchanges", "shutdown" });
+			checkEndpointMBeans(mBeanServer, new String[] { "beans", "conditions", "configprops", "env", "health",
+					"info", "mappings", "threaddump", "httptrace" }, new String[] { "shutdown" });
 		});
 	}
 
 	@Test
 	void jmxEndpointsAreExposedWhenLazyInitializationIsEnabled() {
-		this.contextRunner.withPropertyValues("management.endpoints.jmx.exposure.include:*")
+		this.contextRunner
 			.withBean(LazyInitializationBeanFactoryPostProcessor.class, LazyInitializationBeanFactoryPostProcessor::new)
 			.run((context) -> {
 				MBeanServer mBeanServer = context.getBean(MBeanServer.class);
 				checkEndpointMBeans(mBeanServer, new String[] { "beans", "conditions", "configprops", "env", "health",
-						"info", "mappings", "threaddump", "httpexchanges" }, new String[] { "shutdown" });
+						"info", "mappings", "threaddump", "httptrace" }, new String[] { "shutdown" });
 			});
 	}
 
@@ -83,7 +83,7 @@ class JmxEndpointIntegrationTests {
 		this.contextRunner.withPropertyValues("management.endpoints.jmx.exposure.exclude:*").run((context) -> {
 			MBeanServer mBeanServer = context.getBean(MBeanServer.class);
 			checkEndpointMBeans(mBeanServer, new String[0], new String[] { "beans", "conditions", "configprops", "env",
-					"health", "mappings", "shutdown", "threaddump", "httpexchanges" });
+					"health", "mappings", "shutdown", "threaddump", "httptrace" });
 
 		});
 	}
@@ -93,7 +93,7 @@ class JmxEndpointIntegrationTests {
 		this.contextRunner.withPropertyValues("management.endpoints.jmx.exposure.include=beans").run((context) -> {
 			MBeanServer mBeanServer = context.getBean(MBeanServer.class);
 			checkEndpointMBeans(mBeanServer, new String[] { "beans" }, new String[] { "conditions", "configprops",
-					"env", "health", "mappings", "shutdown", "threaddump", "httpexchanges" });
+					"env", "health", "mappings", "shutdown", "threaddump", "httptrace" });
 		});
 	}
 
@@ -145,11 +145,11 @@ class JmxEndpointIntegrationTests {
 	}
 
 	@Configuration(proxyBeanMethods = false)
-	static class HttpExchangeRepositoryConfiguration {
+	static class HttpTraceRepositoryConfiguration {
 
 		@Bean
-		InMemoryHttpExchangeRepository httpExchangeRepository() {
-			return new InMemoryHttpExchangeRepository();
+		InMemoryHttpTraceRepository httpTraceRepository() {
+			return new InMemoryHttpTraceRepository();
 		}
 
 	}

@@ -60,14 +60,21 @@ class BuildInfoTests {
 	@Test
 	void customArtifactIsReflectedInProperties() {
 		BuildInfo task = createTask(createProject("test"));
-		task.getProperties().getArtifact().set("custom");
+		task.getProperties().setArtifact("custom");
 		assertThat(buildInfoProperties(task)).containsEntry("build.artifact", "custom");
 	}
 
 	@Test
-	void artifactCanBeExcludedFromProperties() {
+	void artifactCanBeRemovedFromPropertiesUsingNull() {
 		BuildInfo task = createTask(createProject("test"));
-		task.getExcludes().addAll("artifact");
+		task.getProperties().setArtifact(null);
+		assertThat(buildInfoProperties(task)).doesNotContainKey("build.artifact");
+	}
+
+	@Test
+	void artifactCanBeRemovedFromPropertiesUsingEmptyString() {
+		BuildInfo task = createTask(createProject("test"));
+		task.getProperties().setArtifact("");
 		assertThat(buildInfoProperties(task)).doesNotContainKey("build.artifact");
 	}
 
@@ -81,28 +88,42 @@ class BuildInfoTests {
 	@Test
 	void customGroupIsReflectedInProperties() {
 		BuildInfo task = createTask(createProject("test"));
-		task.getProperties().getGroup().set("com.example");
+		task.getProperties().setGroup("com.example");
 		assertThat(buildInfoProperties(task)).containsEntry("build.group", "com.example");
 	}
 
 	@Test
-	void groupCanBeExcludedFromProperties() {
+	void groupCanBeRemovedFromPropertiesUsingNull() {
 		BuildInfo task = createTask(createProject("test"));
-		task.getExcludes().add("group");
+		task.getProperties().setGroup(null);
+		assertThat(buildInfoProperties(task)).doesNotContainKey("build.group");
+	}
+
+	@Test
+	void groupCanBeRemovedFromPropertiesUsingEmptyString() {
+		BuildInfo task = createTask(createProject("test"));
+		task.getProperties().setGroup("");
 		assertThat(buildInfoProperties(task)).doesNotContainKey("build.group");
 	}
 
 	@Test
 	void customNameIsReflectedInProperties() {
 		BuildInfo task = createTask(createProject("test"));
-		task.getProperties().getName().set("Example");
+		task.getProperties().setName("Example");
 		assertThat(buildInfoProperties(task)).containsEntry("build.name", "Example");
 	}
 
 	@Test
-	void nameCanBeExludedRemovedFromProperties() {
+	void nameCanBeRemovedFromPropertiesUsingNull() {
 		BuildInfo task = createTask(createProject("test"));
-		task.getExcludes().add("name");
+		task.getProperties().setName(null);
+		assertThat(buildInfoProperties(task)).doesNotContainKey("build.name");
+	}
+
+	@Test
+	void nameCanBeRemovedFromPropertiesUsingEmptyString() {
+		BuildInfo task = createTask(createProject("test"));
+		task.getProperties().setName("");
 		assertThat(buildInfoProperties(task)).doesNotContainKey("build.name");
 	}
 
@@ -116,36 +137,45 @@ class BuildInfoTests {
 	@Test
 	void customVersionIsReflectedInProperties() {
 		BuildInfo task = createTask(createProject("test"));
-		task.getProperties().getVersion().set("2.3.4");
+		task.getProperties().setVersion("2.3.4");
 		assertThat(buildInfoProperties(task)).containsEntry("build.version", "2.3.4");
 	}
 
 	@Test
-	void versionCanBeExcludedFromProperties() {
+	void versionCanBeRemovedFromPropertiesUsingNull() {
 		BuildInfo task = createTask(createProject("test"));
-		task.getExcludes().add("version");
+		task.getProperties().setVersion(null);
+		assertThat(buildInfoProperties(task)).doesNotContainKey("build.version");
+	}
+
+	@Test
+	void versionCanBeRemovedFromPropertiesUsingEmptyString() {
+		BuildInfo task = createTask(createProject("test"));
+		task.getProperties().setVersion("");
 		assertThat(buildInfoProperties(task)).doesNotContainKey("build.version");
 	}
 
 	@Test
 	void timeIsSetInProperties() {
 		BuildInfo task = createTask(createProject("test"));
-		assertThat(buildInfoProperties(task)).containsKey("build.time");
+		assertThat(buildInfoProperties(task)).containsEntry("build.time",
+				DateTimeFormatter.ISO_INSTANT.format(task.getProperties().getTime()));
 	}
 
 	@Test
-	void timeCanBeExcludedFromProperties() {
+	void timeCanBeRemovedFromProperties() {
 		BuildInfo task = createTask(createProject("test"));
-		task.getExcludes().add("time");
+		task.getProperties().setTime(null);
 		assertThat(buildInfoProperties(task)).doesNotContainKey("build.time");
 	}
 
 	@Test
 	void timeCanBeCustomizedInProperties() {
+		Instant now = Instant.now();
 		BuildInfo task = createTask(createProject("test"));
-		String isoTime = DateTimeFormatter.ISO_INSTANT.format(Instant.now());
-		task.getProperties().getTime().set(isoTime);
-		assertThat(buildInfoProperties(task)).containsEntry("build.time", isoTime);
+		task.getProperties().setTime(now);
+		assertThat(buildInfoProperties(task)).containsEntry("build.time",
+				DateTimeFormatter.ISO_INSTANT.format(Instant.ofEpochMilli(now.toEpochMilli())));
 	}
 
 	@Test
@@ -153,22 +183,16 @@ class BuildInfoTests {
 		BuildInfo task = createTask(createProject("test"));
 		task.getProperties().getAdditional().put("a", "alpha");
 		task.getProperties().getAdditional().put("b", "bravo");
-		assertThat(buildInfoProperties(task)).containsEntry("build.a", "alpha").containsEntry("build.b", "bravo");
-	}
-
-	@Test
-	void additionalPropertiesCanBeExcluded() {
-		BuildInfo task = createTask(createProject("test"));
-		task.getProperties().getAdditional().put("a", "alpha");
-		task.getExcludes().add("b");
-		assertThat(buildInfoProperties(task)).containsEntry("build.a", "alpha").doesNotContainKey("b");
+		assertThat(buildInfoProperties(task)).containsEntry("build.a", "alpha");
+		assertThat(buildInfoProperties(task)).containsEntry("build.b", "bravo");
 	}
 
 	@Test
 	void nullAdditionalPropertyProducesInformativeFailure() {
 		BuildInfo task = createTask(createProject("test"));
-		assertThatThrownBy(() -> task.getProperties().getAdditional().put("a", null))
-			.hasMessage("Cannot add an entry with a null value to a property of type Map.");
+		task.getProperties().getAdditional().put("a", null);
+		assertThatThrownBy(() -> buildInfoProperties(task))
+			.hasMessage("Additional property 'a' is illegal as its value is null");
 	}
 
 	private Project createProject(String projectName) {
@@ -186,7 +210,7 @@ class BuildInfoTests {
 
 	private Properties buildInfoProperties(BuildInfo task) {
 		task.generateBuildProperties();
-		return buildInfoProperties(new File(task.getDestinationDir().get().getAsFile(), "build-info.properties"));
+		return buildInfoProperties(new File(task.getDestinationDir(), "build-info.properties"));
 	}
 
 	private Properties buildInfoProperties(File file) {

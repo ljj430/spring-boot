@@ -16,7 +16,8 @@
 
 package org.springframework.boot.diagnostics;
 
-import jakarta.annotation.PostConstruct;
+import javax.annotation.PostConstruct;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 

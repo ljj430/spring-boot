@@ -16,6 +16,8 @@
 
 package org.springframework.boot.actuate.autoconfigure.web.mappings;
 
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.actuate.autoconfigure.endpoint.condition.ConditionalOnAvailableEndpoint;
 import org.springframework.boot.actuate.web.mappings.MappingDescriptionProvider;
@@ -49,7 +51,8 @@ public class MappingsEndpointAutoConfiguration {
 	@Bean
 	public MappingsEndpoint mappingsEndpoint(ApplicationContext applicationContext,
 			ObjectProvider<MappingDescriptionProvider> descriptionProviders) {
-		return new MappingsEndpoint(descriptionProviders.orderedStream().toList(), applicationContext);
+		return new MappingsEndpoint(descriptionProviders.orderedStream().collect(Collectors.toList()),
+				applicationContext);
 	}
 
 	@Configuration(proxyBeanMethods = false)

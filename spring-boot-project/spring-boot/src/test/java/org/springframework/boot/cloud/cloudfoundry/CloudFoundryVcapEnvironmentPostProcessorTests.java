@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,7 @@
 
 package org.springframework.boot.cloud.cloudfoundry;
 
-import java.util.function.Supplier;
-
+import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.boot.cloud.CloudFoundryVcapEnvironmentPostProcessor;
@@ -36,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class CloudFoundryVcapEnvironmentPostProcessorTests {
 
 	private final CloudFoundryVcapEnvironmentPostProcessor initializer = new CloudFoundryVcapEnvironmentPostProcessor(
-			Supplier::get);
+			LogFactory.getLog(getClass()));
 
 	private final ConfigurableApplicationContext context = new AnnotationConfigApplicationContext();
 
@@ -102,7 +101,7 @@ class CloudFoundryVcapEnvironmentPostProcessorTests {
 		assertThat(getProperty("vcap.services.mysql.name")).isEqualTo("mysql");
 		assertThat(getProperty("vcap.services.mysql.credentials.port")).isEqualTo("3306");
 		assertThat(getProperty("vcap.services.mysql.credentials.ssl")).isEqualTo("true");
-		assertThat(getProperty("vcap.services.mysql.credentials.location")).isEmpty();
+		assertThat(getProperty("vcap.services.mysql.credentials.location")).isEqualTo("");
 	}
 
 	@Test

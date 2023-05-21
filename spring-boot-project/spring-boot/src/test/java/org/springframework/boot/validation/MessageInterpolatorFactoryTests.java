@@ -16,7 +16,8 @@
 
 package org.springframework.boot.validation;
 
-import jakarta.validation.MessageInterpolator;
+import javax.validation.MessageInterpolator;
+
 import org.hibernate.validator.messageinterpolation.ResourceBundleMessageInterpolator;
 import org.junit.jupiter.api.Test;
 

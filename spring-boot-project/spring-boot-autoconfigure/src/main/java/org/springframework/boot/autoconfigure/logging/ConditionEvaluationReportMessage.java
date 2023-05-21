@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.boot.autoconfigure.condition.ConditionEvaluationReport;
 import org.springframework.boot.autoconfigure.condition.ConditionEvaluationReport.ConditionAndOutcome;
@@ -41,7 +42,7 @@ import org.springframework.util.StringUtils;
  */
 public class ConditionEvaluationReportMessage {
 
-	private final StringBuilder message;
+	private StringBuilder message;
 
 	public ConditionEvaluationReportMessage(ConditionEvaluationReport report) {
 		this(report, "CONDITIONS EVALUATION REPORT");
@@ -52,9 +53,12 @@ public class ConditionEvaluationReportMessage {
 	}
 
 	private StringBuilder getLogMessage(ConditionEvaluationReport report, String title) {
-		String separator = "=".repeat(title.length());
 		StringBuilder message = new StringBuilder();
 		message.append(String.format("%n%n%n"));
+		StringBuilder separator = new StringBuilder();
+		for (int i = 0; i < title.length(); i++) {
+			separator.append("=");
+		}
 		message.append(String.format("%s%n", separator));
 		message.append(String.format("%s%n", title));
 		message.append(String.format("%s%n%n%n", separator));
@@ -73,7 +77,7 @@ public class ConditionEvaluationReportMessage {
 		List<Entry<String, ConditionAndOutcomes>> matched = shortOutcomes.entrySet()
 			.stream()
 			.filter((entry) -> entry.getValue().isFullMatch())
-			.toList();
+			.collect(Collectors.toList());
 		if (matched.isEmpty()) {
 			message.append(String.format("%n    None%n"));
 		}
@@ -89,7 +93,7 @@ public class ConditionEvaluationReportMessage {
 		List<Entry<String, ConditionAndOutcomes>> nonMatched = shortOutcomes.entrySet()
 			.stream()
 			.filter((entry) -> !entry.getValue().isFullMatch())
-			.toList();
+			.collect(Collectors.toList());
 		if (nonMatched.isEmpty()) {
 			message.append(String.format("%n    None%n"));
 		}
