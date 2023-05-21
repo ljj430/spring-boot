@@ -19,8 +19,6 @@ package org.springframework.boot.devtools.autoconfigure;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
 
@@ -71,8 +69,8 @@ public class DevToolsDataSourceAutoConfiguration {
 	}
 
 	/**
-	 * Post processor to ensure that {@link javax.persistence.EntityManagerFactory} beans
-	 * depend on the {@code inMemoryDatabaseShutdownExecutor} bean.
+	 * Post processor to ensure that {@link jakarta.persistence.EntityManagerFactory}
+	 * beans depend on the {@code inMemoryDatabaseShutdownExecutor} bean.
 	 */
 	@ConditionalOnClass(LocalContainerEntityManagerFactoryBean.class)
 	@ConditionalOnBean(AbstractEntityManagerFactoryBean.class)
@@ -108,10 +106,13 @@ public class DevToolsDataSourceAutoConfiguration {
 
 		private enum InMemoryDatabase {
 
-			DERBY(null, new HashSet<>(Arrays.asList("org.apache.derby.jdbc.EmbeddedDriver")), (dataSource) -> {
-				String url = dataSource.getConnection().getMetaData().getURL();
+			DERBY(null, Set.of("org.apache.derby.jdbc.EmbeddedDriver"), (dataSource) -> {
+				String url;
+				try (Connection connection = dataSource.getConnection()) {
+					url = connection.getMetaData().getURL();
+				}
 				try {
-					new EmbeddedDriver().connect(url + ";drop=true", new Properties());
+					new EmbeddedDriver().connect(url + ";drop=true", new Properties()).close();
 				}
 				catch (SQLException ex) {
 					if (!"08006".equals(ex.getSQLState())) {
@@ -120,10 +121,10 @@ public class DevToolsDataSourceAutoConfiguration {
 				}
 			}),
 
-			H2("jdbc:h2:mem:", new HashSet<>(Arrays.asList("org.h2.Driver", "org.h2.jdbcx.JdbcDataSource"))),
+			H2("jdbc:h2:mem:", Set.of("org.h2.Driver", "org.h2.jdbcx.JdbcDataSource")),
 
-			HSQLDB("jdbc:hsqldb:mem:", new HashSet<>(Arrays.asList("org.hsqldb.jdbcDriver",
-					"org.hsqldb.jdbc.JDBCDriver", "org.hsqldb.jdbc.pool.JDBCXADataSource")));
+			HSQLDB("jdbc:hsqldb:mem:", Set.of("org.hsqldb.jdbcDriver", "org.hsqldb.jdbc.JDBCDriver",
+					"org.hsqldb.jdbc.pool.JDBCXADataSource"));
 
 			private final String urlPrefix;
 
@@ -186,9 +187,9 @@ public class DevToolsDataSourceAutoConfiguration {
 				return ConditionOutcome.noMatch(message.didNotFind("a single DataSourceProperties bean").atAll());
 			}
 			BeanDefinition dataSourceDefinition = context.getRegistry().getBeanDefinition(dataSourceBeanNames[0]);
-			if (dataSourceDefinition instanceof AnnotatedBeanDefinition
-					&& ((AnnotatedBeanDefinition) dataSourceDefinition).getFactoryMethodMetadata() != null
-					&& ((AnnotatedBeanDefinition) dataSourceDefinition).getFactoryMethodMetadata()
+			if (dataSourceDefinition instanceof AnnotatedBeanDefinition annotatedBeanDefinition
+					&& annotatedBeanDefinition.getFactoryMethodMetadata() != null
+					&& annotatedBeanDefinition.getFactoryMethodMetadata()
 						.getDeclaringClassName()
 						.startsWith(DataSourceAutoConfiguration.class.getPackage().getName()
 								+ ".DataSourceConfiguration$")) {

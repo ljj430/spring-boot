@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -139,10 +138,8 @@ public class ApplicationRunner extends DefaultTask {
 	private void awaitLogging(Process process) {
 		long end = System.currentTimeMillis() + 60000;
 		String expectedLogging = this.expectedLogging.get();
-		List<String> outputLines = Collections.emptyList();
 		while (System.currentTimeMillis() < end) {
-			outputLines = outputLines();
-			for (String line : outputLines) {
+			for (String line : outputLines()) {
 				if (line.contains(expectedLogging)) {
 					return;
 				}
@@ -151,10 +148,7 @@ public class ApplicationRunner extends DefaultTask {
 				throw new IllegalStateException("Process exited before '" + expectedLogging + "' was logged");
 			}
 		}
-		StringBuilder message = new StringBuilder(
-				"After 60 seconds '" + expectedLogging + "' had not be logged in the following output:\n\n");
-		outputLines.forEach((line) -> message.append(line).append("\n"));
-		throw new IllegalStateException(message.toString());
+		throw new IllegalStateException("'" + expectedLogging + "' was not logged within 60 seconds");
 	}
 
 	private List<String> outputLines() {
@@ -182,8 +176,8 @@ public class ApplicationRunner extends DefaultTask {
 	private List<String> normalize(List<String> lines) {
 		List<String> normalizedLines = lines;
 		Map<String, String> normalizations = new HashMap<>(this.normalizations);
-		normalizations.put("(Starting .* using Java .* on ).*( with PID [\\d]+ \\().*( started by ).*( in ).*(\\))",
-				"$1myhost$2" + this.applicationJar.get() + "$3myuser$4/opt/apps/$5");
+		normalizations.put("(Starting .* using Java .* with PID [\\d]+ \\().*( started by ).*( in ).*(\\))",
+				"$1" + this.applicationJar.get() + "$2myuser$3/opt/apps/$4");
 		for (Entry<String, String> normalization : normalizations.entrySet()) {
 			Pattern pattern = Pattern.compile(normalization.getKey());
 			normalizedLines = normalize(normalizedLines, pattern, normalization.getValue());
@@ -196,7 +190,7 @@ public class ApplicationRunner extends DefaultTask {
 		List<String> normalizedLines = new ArrayList<>();
 		for (String line : lines) {
 			Matcher matcher = pattern.matcher(line);
-			StringBuffer transformed = new StringBuffer();
+			StringBuilder transformed = new StringBuilder();
 			while (matcher.find()) {
 				matched = true;
 				matcher.appendReplacement(transformed, replacement);
