@@ -16,8 +16,6 @@
 
 package org.springframework.boot.autoconfigure.amqp;
 
-import java.util.stream.Collectors;
-
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.amqp.rabbit.config.ContainerCustomizer;
 import org.springframework.amqp.rabbit.config.DirectRabbitListenerContainerFactory;
@@ -69,8 +67,7 @@ class RabbitAnnotationDrivenConfiguration {
 				this.properties);
 		configurer.setMessageConverter(this.messageConverter.getIfUnique());
 		configurer.setMessageRecoverer(this.messageRecoverer.getIfUnique());
-		configurer
-			.setRetryTemplateCustomizers(this.retryTemplateCustomizers.orderedStream().collect(Collectors.toList()));
+		configurer.setRetryTemplateCustomizers(this.retryTemplateCustomizers.orderedStream().toList());
 		return configurer;
 	}
 
@@ -94,8 +91,7 @@ class RabbitAnnotationDrivenConfiguration {
 				this.properties);
 		configurer.setMessageConverter(this.messageConverter.getIfUnique());
 		configurer.setMessageRecoverer(this.messageRecoverer.getIfUnique());
-		configurer
-			.setRetryTemplateCustomizers(this.retryTemplateCustomizers.orderedStream().collect(Collectors.toList()));
+		configurer.setRetryTemplateCustomizers(this.retryTemplateCustomizers.orderedStream().toList());
 		return configurer;
 	}
 

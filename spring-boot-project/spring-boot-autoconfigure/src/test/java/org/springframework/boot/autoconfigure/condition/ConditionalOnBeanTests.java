@@ -489,7 +489,7 @@ class ConditionalOnBeanTests {
 	@TestAnnotation
 	static class ExampleBean {
 
-		private String value;
+		private final String value;
 
 		ExampleBean(String value) {
 			this.value = value;

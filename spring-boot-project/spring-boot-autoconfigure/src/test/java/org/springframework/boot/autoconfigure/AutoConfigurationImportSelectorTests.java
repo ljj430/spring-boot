@@ -56,7 +56,7 @@ class AutoConfigurationImportSelectorTests {
 
 	private final MockEnvironment environment = new MockEnvironment();
 
-	private List<AutoConfigurationImportFilter> filters = new ArrayList<>();
+	private final List<AutoConfigurationImportFilter> filters = new ArrayList<>();
 
 	@BeforeEach
 	void setup() {
@@ -213,10 +213,7 @@ class AutoConfigurationImportSelectorTests {
 	}
 
 	private List<String> getAutoConfigurationClassNames() {
-		List<String> autoConfigurationClassNames = new ArrayList<>();
-		ImportCandidates.load(AutoConfiguration.class, getClass().getClassLoader())
-			.forEach(autoConfigurationClassNames::add);
-		return autoConfigurationClassNames;
+		return ImportCandidates.load(AutoConfiguration.class, getClass().getClassLoader()).getCandidates();
 	}
 
 	private class TestAutoConfigurationImportSelector extends AutoConfigurationImportSelector {

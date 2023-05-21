@@ -36,6 +36,7 @@ import org.springframework.boot.test.context.runner.ContextConsumer;
 import org.springframework.boot.test.context.runner.ReactiveWebApplicationContextRunner;
 import org.springframework.boot.testsupport.testcontainers.DockerImageNames;
 import org.springframework.http.ResponseCookie;
+import org.springframework.session.MapSession;
 import org.springframework.session.data.mongo.ReactiveMongoSessionRepository;
 import org.springframework.session.data.redis.ReactiveRedisSessionRepository;
 
@@ -55,73 +56,57 @@ class ReactiveSessionAutoConfigurationMongoTests extends AbstractSessionAutoConf
 		.withStartupTimeout(Duration.ofMinutes(5));
 
 	private final ReactiveWebApplicationContextRunner contextRunner = new ReactiveWebApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(SessionAutoConfiguration.class));
+		.withClassLoader(new FilteredClassLoader(ReactiveRedisSessionRepository.class))
+		.withConfiguration(AutoConfigurations.of(SessionAutoConfiguration.class, MongoAutoConfiguration.class,
+				MongoDataAutoConfiguration.class, MongoReactiveAutoConfiguration.class,
+				MongoReactiveDataAutoConfiguration.class));
 
 	@Test
 	void defaultConfig() {
-		this.contextRunner
-			.withPropertyValues("spring.session.store-type=mongodb",
-					"spring.data.mongodb.uri=" + mongoDb.getReplicaSetUrl())
-			.withConfiguration(AutoConfigurations.of(MongoAutoConfiguration.class, MongoDataAutoConfiguration.class,
-					MongoReactiveAutoConfiguration.class, MongoReactiveDataAutoConfiguration.class))
-			.run(validateSpringSessionUsesMongo("sessions"));
-	}
-
-	@Test
-	void defaultConfigWithUniqueStoreImplementation() {
-		this.contextRunner.withClassLoader(new FilteredClassLoader(ReactiveRedisSessionRepository.class))
-			.withPropertyValues("spring.data.mongodb.uri=" + mongoDb.getReplicaSetUrl())
-			.withConfiguration(AutoConfigurations.of(MongoAutoConfiguration.class, MongoDataAutoConfiguration.class,
-					MongoReactiveAutoConfiguration.class, MongoReactiveDataAutoConfiguration.class))
+		this.contextRunner.withPropertyValues("spring.data.mongodb.uri=" + mongoDb.getReplicaSetUrl())
 			.run(validateSpringSessionUsesMongo("sessions"));
 	}
 
 	@Test
 	void defaultConfigWithCustomTimeout() {
 		this.contextRunner
-			.withPropertyValues("spring.session.store-type=mongodb", "spring.session.timeout=1m",
-					"spring.data.mongodb.uri=" + mongoDb.getReplicaSetUrl())
-			.withConfiguration(AutoConfigurations.of(MongoAutoConfiguration.class, MongoDataAutoConfiguration.class,
-					MongoReactiveAutoConfiguration.class, MongoReactiveDataAutoConfiguration.class))
+			.withPropertyValues("spring.session.timeout=1m", "spring.data.mongodb.uri=" + mongoDb.getReplicaSetUrl())
 			.run((context) -> {
 				ReactiveMongoSessionRepository repository = validateSessionRepository(context,
 						ReactiveMongoSessionRepository.class);
-				assertThat(repository).hasFieldOrPropertyWithValue("maxInactiveIntervalInSeconds", 60);
+				assertThat(repository).hasFieldOrPropertyWithValue("defaultMaxInactiveInterval", Duration.ofMinutes(1));
 			});
 	}
 
 	@Test
 	void defaultConfigWithCustomSessionTimeout() {
 		this.contextRunner
-			.withPropertyValues("spring.session.store-type=mongodb", "server.reactive.session.timeout=1m",
+			.withPropertyValues("server.reactive.session.timeout=1m",
 					"spring.data.mongodb.uri=" + mongoDb.getReplicaSetUrl())
-			.withConfiguration(AutoConfigurations.of(MongoAutoConfiguration.class, MongoDataAutoConfiguration.class,
-					MongoReactiveAutoConfiguration.class, MongoReactiveDataAutoConfiguration.class))
 			.run((context) -> {
 				ReactiveMongoSessionRepository repository = validateSessionRepository(context,
 						ReactiveMongoSessionRepository.class);
-				assertThat(repository).hasFieldOrPropertyWithValue("maxInactiveIntervalInSeconds", 60);
+				assertThat(repository).hasFieldOrPropertyWithValue("defaultMaxInactiveInterval", Duration.ofMinutes(1));
 			});
 	}
 
 	@Test
 	void mongoSessionStoreWithCustomizations() {
 		this.contextRunner
-			.withConfiguration(AutoConfigurations.of(MongoAutoConfiguration.class, MongoDataAutoConfiguration.class,
-					MongoReactiveAutoConfiguration.class, MongoReactiveDataAutoConfiguration.class))
-			.withPropertyValues("spring.session.store-type=mongodb", "spring.session.mongodb.collection-name=foo",
+			.withPropertyValues("spring.session.mongodb.collection-name=foo",
 					"spring.data.mongodb.uri=" + mongoDb.getReplicaSetUrl())
 			.run(validateSpringSessionUsesMongo("foo"));
 	}
 
 	@Test
 	void sessionCookieConfigurationIsAppliedToAutoConfiguredWebSessionIdResolver() {
-		AutoConfigurations autoConfigurations = AutoConfigurations.of(MongoAutoConfiguration.class,
-				MongoDataAutoConfiguration.class, MongoReactiveAutoConfiguration.class,
+		AutoConfigurations autoConfigurations = AutoConfigurations.of(SessionAutoConfiguration.class,
+				MongoAutoConfiguration.class, MongoDataAutoConfiguration.class, MongoReactiveAutoConfiguration.class,
 				MongoReactiveDataAutoConfiguration.class, WebSessionIdResolverAutoConfiguration.class);
-		this.contextRunner.withConfiguration(autoConfigurations)
+		new ReactiveWebApplicationContextRunner().withConfiguration(autoConfigurations)
 			.withUserConfiguration(Config.class)
-			.withPropertyValues("spring.session.store-type=mongodb", "server.reactive.session.cookie.name:JSESSIONID",
+			.withClassLoader(new FilteredClassLoader(ReactiveRedisSessionRepository.class))
+			.withPropertyValues("server.reactive.session.cookie.name:JSESSIONID",
 					"server.reactive.session.cookie.domain:.example.com",
 					"server.reactive.session.cookie.path:/example", "server.reactive.session.cookie.max-age:60",
 					"server.reactive.session.cookie.http-only:false", "server.reactive.session.cookie.secure:false",
@@ -145,8 +130,8 @@ class ReactiveSessionAutoConfigurationMongoTests extends AbstractSessionAutoConf
 			ReactiveMongoSessionRepository repository = validateSessionRepository(context,
 					ReactiveMongoSessionRepository.class);
 			assertThat(repository.getCollectionName()).isEqualTo(collectionName);
-			assertThat(repository).hasFieldOrPropertyWithValue("maxInactiveIntervalInSeconds",
-					ReactiveMongoSessionRepository.DEFAULT_INACTIVE_INTERVAL);
+			assertThat(repository).hasFieldOrPropertyWithValue("defaultMaxInactiveInterval",
+					MapSession.DEFAULT_MAX_INACTIVE_INTERVAL);
 		};
 	}
 

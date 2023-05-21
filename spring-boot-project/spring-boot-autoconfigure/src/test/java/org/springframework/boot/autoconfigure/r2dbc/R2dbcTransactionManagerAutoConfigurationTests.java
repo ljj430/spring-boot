@@ -18,6 +18,7 @@ package org.springframework.boot.autoconfigure.r2dbc;
 
 import io.r2dbc.spi.Connection;
 import io.r2dbc.spi.ConnectionFactory;
+import io.r2dbc.spi.TransactionDefinition;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -34,6 +35,7 @@ import org.springframework.transaction.reactive.TransactionSynchronizationManage
 import org.springframework.transaction.reactive.TransactionalOperator;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -77,7 +79,7 @@ class R2dbcTransactionManagerAutoConfigurationTests {
 			ConnectionFactory connectionFactory = mock(ConnectionFactory.class);
 			Connection connection = mock(Connection.class);
 			given(connectionFactory.create()).willAnswer((invocation) -> Mono.just(connection));
-			given(connection.beginTransaction()).willReturn(Mono.empty());
+			given(connection.beginTransaction(any(TransactionDefinition.class))).willReturn(Mono.empty());
 			given(connection.commitTransaction()).willReturn(Mono.empty());
 			given(connection.close()).willReturn(Mono.empty());
 			return connectionFactory;

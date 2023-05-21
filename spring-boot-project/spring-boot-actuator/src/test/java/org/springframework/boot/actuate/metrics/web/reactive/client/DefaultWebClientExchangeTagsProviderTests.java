@@ -39,11 +39,12 @@ import static org.mockito.Mockito.mock;
  * @author Brian Clozel
  * @author Nishant Raut
  */
+@SuppressWarnings({ "deprecation", "removal" })
 class DefaultWebClientExchangeTagsProviderTests {
 
 	private static final String URI_TEMPLATE_ATTRIBUTE = WebClient.class.getName() + ".uriTemplate";
 
-	private WebClientExchangeTagsProvider tagsProvider = new DefaultWebClientExchangeTagsProvider();
+	private final WebClientExchangeTagsProvider tagsProvider = new DefaultWebClientExchangeTagsProvider();
 
 	private ClientRequest request;
 
@@ -55,7 +56,7 @@ class DefaultWebClientExchangeTagsProviderTests {
 			.attribute(URI_TEMPLATE_ATTRIBUTE, "https://example.org/projects/{project}")
 			.build();
 		this.response = mock(ClientResponse.class);
-		given(this.response.rawStatusCode()).willReturn(HttpStatus.OK.value());
+		given(this.response.statusCode()).willReturn(HttpStatus.OK);
 	}
 
 	@Test

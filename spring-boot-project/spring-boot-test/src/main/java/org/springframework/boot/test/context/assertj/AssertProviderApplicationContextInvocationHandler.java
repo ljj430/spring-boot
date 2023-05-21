@@ -46,9 +46,9 @@ class AssertProviderApplicationContextInvocationHandler implements InvocationHan
 	AssertProviderApplicationContextInvocationHandler(Class<?> applicationContextType, Supplier<?> contextSupplier) {
 		this.applicationContextType = applicationContextType;
 		Object contextOrStartupFailure = getContextOrStartupFailure(contextSupplier);
-		if (contextOrStartupFailure instanceof RuntimeException) {
+		if (contextOrStartupFailure instanceof RuntimeException runtimeException) {
 			this.applicationContext = null;
-			this.startupFailure = (RuntimeException) contextOrStartupFailure;
+			this.startupFailure = runtimeException;
 		}
 		else {
 			this.applicationContext = (ApplicationContext) contextOrStartupFailure;
@@ -136,8 +136,8 @@ class AssertProviderApplicationContextInvocationHandler implements InvocationHan
 	}
 
 	private Object invokeClose() throws IOException {
-		if (this.applicationContext instanceof Closeable) {
-			((Closeable) this.applicationContext).close();
+		if (this.applicationContext instanceof Closeable closeable) {
+			closeable.close();
 		}
 		return null;
 	}
