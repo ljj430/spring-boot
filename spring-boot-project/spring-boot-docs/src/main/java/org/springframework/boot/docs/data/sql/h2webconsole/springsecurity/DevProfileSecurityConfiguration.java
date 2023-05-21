@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,10 +33,10 @@ public class DevProfileSecurityConfiguration {
 	@Bean
 	@Order(Ordered.HIGHEST_PRECEDENCE)
 	SecurityFilterChain h2ConsoleSecurityFilterChain(HttpSecurity http) throws Exception {
-		http.securityMatcher(PathRequest.toH2Console());
-		http.authorizeHttpRequests(yourCustomAuthorization());
+		http.requestMatcher(PathRequest.toH2Console());
+		http.authorizeRequests(yourCustomAuthorization());
 		http.csrf((csrf) -> csrf.disable());
-		http.headers((headers) -> headers.frameOptions((frame) -> frame.sameOrigin()));
+		http.headers((headers) -> headers.frameOptions().sameOrigin());
 		return http.build();
 	}
 

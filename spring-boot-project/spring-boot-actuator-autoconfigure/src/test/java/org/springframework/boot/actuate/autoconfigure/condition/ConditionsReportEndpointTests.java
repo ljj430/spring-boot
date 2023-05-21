@@ -19,10 +19,11 @@ package org.springframework.boot.actuate.autoconfigure.condition;
 import java.util.Arrays;
 import java.util.Collections;
 
-import jakarta.annotation.PostConstruct;
+import javax.annotation.PostConstruct;
+
 import org.junit.jupiter.api.Test;
 
-import org.springframework.boot.actuate.autoconfigure.condition.ConditionsReportEndpoint.ContextConditionsDescriptor;
+import org.springframework.boot.actuate.autoconfigure.condition.ConditionsReportEndpoint.ContextConditionEvaluation;
 import org.springframework.boot.autoconfigure.condition.ConditionEvaluationReport;
 import org.springframework.boot.autoconfigure.condition.ConditionOutcome;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -47,8 +48,8 @@ class ConditionsReportEndpointTests {
 	@Test
 	void invoke() {
 		new ApplicationContextRunner().withUserConfiguration(Config.class).run((context) -> {
-			ContextConditionsDescriptor report = context.getBean(ConditionsReportEndpoint.class)
-				.conditions()
+			ContextConditionEvaluation report = context.getBean(ConditionsReportEndpoint.class)
+				.applicationConditionEvaluation()
 				.getContexts()
 				.get(context.getId());
 			assertThat(report.getPositiveMatches()).isEmpty();

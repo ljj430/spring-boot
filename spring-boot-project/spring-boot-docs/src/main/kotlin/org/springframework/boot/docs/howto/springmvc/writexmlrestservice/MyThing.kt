@@ -16,7 +16,7 @@
 
 package org.springframework.boot.docs.howto.springmvc.writexmlrestservice
 
-import jakarta.xml.bind.annotation.XmlRootElement
+import javax.xml.bind.annotation.XmlRootElement
 
 @XmlRootElement
 class MyThing {

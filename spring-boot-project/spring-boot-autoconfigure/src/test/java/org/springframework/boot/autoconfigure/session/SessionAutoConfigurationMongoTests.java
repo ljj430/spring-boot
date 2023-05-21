@@ -52,26 +52,35 @@ class SessionAutoConfigurationMongoTests extends AbstractSessionAutoConfiguratio
 		.withStartupTimeout(Duration.ofMinutes(5));
 
 	private final WebApplicationContextRunner contextRunner = new WebApplicationContextRunner()
-		.withClassLoader(new FilteredClassLoader(HazelcastIndexedSessionRepository.class,
-				JdbcIndexedSessionRepository.class, RedisIndexedSessionRepository.class))
 		.withConfiguration(AutoConfigurations.of(MongoAutoConfiguration.class, MongoDataAutoConfiguration.class,
 				SessionAutoConfiguration.class))
-		.withPropertyValues("spring.data.mongodb.uri=" + mongoDB.getReplicaSetUrl());
+		.withPropertyValues("spring.data.mongodb.uri=" + mongoDB.getReplicaSetUrl(),
+				"spring.mongodb.embedded.version=3.5.5");
 
 	@Test
 	void defaultConfig() {
-		this.contextRunner.run(validateSpringSessionUsesMongo("sessions"));
+		this.contextRunner.withPropertyValues("spring.session.store-type=mongodb")
+			.run(validateSpringSessionUsesMongo("sessions"));
+	}
+
+	@Test
+	void defaultConfigWithUniqueStoreImplementation() {
+		this.contextRunner
+			.withClassLoader(new FilteredClassLoader(HazelcastIndexedSessionRepository.class,
+					JdbcIndexedSessionRepository.class, RedisIndexedSessionRepository.class))
+			.run(validateSpringSessionUsesMongo("sessions"));
 	}
 
 	@Test
 	void defaultConfigWithCustomTimeout() {
-		this.contextRunner.withPropertyValues("spring.session.timeout=1m")
+		this.contextRunner.withPropertyValues("spring.session.store-type=mongodb", "spring.session.timeout=1m")
 			.run(validateSpringSessionUsesMongo("sessions", Duration.ofMinutes(1)));
 	}
 
 	@Test
 	void mongoSessionStoreWithCustomizations() {
-		this.contextRunner.withPropertyValues("spring.session.mongodb.collection-name=foo")
+		this.contextRunner
+			.withPropertyValues("spring.session.store-type=mongodb", "spring.session.mongodb.collection-name=foo")
 			.run(validateSpringSessionUsesMongo("foo"));
 	}
 
@@ -86,7 +95,8 @@ class SessionAutoConfigurationMongoTests extends AbstractSessionAutoConfiguratio
 			MongoIndexedSessionRepository repository = validateSessionRepository(context,
 					MongoIndexedSessionRepository.class);
 			assertThat(repository).hasFieldOrPropertyWithValue("collectionName", collectionName);
-			assertThat(repository).hasFieldOrPropertyWithValue("defaultMaxInactiveInterval", timeout);
+			assertThat(repository).hasFieldOrPropertyWithValue("maxInactiveIntervalInSeconds",
+					(int) timeout.getSeconds());
 		};
 	}
 

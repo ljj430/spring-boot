@@ -64,8 +64,8 @@ class SpringApplicationBuilderTests {
 
 	private void close(ApplicationContext context) {
 		if (context != null) {
-			if (context instanceof ConfigurableApplicationContext configurableContext) {
-				configurableContext.close();
+			if (context instanceof ConfigurableApplicationContext) {
+				((ConfigurableApplicationContext) context).close();
 			}
 			close(context.getParent());
 		}

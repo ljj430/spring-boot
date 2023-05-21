@@ -16,7 +16,7 @@
 
 package org.springframework.boot.autoconfigure.mail;
 
-import jakarta.mail.MessagingException;
+import javax.mail.MessagingException;
 
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;

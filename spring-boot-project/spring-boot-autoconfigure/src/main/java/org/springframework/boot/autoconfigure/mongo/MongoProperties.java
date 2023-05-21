@@ -16,8 +16,6 @@
 
 package org.springframework.boot.autoconfigure.mongo;
 
-import java.util.List;
-
 import com.mongodb.ConnectionString;
 import org.bson.UuidRepresentation;
 
@@ -35,7 +33,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @author Nasko Vasilev
  * @author Mark Paluch
  * @author Artsiom Yudovin
- * @author Safeer Ansari
  * @since 1.0.0
  */
 @ConfigurationProperties(prefix = "spring.data.mongodb")
@@ -60,13 +57,6 @@ public class MongoProperties {
 	 * Mongo server port. Cannot be set with URI.
 	 */
 	private Integer port = null;
-
-	/**
-	 * Additional server hosts. Cannot be set with URI or if 'host' is not specified.
-	 * Additional hosts will use the default mongo port of 27017. If you want to use a
-	 * different port you can use the "host:port" syntax.
-	 */
-	private List<String> additionalHosts;
 
 	/**
 	 * Mongo database URI. Overrides host, port, username, password, and database.
@@ -216,14 +206,6 @@ public class MongoProperties {
 
 	public void setAutoIndexCreation(Boolean autoIndexCreation) {
 		this.autoIndexCreation = autoIndexCreation;
-	}
-
-	public List<String> getAdditionalHosts() {
-		return this.additionalHosts;
-	}
-
-	public void setAdditionalHosts(List<String> additionalHosts) {
-		this.additionalHosts = additionalHosts;
 	}
 
 	public static class Gridfs {
