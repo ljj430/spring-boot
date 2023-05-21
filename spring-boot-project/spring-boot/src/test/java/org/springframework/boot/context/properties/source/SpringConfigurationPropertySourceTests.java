@@ -70,7 +70,7 @@ class SpringConfigurationPropertySourceTests {
 		mapper.addFromConfigurationProperty(name, "key");
 		SpringConfigurationPropertySource adapter = new SpringConfigurationPropertySource(propertySource, mapper);
 		ConfigurationProperty configurationProperty = adapter.getConfigurationProperty(name);
-		assertThat(configurationProperty.getOrigin().toString()).isEqualTo("\"key\" from property source \"test\"");
+		assertThat(configurationProperty.getOrigin()).hasToString("\"key\" from property source \"test\"");
 		assertThat(configurationProperty.getSource()).isEqualTo(adapter);
 	}
 
@@ -83,7 +83,7 @@ class SpringConfigurationPropertySourceTests {
 		ConfigurationPropertyName name = ConfigurationPropertyName.of("my.key");
 		mapper.addFromConfigurationProperty(name, "key");
 		SpringConfigurationPropertySource adapter = new SpringConfigurationPropertySource(propertySource, mapper);
-		assertThat(adapter.getConfigurationProperty(name).getOrigin().toString()).isEqualTo("TestOrigin key");
+		assertThat(adapter.getConfigurationProperty(name).getOrigin()).hasToString("TestOrigin key");
 	}
 
 	@Test
@@ -105,7 +105,7 @@ class SpringConfigurationPropertySourceTests {
 
 	@Test
 	void fromWhenNonEnumerableShouldReturnNonIterable() {
-		PropertySource<?> propertySource = new PropertySource<Object>("test", new Object()) {
+		PropertySource<?> propertySource = new PropertySource<>("test", new Object()) {
 
 			@Override
 			public Object getProperty(String name) {
@@ -120,7 +120,7 @@ class SpringConfigurationPropertySourceTests {
 
 	@Test
 	void fromWhenEnumerableButRestrictedShouldReturnNonIterable() {
-		Map<String, Object> source = new LinkedHashMap<String, Object>() {
+		Map<String, Object> source = new LinkedHashMap<>() {
 
 			@Override
 			public int size() {

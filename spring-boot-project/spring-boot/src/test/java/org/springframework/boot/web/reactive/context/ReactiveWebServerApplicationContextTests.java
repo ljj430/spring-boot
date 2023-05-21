@@ -50,7 +50,7 @@ import static org.mockito.BDDMockito.then;
  */
 class ReactiveWebServerApplicationContextTests {
 
-	private ReactiveWebServerApplicationContext context = new ReactiveWebServerApplicationContext();
+	private final ReactiveWebServerApplicationContext context = new ReactiveWebServerApplicationContext();
 
 	@AfterEach
 	void cleanUp() {
@@ -60,6 +60,7 @@ class ReactiveWebServerApplicationContextTests {
 	@Test
 	void whenThereIsNoWebServerFactoryBeanThenContextRefreshWillFail() {
 		assertThatExceptionOfType(ApplicationContextException.class).isThrownBy(() -> this.context.refresh())
+			.havingRootCause()
 			.withMessageContaining(
 					"Unable to start ReactiveWebServerApplicationContext due to missing ReactiveWebServerFactory bean");
 	}
@@ -68,6 +69,7 @@ class ReactiveWebServerApplicationContextTests {
 	void whenThereIsNoHttpHandlerBeanThenContextRefreshWillFail() {
 		addWebServerFactoryBean();
 		assertThatExceptionOfType(ApplicationContextException.class).isThrownBy(() -> this.context.refresh())
+			.havingRootCause()
 			.withMessageContaining("Unable to start ReactiveWebApplicationContext due to missing HttpHandler bean");
 	}
 
@@ -76,6 +78,7 @@ class ReactiveWebServerApplicationContextTests {
 		addWebServerFactoryBean();
 		addWebServerFactoryBean("anotherWebServerFactory");
 		assertThatExceptionOfType(ApplicationContextException.class).isThrownBy(() -> this.context.refresh())
+			.havingRootCause()
 			.withMessageContaining(
 					"Unable to start ReactiveWebApplicationContext due to multiple ReactiveWebServerFactory beans");
 	}
@@ -86,6 +89,7 @@ class ReactiveWebServerApplicationContextTests {
 		addHttpHandlerBean("httpHandler1");
 		addHttpHandlerBean("httpHandler2");
 		assertThatExceptionOfType(ApplicationContextException.class).isThrownBy(() -> this.context.refresh())
+			.havingRootCause()
 			.withMessageContaining("Unable to start ReactiveWebApplicationContext due to multiple HttpHandler beans");
 	}
 
@@ -183,7 +187,7 @@ class ReactiveWebServerApplicationContextTests {
 
 	static class TestApplicationListener implements ApplicationListener<ApplicationEvent> {
 
-		private Deque<ApplicationEvent> events = new ArrayDeque<>();
+		private final Deque<ApplicationEvent> events = new ArrayDeque<>();
 
 		@Override
 		public void onApplicationEvent(ApplicationEvent event) {

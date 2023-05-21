@@ -23,15 +23,14 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Properties;
 
-import javax.servlet.DispatcherType;
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.Servlet;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletContextListener;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.Servlet;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletContextListener;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -96,7 +95,7 @@ import static org.mockito.Mockito.withSettings;
 @ExtendWith({ OutputCaptureExtension.class, MockitoExtension.class })
 class ServletWebServerApplicationContextTests {
 
-	private ServletWebServerApplicationContext context = new ServletWebServerApplicationContext();
+	private final ServletWebServerApplicationContext context = new ServletWebServerApplicationContext();
 
 	@Captor
 	private ArgumentCaptor<Filter> filterCaptor;
@@ -142,7 +141,7 @@ class ServletWebServerApplicationContextTests {
 			.extracting("class")
 			.containsExactly(ServletWebServerInitializedEvent.class, ContextRefreshedEvent.class);
 		ServletWebServerInitializedEvent initializedEvent = (ServletWebServerInitializedEvent) events.get(0);
-		assertThat(initializedEvent.getSource().getPort() >= 0).isTrue();
+		assertThat(initializedEvent.getSource().getPort()).isGreaterThanOrEqualTo(0);
 		assertThat(initializedEvent.getApplicationContext()).isEqualTo(this.context);
 	}
 
@@ -207,6 +206,7 @@ class ServletWebServerApplicationContextTests {
 	@Test
 	void missingServletWebServerFactory() {
 		assertThatExceptionOfType(ApplicationContextException.class).isThrownBy(() -> this.context.refresh())
+			.havingRootCause()
 			.withMessageContaining("Unable to start ServletWebServerApplicationContext due to missing "
 					+ "ServletWebServerFactory bean");
 	}
@@ -217,6 +217,7 @@ class ServletWebServerApplicationContextTests {
 		this.context.registerBeanDefinition("webServerFactory2",
 				new RootBeanDefinition(MockServletWebServerFactory.class));
 		assertThatExceptionOfType(ApplicationContextException.class).isThrownBy(() -> this.context.refresh())
+			.havingRootCause()
 			.withMessageContaining("Unable to start ServletWebServerApplicationContext due to "
 					+ "multiple ServletWebServerFactory beans");
 
@@ -239,13 +240,14 @@ class ServletWebServerApplicationContextTests {
 		OrderedFilter filter = new OrderedFilter();
 		this.context.registerBeanDefinition("filterBean", beanDefinition(filter));
 		FilterRegistrationBean<Filter> registration = new FilterRegistrationBean<>();
+		registration.setName("filterBeanRegistration");
 		registration.setFilter(mock(Filter.class));
 		registration.setOrder(100);
 		this.context.registerBeanDefinition("filterRegistrationBean", beanDefinition(registration));
 		this.context.refresh();
 		MockServletWebServerFactory factory = getWebServerFactory();
 		then(factory.getServletContext()).should().addFilter("filterBean", filter);
-		then(factory.getServletContext()).should().addFilter("object", registration.getFilter());
+		then(factory.getServletContext()).should().addFilter("filterBeanRegistration", registration.getFilter());
 		assertThat(factory.getRegisteredFilter(0).getFilter()).isEqualTo(filter);
 	}
 
@@ -489,15 +491,15 @@ class ServletWebServerApplicationContextTests {
 	}
 
 	static <T> T getBean(T object) {
-		if (object instanceof RuntimeException) {
-			throw (RuntimeException) object;
+		if (object instanceof RuntimeException runtimeException) {
+			throw runtimeException;
 		}
 		return object;
 	}
 
 	static class TestApplicationListener implements ApplicationListener<ApplicationEvent> {
 
-		private Deque<ApplicationEvent> events = new ArrayDeque<>();
+		private final Deque<ApplicationEvent> events = new ArrayDeque<>();
 
 		@Override
 		public void onApplicationEvent(ApplicationEvent event) {
