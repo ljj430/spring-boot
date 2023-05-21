@@ -20,8 +20,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
-
+import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -66,9 +65,9 @@ class DefaultErrorViewResolverTests {
 
 	private Resources resourcesProperties;
 
-	private Map<String, Object> model = new HashMap<>();
+	private final Map<String, Object> model = new HashMap<>();
 
-	private HttpServletRequest request = new MockHttpServletRequest();
+	private final HttpServletRequest request = new MockHttpServletRequest();
 
 	@BeforeEach
 	void setup() {

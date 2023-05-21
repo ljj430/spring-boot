@@ -21,7 +21,6 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.sql.DataSource;
@@ -62,8 +61,8 @@ class BatchDataSourceScriptDatabaseInitializerTests {
 	}
 
 	@ParameterizedTest
-	@EnumSource(value = DatabaseDriver.class, mode = Mode.EXCLUDE, names = { "FIREBIRD", "GAE", "HANA", "INFORMIX",
-			"JTDS", "PHOENIX", "REDSHIFT", "TERADATA", "TESTCONTAINERS", "UNKNOWN" })
+	@EnumSource(value = DatabaseDriver.class, mode = Mode.EXCLUDE,
+			names = { "FIREBIRD", "INFORMIX", "JTDS", "PHOENIX", "REDSHIFT", "TERADATA", "TESTCONTAINERS", "UNKNOWN" })
 	void batchSchemaCanBeLocated(DatabaseDriver driver) throws SQLException {
 		DefaultResourceLoader resourceLoader = new DefaultResourceLoader();
 		BatchProperties properties = new BatchProperties();
@@ -88,10 +87,11 @@ class BatchDataSourceScriptDatabaseInitializerTests {
 			.of(resolver.getResources("classpath:org/springframework/batch/core/schema-*.sql"))
 			.map((resource) -> resource.getFilename())
 			.filter((resourceName) -> !resourceName.contains("-drop-"))
-			.collect(Collectors.toList());
+			.toList();
 		assertThat(schemaNames).containsExactlyInAnyOrder("schema-derby.sql", "schema-sqlserver.sql",
-				"schema-mysql.sql", "schema-sqlite.sql", "schema-postgresql.sql", "schema-oracle10g.sql",
-				"schema-db2.sql", "schema-sqlf.sql", "schema-hsqldb.sql", "schema-sybase.sql", "schema-h2.sql");
+				"schema-mariadb.sql", "schema-mysql.sql", "schema-sqlite.sql", "schema-postgresql.sql",
+				"schema-hana.sql", "schema-oracle.sql", "schema-db2.sql", "schema-hsqldb.sql", "schema-sybase.sql",
+				"schema-h2.sql");
 	}
 
 }

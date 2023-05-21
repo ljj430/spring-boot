@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2021 the original author or authors.
+ * Copyright 2012-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
@@ -62,8 +63,6 @@ public class MetricsProperties {
 
 	private final Data data = new Data();
 
-	private final Graphql graphql = new Graphql();
-
 	private final System system = new System();
 
 	private final Distribution distribution = new Distribution();
@@ -90,10 +89,6 @@ public class MetricsProperties {
 
 	public Data getData() {
 		return this.data;
-	}
-
-	public Graphql getGraphql() {
-		return this.graphql;
 	}
 
 	public System getSystem() {
@@ -148,20 +143,13 @@ public class MetricsProperties {
 				 */
 				private String metricName = "http.client.requests";
 
-				/**
-				 * Auto-timed request settings.
-				 */
-				@NestedConfigurationProperty
-				private final AutoTimeProperties autotime = new AutoTimeProperties();
-
-				public AutoTimeProperties getAutotime() {
-					return this.autotime;
-				}
-
+				@Deprecated(since = "3.0.0", forRemoval = true)
+				@DeprecatedConfigurationProperty(replacement = "management.observations.http.client.requests.name")
 				public String getMetricName() {
 					return this.metricName;
 				}
 
+				@Deprecated(since = "3.0.0", forRemoval = true)
 				public void setMetricName(String metricName) {
 					this.metricName = metricName;
 				}
@@ -200,35 +188,16 @@ public class MetricsProperties {
 				 */
 				private String metricName = "http.server.requests";
 
-				/**
-				 * Whether the trailing slash should be ignored when recording metrics.
-				 */
-				private boolean ignoreTrailingSlash = true;
-
-				/**
-				 * Auto-timed request settings.
-				 */
-				@NestedConfigurationProperty
-				private final AutoTimeProperties autotime = new AutoTimeProperties();
-
-				public AutoTimeProperties getAutotime() {
-					return this.autotime;
-				}
-
+				@Deprecated(since = "3.0.0", forRemoval = true)
+				@DeprecatedConfigurationProperty(replacement = "management.observations.http.server.requests.name")
 				public String getMetricName() {
 					return this.metricName;
 				}
 
+				@Deprecated(since = "3.0.0", forRemoval = true)
+				@DeprecatedConfigurationProperty(replacement = "management.observations.http.server.requests.name")
 				public void setMetricName(String metricName) {
 					this.metricName = metricName;
-				}
-
-				public boolean isIgnoreTrailingSlash() {
-					return this.ignoreTrailingSlash;
-				}
-
-				public void setIgnoreTrailingSlash(boolean ignoreTrailingSlash) {
-					this.ignoreTrailingSlash = ignoreTrailingSlash;
 				}
 
 			}
@@ -270,20 +239,6 @@ public class MetricsProperties {
 				return this.autotime;
 			}
 
-		}
-
-	}
-
-	public static class Graphql {
-
-		/**
-		 * Auto-timed queries settings.
-		 */
-		@NestedConfigurationProperty
-		private final AutoTimeProperties autotime = new AutoTimeProperties();
-
-		public AutoTimeProperties getAutotime() {
-			return this.autotime;
 		}
 
 	}
