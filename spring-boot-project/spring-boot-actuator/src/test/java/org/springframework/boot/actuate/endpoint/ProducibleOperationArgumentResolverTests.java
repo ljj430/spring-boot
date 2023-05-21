@@ -61,7 +61,7 @@ class ProducibleOperationArgumentResolverTests {
 
 	@Test
 	void whenNothingIsAcceptableThenNullIsReturned() {
-		assertThat(resolve(acceptHeader("image/png"))).isNull();
+		assertThat(resolve(acceptHeader("image/png"))).isEqualTo(null);
 	}
 
 	@Test

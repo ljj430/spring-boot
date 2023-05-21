@@ -69,8 +69,8 @@ public class ServerPortInfoApplicationContextInitializer implements
 	}
 
 	private void setPortProperty(ApplicationContext context, String propertyName, int port) {
-		if (context instanceof ConfigurableApplicationContext configurableContext) {
-			setPortProperty(configurableContext.getEnvironment(), propertyName, port);
+		if (context instanceof ConfigurableApplicationContext) {
+			setPortProperty(((ConfigurableApplicationContext) context).getEnvironment(), propertyName, port);
 		}
 		if (context.getParent() != null) {
 			setPortProperty(context.getParent(), propertyName, port);

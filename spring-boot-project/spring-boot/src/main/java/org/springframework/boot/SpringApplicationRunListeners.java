@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package org.springframework.boot;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -43,10 +45,10 @@ class SpringApplicationRunListeners {
 
 	private final ApplicationStartup applicationStartup;
 
-	SpringApplicationRunListeners(Log log, List<SpringApplicationRunListener> listeners,
+	SpringApplicationRunListeners(Log log, Collection<? extends SpringApplicationRunListener> listeners,
 			ApplicationStartup applicationStartup) {
 		this.log = log;
-		this.listeners = List.copyOf(listeners);
+		this.listeners = new ArrayList<>(listeners);
 		this.applicationStartup = applicationStartup;
 	}
 

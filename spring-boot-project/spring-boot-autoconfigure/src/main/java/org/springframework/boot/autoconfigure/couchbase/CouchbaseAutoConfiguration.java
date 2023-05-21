@@ -23,6 +23,9 @@ import java.security.KeyStore;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
 
+import com.couchbase.client.core.env.IoConfig;
+import com.couchbase.client.core.env.SecurityConfig;
+import com.couchbase.client.core.env.TimeoutConfig;
 import com.couchbase.client.java.Cluster;
 import com.couchbase.client.java.ClusterOptions;
 import com.couchbase.client.java.codec.JacksonJsonSerializer;
@@ -80,7 +83,7 @@ public class CouchbaseAutoConfiguration {
 	private ClusterEnvironment.Builder initializeEnvironmentBuilder(CouchbaseProperties properties) {
 		ClusterEnvironment.Builder builder = ClusterEnvironment.builder();
 		Timeouts timeouts = properties.getEnv().getTimeouts();
-		builder.timeoutConfig((config) -> config.kvTimeout(timeouts.getKeyValue())
+		builder.timeoutConfig(TimeoutConfig.kvTimeout(timeouts.getKeyValue())
 			.analyticsTimeout(timeouts.getAnalytics())
 			.kvDurableTimeout(timeouts.getKeyValueDurable())
 			.queryTimeout(timeouts.getQuery())
@@ -90,11 +93,11 @@ public class CouchbaseAutoConfiguration {
 			.connectTimeout(timeouts.getConnect())
 			.disconnectTimeout(timeouts.getDisconnect()));
 		CouchbaseProperties.Io io = properties.getEnv().getIo();
-		builder.ioConfig((config) -> config.maxHttpConnections(io.getMaxEndpoints())
+		builder.ioConfig(IoConfig.maxHttpConnections(io.getMaxEndpoints())
 			.numKvConnections(io.getMinEndpoints())
 			.idleHttpConnectionTimeout(io.getIdleHttpConnectionTimeout()));
 		if (properties.getEnv().getSsl().getEnabled()) {
-			builder.securityConfig((config) -> config.enableTls(true)
+			builder.securityConfig(SecurityConfig.enableTls(true)
 				.trustManagerFactory(getTrustManagerFactory(properties.getEnv().getSsl())));
 		}
 		return builder;

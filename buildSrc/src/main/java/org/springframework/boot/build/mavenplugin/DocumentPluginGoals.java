@@ -21,6 +21,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.Task;
@@ -97,8 +98,13 @@ public class DocumentPluginGoals extends DefaultTask {
 			writer.printf("`%s:%s:%s`%n", plugin.getGroupId(), plugin.getArtifactId(), plugin.getVersion());
 			writer.println();
 			writer.println(mojo.getDescription());
-			List<Parameter> parameters = mojo.getParameters().stream().filter(Parameter::isEditable).toList();
-			List<Parameter> requiredParameters = parameters.stream().filter(Parameter::isRequired).toList();
+			List<Parameter> parameters = mojo.getParameters()
+				.stream()
+				.filter(Parameter::isEditable)
+				.collect(Collectors.toList());
+			List<Parameter> requiredParameters = parameters.stream()
+				.filter(Parameter::isRequired)
+				.collect(Collectors.toList());
 			String parametersSectionId = sectionId + "-parameters";
 			String detailsSectionId = parametersSectionId + "-details";
 			if (!requiredParameters.isEmpty()) {
@@ -110,7 +116,7 @@ public class DocumentPluginGoals extends DefaultTask {
 			}
 			List<Parameter> optionalParameters = parameters.stream()
 				.filter((parameter) -> !parameter.isRequired())
-				.toList();
+				.collect(Collectors.toList());
 			if (!optionalParameters.isEmpty()) {
 				writer.println();
 				writer.println();

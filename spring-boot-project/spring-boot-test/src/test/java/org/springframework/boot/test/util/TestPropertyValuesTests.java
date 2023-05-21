@@ -143,17 +143,11 @@ class TestPropertyValuesTests {
 	}
 
 	@Test
-	void applyToSystemPropertiesWithCallableShouldSetSystemProperties() {
+	void applyToSystemPropertiesShouldSetSystemProperties() {
 		TestPropertyValues.of("foo=bar").applyToSystemProperties(() -> {
 			assertThat(System.getProperty("foo")).isEqualTo("bar");
 			return null;
 		});
-	}
-
-	@Test
-	void applyToSystemPropertiesWithRunnableShouldSetSystemProperties() {
-		TestPropertyValues.of("foo=bar")
-			.applyToSystemProperties(() -> assertThat(System.getProperty("foo")).isEqualTo("bar"));
 	}
 
 	@Test

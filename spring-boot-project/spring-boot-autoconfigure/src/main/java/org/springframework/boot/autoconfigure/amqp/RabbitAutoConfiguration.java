@@ -16,6 +16,8 @@
 
 package org.springframework.boot.autoconfigure.amqp;
 
+import java.util.stream.Collectors;
+
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.impl.CredentialsProvider;
 import com.rabbitmq.client.impl.CredentialsRefreshService;
@@ -147,7 +149,8 @@ public class RabbitAutoConfiguration {
 				ObjectProvider<RabbitRetryTemplateCustomizer> retryTemplateCustomizers) {
 			RabbitTemplateConfigurer configurer = new RabbitTemplateConfigurer(properties);
 			configurer.setMessageConverter(messageConverter.getIfUnique());
-			configurer.setRetryTemplateCustomizers(retryTemplateCustomizers.orderedStream().toList());
+			configurer
+				.setRetryTemplateCustomizers(retryTemplateCustomizers.orderedStream().collect(Collectors.toList()));
 			return configurer;
 		}
 

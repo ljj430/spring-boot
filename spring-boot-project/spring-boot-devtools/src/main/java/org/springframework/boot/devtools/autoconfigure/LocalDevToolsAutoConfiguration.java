@@ -182,8 +182,8 @@ public class LocalDevToolsAutoConfiguration {
 
 		@Override
 		public void onApplicationEvent(ApplicationEvent event) {
-			if (event instanceof ContextRefreshedEvent || (event instanceof ClassPathChangedEvent classPathChangedEvent
-					&& !classPathChangedEvent.isRestartRequired())) {
+			if (event instanceof ContextRefreshedEvent || (event instanceof ClassPathChangedEvent
+					&& !((ClassPathChangedEvent) event).isRestartRequired())) {
 				this.liveReloadServer.triggerReload();
 			}
 		}

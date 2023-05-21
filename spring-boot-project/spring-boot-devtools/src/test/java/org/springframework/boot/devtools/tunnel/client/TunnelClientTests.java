@@ -41,7 +41,7 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
  */
 class TunnelClientTests {
 
-	private final MockTunnelConnection tunnelConnection = new MockTunnelConnection();
+	private MockTunnelConnection tunnelConnection = new MockTunnelConnection();
 
 	@Test
 	void listenPortMustNotBeNegative() {
@@ -79,7 +79,7 @@ class TunnelClientTests {
 		channel.close();
 		client.getServerThread().stopAcceptingConnections();
 		client.getServerThread().join(2000);
-		assertThat(this.tunnelConnection.getOpenedTimes()).isOne();
+		assertThat(this.tunnelConnection.getOpenedTimes()).isEqualTo(1);
 		assertThat(this.tunnelConnection.isOpen()).isFalse();
 	}
 
