@@ -28,10 +28,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.impl.client.StandardHttpRequestRetryHandler;
+import org.apache.hc.client5.http.impl.DefaultHttpRequestRetryStrategy;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.core5.util.TimeValue;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.Extension;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -83,12 +85,21 @@ class EmbeddedServerContainerInvocationContextProvider
 			.getAnnotation(EmbeddedServletContainerTest.class);
 		return CONTAINERS.stream()
 			.map((container) -> getApplication(annotation, container))
-			.flatMap((builder) -> Stream.of(annotation.launchers())
-				.map((launcherClass) -> getAbstractApplicationLauncher(builder, launcherClass))
-				.map((launcher) -> new EmbeddedServletContainerInvocationContext(
-						StringUtils.capitalize(builder.getContainer()) + ": "
-								+ launcher.getDescription(builder.getPackaging()),
-						launcher)));
+			.flatMap((builder) -> provideTestTemplateInvocationContexts(annotation, builder));
+	}
+
+	private Stream<EmbeddedServletContainerInvocationContext> provideTestTemplateInvocationContexts(
+			EmbeddedServletContainerTest annotation, Application application) {
+		return Stream.of(annotation.launchers())
+			.map((launcherClass) -> getAbstractApplicationLauncher(application, launcherClass))
+			.map((launcher) -> provideTestTemplateInvocationContext(application, launcher));
+	}
+
+	private EmbeddedServletContainerInvocationContext provideTestTemplateInvocationContext(Application application,
+			AbstractApplicationLauncher launcher) {
+		String name = StringUtils.capitalize(application.getContainer()) + ": "
+				+ launcher.getDescription(application.getPackaging());
+		return new EmbeddedServletContainerInvocationContext(name, launcher);
 	}
 
 	@Override
@@ -175,8 +186,9 @@ class EmbeddedServerContainerInvocationContextProvider
 
 		@Override
 		public Object resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext) {
-			RestTemplate rest = new RestTemplate(new HttpComponentsClientHttpRequestFactory(
-					HttpClients.custom().setRetryHandler(new StandardHttpRequestRetryHandler(10, false)).build()));
+			RestTemplate rest = new RestTemplate(new HttpComponentsClientHttpRequestFactory(HttpClients.custom()
+				.setRetryStrategy(new DefaultHttpRequestRetryStrategy(10, TimeValue.of(1, TimeUnit.SECONDS)))
+				.build()));
 			rest.setErrorHandler(new ResponseErrorHandler() {
 
 				@Override

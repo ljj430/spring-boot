@@ -55,16 +55,22 @@ class ImageTests extends AbstractJsonTests {
 		Image image = getImage();
 		List<LayerId> layers = image.getLayers();
 		assertThat(layers).hasSize(46);
-		assertThat(layers.get(0).toString())
-			.isEqualTo("sha256:733a8e5ce32984099ef675fce04730f6e2a6dcfdf5bd292fea01a8f936265342");
-		assertThat(layers.get(45).toString())
-			.isEqualTo("sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef");
+		assertThat(layers.get(0))
+			.hasToString("sha256:733a8e5ce32984099ef675fce04730f6e2a6dcfdf5bd292fea01a8f936265342");
+		assertThat(layers.get(45))
+			.hasToString("sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef");
 	}
 
 	@Test
 	void getOsReturnsOs() throws Exception {
 		Image image = getImage();
 		assertThat(image.getOs()).isEqualTo("linux");
+	}
+
+	@Test
+	void getCreatedReturnsDate() throws Exception {
+		Image image = getImage();
+		assertThat(image.getCreated()).isEqualTo("2019-10-30T19:34:56.296666503Z");
 	}
 
 	private Image getImage() throws IOException {
