@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.boot.configurationprocessor.json.JSONArray;
 import org.springframework.boot.configurationprocessor.json.JSONObject;
@@ -42,7 +43,7 @@ class JsonConverter {
 			.stream()
 			.filter((item) -> item.isOfItemType(itemType))
 			.sorted(ITEM_COMPARATOR)
-			.toList();
+			.collect(Collectors.toList());
 		for (ItemMetadata item : items) {
 			if (item.isOfItemType(itemType)) {
 				jsonArray.put(toJsonObject(item));

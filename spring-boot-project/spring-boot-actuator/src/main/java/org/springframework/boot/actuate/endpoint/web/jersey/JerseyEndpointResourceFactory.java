@@ -28,11 +28,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-import jakarta.ws.rs.HttpMethod;
-import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.core.MultivaluedMap;
-import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.core.Response.Status;
+import javax.ws.rs.HttpMethod;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
+
 import org.glassfish.jersey.process.Inflector;
 import org.glassfish.jersey.server.ContainerRequest;
 import org.glassfish.jersey.server.model.Resource;
@@ -43,7 +44,6 @@ import reactor.core.publisher.Mono;
 import org.springframework.boot.actuate.endpoint.InvalidEndpointRequestException;
 import org.springframework.boot.actuate.endpoint.InvocationContext;
 import org.springframework.boot.actuate.endpoint.OperationArgumentResolver;
-import org.springframework.boot.actuate.endpoint.OperationResponseBody;
 import org.springframework.boot.actuate.endpoint.ProducibleOperationArgumentResolver;
 import org.springframework.boot.actuate.endpoint.SecurityContext;
 import org.springframework.boot.actuate.endpoint.web.EndpointLinksResolver;
@@ -244,9 +244,10 @@ public class JerseyEndpointResourceFactory {
 				Status status = isGet ? Status.NOT_FOUND : Status.NO_CONTENT;
 				return Response.status(status).build();
 			}
-			if (!(response instanceof WebEndpointResponse<?> webEndpointResponse)) {
+			if (!(response instanceof WebEndpointResponse)) {
 				return Response.status(Status.OK).entity(convertIfNecessary(response)).build();
 			}
+			WebEndpointResponse<?> webEndpointResponse = (WebEndpointResponse<?>) response;
 			return Response.status(webEndpointResponse.getStatus())
 				.header("Content-Type", webEndpointResponse.getContentType())
 				.entity(convertIfNecessary(webEndpointResponse.getBody()))
@@ -328,17 +329,16 @@ public class JerseyEndpointResourceFactory {
 		public Response apply(ContainerRequestContext request) {
 			Map<String, Link> links = this.linksResolver
 				.resolveLinks(request.getUriInfo().getAbsolutePath().toString());
-			Map<String, Map<String, Link>> entity = OperationResponseBody.of(Collections.singletonMap("_links", links));
-			return Response.ok(entity).build();
+			return Response.ok(Collections.singletonMap("_links", links)).build();
 		}
 
 	}
 
 	private static final class JerseySecurityContext implements SecurityContext {
 
-		private final jakarta.ws.rs.core.SecurityContext securityContext;
+		private final javax.ws.rs.core.SecurityContext securityContext;
 
-		private JerseySecurityContext(jakarta.ws.rs.core.SecurityContext securityContext) {
+		private JerseySecurityContext(javax.ws.rs.core.SecurityContext securityContext) {
 			this.securityContext = securityContext;
 		}
 

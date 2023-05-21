@@ -93,7 +93,8 @@ class CloudFoundrySecurityInterceptor {
 	}
 
 	private Mono<SecurityResponse> getErrorResponse(Throwable throwable) {
-		if (throwable instanceof CloudFoundryAuthorizationException cfException) {
+		if (throwable instanceof CloudFoundryAuthorizationException) {
+			CloudFoundryAuthorizationException cfException = (CloudFoundryAuthorizationException) throwable;
 			return Mono.just(new SecurityResponse(cfException.getStatusCode(),
 					"{\"security_error\":\"" + cfException.getMessage() + "\"}"));
 		}

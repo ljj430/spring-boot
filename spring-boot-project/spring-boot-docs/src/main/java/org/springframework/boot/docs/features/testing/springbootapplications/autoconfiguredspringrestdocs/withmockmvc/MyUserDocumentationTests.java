@@ -37,9 +37,11 @@ class MyUserDocumentationTests {
 
 	@Test
 	void listUsers() throws Exception {
+		// @formatter:off
 		this.mvc.perform(get("/users").accept(MediaType.TEXT_PLAIN))
 			.andExpect(status().isOk())
 			.andDo(document("list-users"));
+		// @formatter:on
 	}
 
 }

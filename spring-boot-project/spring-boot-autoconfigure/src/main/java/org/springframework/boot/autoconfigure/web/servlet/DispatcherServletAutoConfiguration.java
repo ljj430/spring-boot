@@ -19,8 +19,8 @@ package org.springframework.boot.autoconfigure.web.servlet;
 import java.util.Arrays;
 import java.util.List;
 
-import jakarta.servlet.MultipartConfigElement;
-import jakarta.servlet.ServletRegistration;
+import javax.servlet.MultipartConfigElement;
+import javax.servlet.ServletRegistration;
 
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;

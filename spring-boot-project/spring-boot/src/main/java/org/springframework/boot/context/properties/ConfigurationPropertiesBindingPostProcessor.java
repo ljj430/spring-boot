@@ -75,19 +75,12 @@ public class ConfigurationPropertiesBindingPostProcessor
 
 	@Override
 	public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
-		if (!hasBoundValueObject(beanName)) {
-			bind(ConfigurationPropertiesBean.get(this.applicationContext, bean, beanName));
-		}
+		bind(ConfigurationPropertiesBean.get(this.applicationContext, bean, beanName));
 		return bean;
 	}
 
-	private boolean hasBoundValueObject(String beanName) {
-		return this.registry.containsBeanDefinition(beanName) && BindMethod.VALUE_OBJECT
-			.equals(this.registry.getBeanDefinition(beanName).getAttribute(BindMethod.class.getName()));
-	}
-
 	private void bind(ConfigurationPropertiesBean bean) {
-		if (bean == null) {
+		if (bean == null || hasBoundValueObject(bean.getName())) {
 			return;
 		}
 		Assert.state(bean.getBindMethod() == BindMethod.JAVA_BEAN, "Cannot bind @ConfigurationProperties for bean '"
@@ -98,6 +91,11 @@ public class ConfigurationPropertiesBindingPostProcessor
 		catch (Exception ex) {
 			throw new ConfigurationPropertiesBindException(bean, ex);
 		}
+	}
+
+	private boolean hasBoundValueObject(String beanName) {
+		return this.registry.containsBeanDefinition(beanName) && BindMethod.VALUE_OBJECT
+			.equals(this.registry.getBeanDefinition(beanName).getAttribute(BindMethod.class.getName()));
 	}
 
 	/**

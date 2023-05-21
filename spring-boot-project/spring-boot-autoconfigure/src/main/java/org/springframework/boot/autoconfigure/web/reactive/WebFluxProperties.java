@@ -17,13 +17,13 @@
 package org.springframework.boot.autoconfigure.web.reactive;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
 import org.springframework.util.StringUtils;
 
 /**
  * {@link ConfigurationProperties properties} for Spring WebFlux.
  *
  * @author Brian Clozel
- * @author Vedran Pavic
  * @since 2.0.0
  */
 @ConfigurationProperties(prefix = "spring.webflux")
@@ -36,17 +36,12 @@ public class WebFluxProperties {
 
 	private final Format format = new Format();
 
-	private final Problemdetails problemdetails = new Problemdetails();
+	private final Session session = new Session();
 
 	/**
 	 * Path pattern used for static resources.
 	 */
 	private String staticPathPattern = "/**";
-
-	/**
-	 * Path pattern used for WebJar assets.
-	 */
-	private String webjarsPathPattern = "/webjars/**";
 
 	public String getBasePath() {
 		return this.basePath;
@@ -57,10 +52,7 @@ public class WebFluxProperties {
 	}
 
 	private String cleanBasePath(String basePath) {
-		String candidate = null;
-		if (StringUtils.hasLength(basePath)) {
-			candidate = basePath.strip();
-		}
+		String candidate = StringUtils.trimWhitespace(basePath);
 		if (StringUtils.hasText(candidate)) {
 			if (!candidate.startsWith("/")) {
 				candidate = "/" + candidate;
@@ -76,8 +68,9 @@ public class WebFluxProperties {
 		return this.format;
 	}
 
-	public Problemdetails getProblemdetails() {
-		return this.problemdetails;
+	@DeprecatedConfigurationProperty(replacement = "server.reactive.session")
+	public Session getSession() {
+		return this.session;
 	}
 
 	public String getStaticPathPattern() {
@@ -86,14 +79,6 @@ public class WebFluxProperties {
 
 	public void setStaticPathPattern(String staticPathPattern) {
 		this.staticPathPattern = staticPathPattern;
-	}
-
-	public String getWebjarsPathPattern() {
-		return this.webjarsPathPattern;
-	}
-
-	public void setWebjarsPathPattern(String webjarsPathPattern) {
-		this.webjarsPathPattern = webjarsPathPattern;
 	}
 
 	public static class Format {
@@ -139,19 +124,83 @@ public class WebFluxProperties {
 
 	}
 
-	public static class Problemdetails {
+	/**
+	 * Session properties.
+	 *
+	 * @deprecated since 2.6.0 for removal in 3.0.0 in favor of
+	 * {@code server.reactive.session}.
+	 */
+	@Deprecated
+	public static class Session {
 
-		/**
-		 * Whether RFC 7807 Problem Details support should be enabled.
-		 */
-		private boolean enabled = false;
+		private final Cookie cookie = new Cookie();
 
-		public boolean isEnabled() {
-			return this.enabled;
+		@DeprecatedConfigurationProperty(replacement = "server.reactive.session.cookie")
+		public Cookie getCookie() {
+			return this.cookie;
 		}
 
-		public void setEnabled(boolean enabled) {
-			this.enabled = enabled;
+	}
+
+	/**
+	 * Session cookie properties.
+	 *
+	 * @deprecated since 2.6.0 for removal in 3.0.0 in favor of
+	 * {@link org.springframework.boot.web.server.Cookie}.
+	 */
+	@Deprecated
+	public static class Cookie {
+
+		/**
+		 * SameSite attribute value for session Cookies.
+		 */
+		private SameSite sameSite;
+
+		@DeprecatedConfigurationProperty(replacement = "server.reactive.session.cookie.same-site")
+		public SameSite getSameSite() {
+			return this.sameSite;
+		}
+
+		public void setSameSite(SameSite sameSite) {
+			this.sameSite = sameSite;
+		}
+
+	}
+
+	/**
+	 * SameSite values.
+	 *
+	 * @deprecated since 2.6.0 for removal in 3.0.0 in favor of
+	 * {@link org.springframework.boot.web.server.Cookie.SameSite}.
+	 */
+	@Deprecated
+	public enum SameSite {
+
+		/**
+		 * Cookies are sent in both first-party and cross-origin requests.
+		 */
+		NONE("None"),
+
+		/**
+		 * Cookies are sent in a first-party context, also when following a link to the
+		 * origin site.
+		 */
+		LAX("Lax"),
+
+		/**
+		 * Cookies are only sent in a first-party context (i.e. not when following a link
+		 * to the origin site).
+		 */
+		STRICT("Strict");
+
+		private final String attribute;
+
+		SameSite(String attribute) {
+			this.attribute = attribute;
+		}
+
+		public String attribute() {
+			return this.attribute;
 		}
 
 	}

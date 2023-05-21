@@ -9,7 +9,7 @@ version = '1.0'
 springBoot {
 	buildInfo {
 		properties {
-			additional = [
+			additionalProperties = [
 				'a': 'alpha', 'b': 'bravo'
 			]
 		}

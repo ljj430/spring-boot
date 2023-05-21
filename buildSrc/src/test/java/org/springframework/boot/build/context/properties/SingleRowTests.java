@@ -38,7 +38,7 @@ class SingleRowTests {
 		SingleRow row = new SingleRow(SNIPPET, property);
 		Asciidoc asciidoc = new Asciidoc();
 		row.write(asciidoc);
-		assertThat(asciidoc).hasToString("|[[my.spring.test.prop]]<<my.spring.test.prop,`+spring.test.prop+`>>"
+		assertThat(asciidoc.toString()).isEqualTo("|[[my.spring.test.prop]]<<my.spring.test.prop,`+spring.test.prop+`>>"
 				+ NEWLINE + "|+++This is a description.+++" + NEWLINE + "|`+something+`" + NEWLINE);
 	}
 
@@ -49,7 +49,7 @@ class SingleRowTests {
 		SingleRow row = new SingleRow(SNIPPET, property);
 		Asciidoc asciidoc = new Asciidoc();
 		row.write(asciidoc);
-		assertThat(asciidoc).hasToString("|[[my.spring.test.prop]]<<my.spring.test.prop,`+spring.test.prop+`>>"
+		assertThat(asciidoc.toString()).isEqualTo("|[[my.spring.test.prop]]<<my.spring.test.prop,`+spring.test.prop+`>>"
 				+ NEWLINE + "|+++This is a description.+++" + NEWLINE + "|" + NEWLINE);
 	}
 
@@ -60,7 +60,7 @@ class SingleRowTests {
 		SingleRow row = new SingleRow(SNIPPET, property);
 		Asciidoc asciidoc = new Asciidoc();
 		row.write(asciidoc);
-		assertThat(asciidoc).hasToString("|[[my.spring.test.prop]]<<my.spring.test.prop,`+spring.test.prop+`>>"
+		assertThat(asciidoc.toString()).isEqualTo("|[[my.spring.test.prop]]<<my.spring.test.prop,`+spring.test.prop+`>>"
 				+ NEWLINE + "|+++This is a description.+++" + NEWLINE + "|`+first\\|second+`" + NEWLINE);
 	}
 
@@ -71,7 +71,7 @@ class SingleRowTests {
 		SingleRow row = new SingleRow(SNIPPET, property);
 		Asciidoc asciidoc = new Asciidoc();
 		row.write(asciidoc);
-		assertThat(asciidoc).hasToString("|[[my.spring.test.prop]]<<my.spring.test.prop,`+spring.test.prop+`>>"
+		assertThat(asciidoc.toString()).isEqualTo("|[[my.spring.test.prop]]<<my.spring.test.prop,`+spring.test.prop+`>>"
 				+ NEWLINE + "|+++This is a description.+++" + NEWLINE + "|`+first\\\\second+`" + NEWLINE);
 	}
 
@@ -82,7 +82,7 @@ class SingleRowTests {
 		SingleRow row = new SingleRow(SNIPPET, property);
 		Asciidoc asciidoc = new Asciidoc();
 		row.write(asciidoc);
-		assertThat(asciidoc).hasToString("|[[my.spring.test.prop]]<<my.spring.test.prop,`+spring.test.prop+`>>"
+		assertThat(asciidoc.toString()).isEqualTo("|[[my.spring.test.prop]]<<my.spring.test.prop,`+spring.test.prop+`>>"
 				+ NEWLINE + "|+++This is a description with a \\| pipe.+++" + NEWLINE + "|" + NEWLINE);
 	}
 
@@ -93,8 +93,9 @@ class SingleRowTests {
 		SingleRow row = new SingleRow(SNIPPET, property);
 		Asciidoc asciidoc = new Asciidoc();
 		row.write(asciidoc);
-		assertThat(asciidoc).hasToString("|[[my.spring.test.prop]]<<my.spring.test.prop,`+spring.test.prop.*+`>>"
-				+ NEWLINE + "|+++This is a description.+++" + NEWLINE + "|" + NEWLINE);
+		assertThat(asciidoc.toString())
+			.isEqualTo("|[[my.spring.test.prop]]<<my.spring.test.prop,`+spring.test.prop.*+`>>" + NEWLINE
+					+ "|+++This is a description.+++" + NEWLINE + "|" + NEWLINE);
 	}
 
 	@Test
@@ -105,7 +106,7 @@ class SingleRowTests {
 		SingleRow row = new SingleRow(SNIPPET, property);
 		Asciidoc asciidoc = new Asciidoc();
 		row.write(asciidoc);
-		assertThat(asciidoc).hasToString("|[[my.spring.test.prop]]<<my.spring.test.prop,`+spring.test.prop+`>>"
+		assertThat(asciidoc.toString()).isEqualTo("|[[my.spring.test.prop]]<<my.spring.test.prop,`+spring.test.prop+`>>"
 				+ NEWLINE + "|+++This is a description.+++" + NEWLINE + "|`+first," + NEWLINE + "second," + NEWLINE
 				+ "third+`" + NEWLINE);
 	}

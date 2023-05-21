@@ -23,8 +23,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
 
+import javax.servlet.http.HttpServletRequest;
+
 import groovy.text.markup.MarkupTemplateEngine;
-import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,7 +56,7 @@ class GroovyTemplateAutoConfigurationTests {
 
 	private final BuildOutput buildOutput = new BuildOutput(getClass());
 
-	private final AnnotationConfigServletWebApplicationContext context = new AnnotationConfigServletWebApplicationContext();
+	private AnnotationConfigServletWebApplicationContext context = new AnnotationConfigServletWebApplicationContext();
 
 	@BeforeEach
 	void setupContext() {
@@ -152,7 +153,7 @@ class GroovyTemplateAutoConfigurationTests {
 	@Test
 	void disableCache() {
 		registerAndRefreshContext("spring.groovy.template.cache:false");
-		assertThat(this.context.getBean(GroovyMarkupViewResolver.class).getCacheLimit()).isZero();
+		assertThat(this.context.getBean(GroovyMarkupViewResolver.class).getCacheLimit()).isEqualTo(0);
 	}
 
 	@Test

@@ -22,13 +22,12 @@ import java.util.Map;
 import java.util.Vector;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import jakarta.servlet.DispatcherType;
-import jakarta.servlet.Filter;
-import jakarta.servlet.FilterRegistration.Dynamic;
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.ServletContextEvent;
-import jakarta.servlet.ServletContextListener;
-import jakarta.servlet.ServletException;
+import javax.servlet.DispatcherType;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
+import javax.servlet.ServletException;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -57,7 +56,6 @@ import org.springframework.web.context.support.StandardServletEnvironment;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
@@ -71,7 +69,7 @@ import static org.mockito.Mockito.mock;
 @ExtendWith(OutputCaptureExtension.class)
 class SpringBootServletInitializerTests {
 
-	private final ServletContext servletContext = new MockServletContext();
+	private ServletContext servletContext = new MockServletContext();
 
 	private SpringApplication application;
 
@@ -127,7 +125,7 @@ class SpringBootServletInitializerTests {
 		WebServer webServer = new UndertowServletWebServerFactory(0).getWebServer((servletContext) -> {
 			try (AbstractApplicationContext context = (AbstractApplicationContext) new WithErrorPageFilterNotRegistered()
 				.createRootApplicationContext(servletContext)) {
-				assertThat(context.getBeansOfType(ErrorPageFilter.class)).isEmpty();
+				assertThat(context.getBeansOfType(ErrorPageFilter.class)).hasSize(0);
 			}
 		});
 		try {
@@ -184,14 +182,13 @@ class SpringBootServletInitializerTests {
 	@Test
 	void executableWarThatUsesServletInitializerDoesNotHaveErrorPageFilterConfigured() {
 		try (ConfigurableApplicationContext context = new SpringApplication(ExecutableWar.class).run()) {
-			assertThat(context.getBeansOfType(ErrorPageFilter.class)).isEmpty();
+			assertThat(context.getBeansOfType(ErrorPageFilter.class)).hasSize(0);
 		}
 	}
 
 	@Test
 	void servletContextPropertySourceIsAvailablePriorToRefresh() {
 		ServletContext servletContext = mock(ServletContext.class);
-		given(servletContext.addFilter(any(), any(Filter.class))).willReturn(mock(Dynamic.class));
 		given(servletContext.getInitParameterNames())
 			.willReturn(Collections.enumeration(Collections.singletonList("spring.profiles.active")));
 		given(servletContext.getInitParameter("spring.profiles.active")).willReturn("from-servlet-context");
@@ -205,7 +202,6 @@ class SpringBootServletInitializerTests {
 	@Test
 	void whenServletContextIsDestroyedThenJdbcDriversAreDeregistered() throws ServletException {
 		ServletContext servletContext = mock(ServletContext.class);
-		given(servletContext.addFilter(any(), any(Filter.class))).willReturn(mock(Dynamic.class));
 		given(servletContext.getInitParameterNames()).willReturn(new Vector<String>().elements());
 		given(servletContext.getAttributeNames()).willReturn(new Vector<String>().elements());
 		AtomicBoolean driversDeregistered = new AtomicBoolean();

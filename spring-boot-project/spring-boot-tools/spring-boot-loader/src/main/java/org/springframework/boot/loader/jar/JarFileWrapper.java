@@ -40,7 +40,9 @@ class JarFileWrapper extends AbstractJarFile {
 	JarFileWrapper(JarFile parent) throws IOException {
 		super(parent.getRootJarFile().getFile());
 		this.parent = parent;
-		super.close();
+		if (System.getSecurityManager() == null) {
+			super.close();
+		}
 	}
 
 	@Override
@@ -114,11 +116,11 @@ class JarFileWrapper extends AbstractJarFile {
 	}
 
 	static JarFile unwrap(java.util.jar.JarFile jarFile) {
-		if (jarFile instanceof JarFile file) {
-			return file;
+		if (jarFile instanceof JarFile) {
+			return (JarFile) jarFile;
 		}
-		if (jarFile instanceof JarFileWrapper wrapper) {
-			return unwrap(wrapper.parent);
+		if (jarFile instanceof JarFileWrapper) {
+			return unwrap(((JarFileWrapper) jarFile).parent);
 		}
 		throw new IllegalStateException("Not a JarFile or Wrapper");
 	}

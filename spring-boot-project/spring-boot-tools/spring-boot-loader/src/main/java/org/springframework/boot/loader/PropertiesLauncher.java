@@ -269,8 +269,8 @@ public class PropertiesLauncher extends Launcher {
 			}
 			catch (IOException ex) {
 				// Close the HTTP connection (if applicable).
-				if (con instanceof HttpURLConnection httpURLConnection) {
-					httpURLConnection.disconnect();
+				if (con instanceof HttpURLConnection) {
+					((HttpURLConnection) con).disconnect();
 				}
 				throw ex;
 			}
@@ -283,7 +283,8 @@ public class PropertiesLauncher extends Launcher {
 		URLConnection connection = url.openConnection();
 		try {
 			connection.setUseCaches(connection.getClass().getSimpleName().startsWith("JNLP"));
-			if (connection instanceof HttpURLConnection httpConnection) {
+			if (connection instanceof HttpURLConnection) {
+				HttpURLConnection httpConnection = (HttpURLConnection) connection;
 				httpConnection.setRequestMethod("HEAD");
 				int responseCode = httpConnection.getResponseCode();
 				if (responseCode == HttpURLConnection.HTTP_OK) {
@@ -296,8 +297,8 @@ public class PropertiesLauncher extends Launcher {
 			return (connection.getContentLength() >= 0);
 		}
 		finally {
-			if (connection instanceof HttpURLConnection httpURLConnection) {
-				httpURLConnection.disconnect();
+			if (connection instanceof HttpURLConnection) {
+				((HttpURLConnection) connection).disconnect();
 			}
 		}
 	}
