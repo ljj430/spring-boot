@@ -43,7 +43,7 @@ class JarLaunchScriptIntegrationTests extends AbstractLaunchScriptIntegrationTes
 	}
 
 	static List<Object[]> parameters() {
-		return parameters((file) -> true);
+		return filterParameters((file) -> true);
 	}
 
 	@ParameterizedTest(name = "{0} {1}")

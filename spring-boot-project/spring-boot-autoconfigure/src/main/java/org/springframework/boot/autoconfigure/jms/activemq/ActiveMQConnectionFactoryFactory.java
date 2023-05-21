@@ -35,8 +35,6 @@ import org.springframework.util.StringUtils;
  */
 class ActiveMQConnectionFactoryFactory {
 
-	private static final String DEFAULT_EMBEDDED_BROKER_URL = "vm://localhost?broker.persistent=false";
-
 	private static final String DEFAULT_NETWORK_BROKER_URL = "tcp://localhost:61616";
 
 	private final ActiveMQProperties properties;
@@ -100,9 +98,6 @@ class ActiveMQConnectionFactoryFactory {
 	String determineBrokerUrl() {
 		if (this.properties.getBrokerUrl() != null) {
 			return this.properties.getBrokerUrl();
-		}
-		if (this.properties.isInMemory()) {
-			return DEFAULT_EMBEDDED_BROKER_URL;
 		}
 		return DEFAULT_NETWORK_BROKER_URL;
 	}

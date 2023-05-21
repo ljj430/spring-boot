@@ -19,7 +19,6 @@ package org.springframework.boot.test.autoconfigure.data.neo4j;
 import java.time.Duration;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.OS;
 import org.neo4j.driver.Driver;
 import org.testcontainers.containers.Neo4jContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -30,15 +29,13 @@ import reactor.test.StepVerifier;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.testsupport.junit.DisabledOnOs;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.boot.testsupport.testcontainers.DockerImageNames;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.neo4j.core.ReactiveDatabaseSelectionProvider;
 import org.springframework.data.neo4j.core.ReactiveNeo4jTemplate;
 import org.springframework.data.neo4j.core.transaction.ReactiveNeo4jTransactionManager;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,24 +46,20 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
  *
  * @author Michael J. Simons
  * @author Scott Frederick
- * @since 2.4.0
+ * @author Moritz Halbritter
+ * @author Andy Wilkinson
+ * @author Phillip Webb
  */
 @DataNeo4jTest
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 @Testcontainers(disabledWithoutDocker = true)
-@DisabledOnOs(os = { OS.LINUX, OS.MAC }, architecture = "aarch64",
-		disabledReason = "The Neo4j image has no ARM support")
 class DataNeo4jTestReactiveIntegrationTests {
 
 	@Container
+	@ServiceConnection
 	static final Neo4jContainer<?> neo4j = new Neo4jContainer<>(DockerImageNames.neo4j()).withoutAuthentication()
 		.withStartupAttempts(5)
 		.withStartupTimeout(Duration.ofMinutes(10));
-
-	@DynamicPropertySource
-	static void neo4jProperties(DynamicPropertyRegistry registry) {
-		registry.add("spring.neo4j.uri", neo4j::getBoltUrl);
-	}
 
 	@Autowired
 	private ReactiveNeo4jTemplate neo4jTemplate;

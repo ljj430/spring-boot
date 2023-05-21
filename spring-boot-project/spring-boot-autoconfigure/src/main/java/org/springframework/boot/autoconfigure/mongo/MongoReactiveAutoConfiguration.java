@@ -16,8 +16,6 @@
 
 package org.springframework.boot.autoconfigure.mongo;
 
-import java.util.stream.Collectors;
-
 import com.mongodb.MongoClientSettings;
 import com.mongodb.MongoClientSettings.Builder;
 import com.mongodb.connection.netty.NettyStreamFactoryFactory;
@@ -34,11 +32,11 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.ssl.SslBundles;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
-import org.springframework.core.env.Environment;
 
 /**
  * {@link EnableAutoConfiguration Auto-configuration} for Reactive Mongo.
@@ -54,11 +52,17 @@ import org.springframework.core.env.Environment;
 public class MongoReactiveAutoConfiguration {
 
 	@Bean
+	@ConditionalOnMissingBean(MongoConnectionDetails.class)
+	PropertiesMongoConnectionDetails mongoConnectionDetails(MongoProperties properties) {
+		return new PropertiesMongoConnectionDetails(properties);
+	}
+
+	@Bean
 	@ConditionalOnMissingBean
 	public MongoClient reactiveStreamsMongoClient(
 			ObjectProvider<MongoClientSettingsBuilderCustomizer> builderCustomizers, MongoClientSettings settings) {
 		ReactiveMongoClientFactory factory = new ReactiveMongoClientFactory(
-				builderCustomizers.orderedStream().collect(Collectors.toList()));
+				builderCustomizers.orderedStream().toList());
 		return factory.createMongoClient(settings);
 	}
 
@@ -72,9 +76,10 @@ public class MongoReactiveAutoConfiguration {
 		}
 
 		@Bean
-		MongoPropertiesClientSettingsBuilderCustomizer mongoPropertiesCustomizer(MongoProperties properties,
-				Environment environment) {
-			return new MongoPropertiesClientSettingsBuilderCustomizer(properties, environment);
+		StandardMongoClientSettingsBuilderCustomizer standardMongoSettingsCustomizer(MongoProperties properties,
+				MongoConnectionDetails connectionDetails, ObjectProvider<SslBundles> sslBundles) {
+			return new StandardMongoClientSettingsBuilderCustomizer(connectionDetails.getConnectionString(),
+					properties.getUuidRepresentation(), properties.getSsl(), sslBundles.getIfAvailable());
 		}
 
 	}
