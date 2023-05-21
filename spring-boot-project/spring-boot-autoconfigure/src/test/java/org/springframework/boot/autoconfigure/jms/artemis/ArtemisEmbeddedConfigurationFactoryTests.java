@@ -74,10 +74,10 @@ class ArtemisEmbeddedConfigurationFactoryTests {
 	void hasDlqExpiryQueueAddressSettingsConfigured() {
 		ArtemisProperties properties = new ArtemisProperties();
 		Configuration configuration = new ArtemisEmbeddedConfigurationFactory(properties).createConfiguration();
-		Map<String, AddressSettings> addressSettings = configuration.getAddressSettings();
-		assertThat((Object) addressSettings.get("#").getDeadLetterAddress())
+		Map<String, AddressSettings> addressesSettings = configuration.getAddressesSettings();
+		assertThat((Object) addressesSettings.get("#").getDeadLetterAddress())
 			.isEqualTo(SimpleString.toSimpleString("DLQ"));
-		assertThat((Object) addressSettings.get("#").getExpiryAddress())
+		assertThat((Object) addressesSettings.get("#").getExpiryAddress())
 			.isEqualTo(SimpleString.toSimpleString("ExpiryQueue"));
 	}
 

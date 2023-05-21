@@ -48,8 +48,7 @@ class DiskSpaceHealthContributorAutoConfigurationTests {
 		this.contextRunner.withPropertyValues("management.health.diskspace.threshold=-10MB")
 			.run((context) -> assertThat(context).hasFailed()
 				.getFailure()
-				.rootCause()
-				.hasMessage("threshold must be greater than or equal to 0"));
+				.hasMessageContaining("Failed to bind properties under 'management.health.diskspace'"));
 	}
 
 	@Test

@@ -23,6 +23,8 @@ import java.io.ObjectOutputStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -36,7 +38,6 @@ import org.springframework.mock.web.MockHttpServletResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
-import static org.mockito.ArgumentMatchers.assertArg;
 import static org.mockito.BDDMockito.then;
 
 /**
@@ -51,6 +52,9 @@ class HttpRestartServerTests {
 	private RestartServer delegate;
 
 	private HttpRestartServer server;
+
+	@Captor
+	private ArgumentCaptor<ClassLoaderFiles> filesCaptor;
 
 	@BeforeEach
 	void setup() {
@@ -78,9 +82,8 @@ class HttpRestartServerTests {
 		byte[] bytes = serialize(files);
 		request.setContent(bytes);
 		this.server.handle(new ServletServerHttpRequest(request), new ServletServerHttpResponse(response));
-		then(this.delegate).should()
-			.updateAndRestart(
-					assertArg((classLoaderFiles) -> assertThat(classLoaderFiles.getFile("name")).isNotNull()));
+		then(this.delegate).should().updateAndRestart(this.filesCaptor.capture());
+		assertThat(this.filesCaptor.getValue().getFile("name")).isNotNull();
 		assertThat(response.getStatus()).isEqualTo(200);
 	}
 

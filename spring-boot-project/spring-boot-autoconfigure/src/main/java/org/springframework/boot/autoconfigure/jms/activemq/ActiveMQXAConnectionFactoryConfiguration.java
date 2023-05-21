@@ -18,8 +18,9 @@ package org.springframework.boot.autoconfigure.jms.activemq;
 
 import java.util.stream.Collectors;
 
-import jakarta.jms.ConnectionFactory;
-import jakarta.transaction.TransactionManager;
+import javax.jms.ConnectionFactory;
+import javax.transaction.TransactionManager;
+
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.activemq.ActiveMQXAConnectionFactory;
 

@@ -50,12 +50,12 @@ public class MetricsAutoConfiguration {
 	}
 
 	@Bean
-	public static MeterRegistryPostProcessor meterRegistryPostProcessor(ApplicationContext applicationContext,
-			ObjectProvider<MetricsProperties> metricsProperties,
+	public static MeterRegistryPostProcessor meterRegistryPostProcessor(ObjectProvider<MeterBinder> meterBinders,
+			ObjectProvider<MeterFilter> meterFilters,
 			ObjectProvider<MeterRegistryCustomizer<?>> meterRegistryCustomizers,
-			ObjectProvider<MeterFilter> meterFilters, ObjectProvider<MeterBinder> meterBinders) {
-		return new MeterRegistryPostProcessor(applicationContext, metricsProperties, meterRegistryCustomizers,
-				meterFilters, meterBinders);
+			ObjectProvider<MetricsProperties> metricsProperties, ApplicationContext applicationContext) {
+		return new MeterRegistryPostProcessor(meterBinders, meterFilters, meterRegistryCustomizers, metricsProperties,
+				applicationContext);
 	}
 
 	@Bean

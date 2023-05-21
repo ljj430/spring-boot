@@ -23,7 +23,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import jakarta.servlet.Filter;
+import javax.servlet.Filter;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 

@@ -17,11 +17,13 @@
 package org.springframework.boot.autoconfigure;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.BeanClassLoaderAware;
 import org.springframework.boot.context.annotation.ImportCandidates;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.support.SpringFactoriesLoader;
 import org.springframework.core.type.classreading.MetadataReader;
 import org.springframework.core.type.classreading.MetadataReaderFactory;
 import org.springframework.core.type.filter.TypeFilter;
@@ -30,7 +32,6 @@ import org.springframework.core.type.filter.TypeFilter;
  * A {@link TypeFilter} implementation that matches registered auto-configuration classes.
  *
  * @author Stephane Nicoll
- * @author Scott Frederick
  * @since 1.5.0
  */
 public class AutoConfigurationExcludeFilter implements TypeFilter, BeanClassLoaderAware {
@@ -63,8 +64,10 @@ public class AutoConfigurationExcludeFilter implements TypeFilter, BeanClassLoad
 
 	protected List<String> getAutoConfigurations() {
 		if (this.autoConfigurations == null) {
-			this.autoConfigurations = ImportCandidates.load(AutoConfiguration.class, this.beanClassLoader)
-				.getCandidates();
+			List<String> autoConfigurations = new ArrayList<>(
+					SpringFactoriesLoader.loadFactoryNames(EnableAutoConfiguration.class, this.beanClassLoader));
+			ImportCandidates.load(AutoConfiguration.class, this.beanClassLoader).forEach(autoConfigurations::add);
+			this.autoConfigurations = autoConfigurations;
 		}
 		return this.autoConfigurations;
 	}

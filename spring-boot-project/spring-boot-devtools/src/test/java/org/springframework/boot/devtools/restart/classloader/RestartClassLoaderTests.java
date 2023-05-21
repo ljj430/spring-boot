@@ -129,7 +129,7 @@ class RestartClassLoaderTests {
 	@Test
 	void getResourcesFiltersDuplicates() throws Exception {
 		List<URL> resources = toList(this.reloadClassLoader.getResources(PACKAGE_PATH + "/Sample.txt"));
-		assertThat(resources).hasSize(1);
+		assertThat(resources.size()).isEqualTo(1);
 	}
 
 	@Test
@@ -223,11 +223,13 @@ class RestartClassLoaderTests {
 				new URL[] { this.sampleJarFile.toURI().toURL() }, this.updatedFiles)) {
 			new ApplicationContextRunner().withClassLoader(restartClassLoader)
 				.withUserConfiguration(ProxyConfiguration.class)
-				.run((context) -> assertThat(context).getBean(ExampleTransactional.class)
-					.matches(AopUtils::isCglibProxy)
-					.extracting(Object::getClass)
-					.extracting(Class::getClassLoader)
-					.isEqualTo(ExampleTransactional.class.getClassLoader()));
+				.run((context) -> {
+					assertThat(context).hasNotFailed();
+					ExampleTransactional transactional = context.getBean(ExampleTransactional.class);
+					assertThat(AopUtils.isCglibProxy(transactional)).isTrue();
+					assertThat(transactional.getClass().getClassLoader())
+						.isEqualTo(ExampleTransactional.class.getClassLoader());
+				});
 		}
 	}
 

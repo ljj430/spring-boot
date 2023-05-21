@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,11 @@
 
 package org.springframework.boot.autoconfigure.web.reactive;
 
+import java.util.function.Supplier;
+
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.RootBeanDefinition;
@@ -32,7 +33,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.autoconfigure.web.ServerProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.ssl.SslBundles;
 import org.springframework.boot.web.server.WebServerFactoryCustomizerBeanPostProcessor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
@@ -47,7 +47,6 @@ import org.springframework.web.server.adapter.ForwardedHeaderTransformer;
  * {@link EnableAutoConfiguration Auto-configuration} for a reactive web server.
  *
  * @author Brian Clozel
- * @author Scott Frederick
  * @since 2.0.0
  */
 @AutoConfigureOrder(Ordered.HIGHEST_PRECEDENCE)
@@ -63,9 +62,8 @@ import org.springframework.web.server.adapter.ForwardedHeaderTransformer;
 public class ReactiveWebServerFactoryAutoConfiguration {
 
 	@Bean
-	public ReactiveWebServerFactoryCustomizer reactiveWebServerFactoryCustomizer(ServerProperties serverProperties,
-			ObjectProvider<SslBundles> sslBundles) {
-		return new ReactiveWebServerFactoryCustomizer(serverProperties, sslBundles.getIfAvailable());
+	public ReactiveWebServerFactoryCustomizer reactiveWebServerFactoryCustomizer(ServerProperties serverProperties) {
+		return new ReactiveWebServerFactoryCustomizer(serverProperties);
 	}
 
 	@Bean
@@ -92,8 +90,8 @@ public class ReactiveWebServerFactoryAutoConfiguration {
 
 		@Override
 		public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
-			if (beanFactory instanceof ConfigurableListableBeanFactory listableBeanFactory) {
-				this.beanFactory = listableBeanFactory;
+			if (beanFactory instanceof ConfigurableListableBeanFactory) {
+				this.beanFactory = (ConfigurableListableBeanFactory) beanFactory;
 			}
 		}
 
@@ -104,13 +102,14 @@ public class ReactiveWebServerFactoryAutoConfiguration {
 				return;
 			}
 			registerSyntheticBeanIfMissing(registry, "webServerFactoryCustomizerBeanPostProcessor",
-					WebServerFactoryCustomizerBeanPostProcessor.class);
+					WebServerFactoryCustomizerBeanPostProcessor.class,
+					WebServerFactoryCustomizerBeanPostProcessor::new);
 		}
 
 		private <T> void registerSyntheticBeanIfMissing(BeanDefinitionRegistry registry, String name,
-				Class<T> beanClass) {
+				Class<T> beanClass, Supplier<T> instanceSupplier) {
 			if (ObjectUtils.isEmpty(this.beanFactory.getBeanNamesForType(beanClass, true, false))) {
-				RootBeanDefinition beanDefinition = new RootBeanDefinition(beanClass);
+				RootBeanDefinition beanDefinition = new RootBeanDefinition(beanClass, instanceSupplier);
 				beanDefinition.setSynthetic(true);
 				registry.registerBeanDefinition(name, beanDefinition);
 			}

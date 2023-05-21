@@ -21,7 +21,8 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
 
-import jakarta.servlet.ServletException;
+import javax.servlet.ServletException;
+
 import org.junit.jupiter.api.Test;
 
 import org.springframework.boot.web.error.ErrorAttributeOptions;
@@ -65,26 +66,26 @@ class DefaultErrorAttributesTests {
 
 	@Test
 	void specificStatusCode() {
-		this.request.setAttribute("jakarta.servlet.error.status_code", 404);
+		this.request.setAttribute("javax.servlet.error.status_code", 404);
 		Map<String, Object> attributes = this.errorAttributes.getErrorAttributes(this.webRequest,
 				ErrorAttributeOptions.defaults());
-		assertThat(attributes).containsEntry("error", HttpStatus.NOT_FOUND.getReasonPhrase());
-		assertThat(attributes).containsEntry("status", 404);
+		assertThat(attributes.get("error")).isEqualTo(HttpStatus.NOT_FOUND.getReasonPhrase());
+		assertThat(attributes.get("status")).isEqualTo(404);
 	}
 
 	@Test
 	void missingStatusCode() {
 		Map<String, Object> attributes = this.errorAttributes.getErrorAttributes(this.webRequest,
 				ErrorAttributeOptions.defaults());
-		assertThat(attributes).containsEntry("error", "None");
-		assertThat(attributes).containsEntry("status", 999);
+		assertThat(attributes.get("error")).isEqualTo("None");
+		assertThat(attributes.get("status")).isEqualTo(999);
 	}
 
 	@Test
 	void mvcError() {
 		RuntimeException ex = new RuntimeException("Test");
 		ModelAndView modelAndView = this.errorAttributes.resolveException(this.request, null, null, ex);
-		this.request.setAttribute("jakarta.servlet.error.exception", new RuntimeException("Ignored"));
+		this.request.setAttribute("javax.servlet.error.exception", new RuntimeException("Ignored"));
 		Map<String, Object> attributes = this.errorAttributes.getErrorAttributes(this.webRequest,
 				ErrorAttributeOptions.of(Include.MESSAGE));
 		assertThat(this.errorAttributes.getError(this.webRequest)).isSameAs(ex);
@@ -92,26 +93,26 @@ class DefaultErrorAttributesTests {
 			.isSameAs(ex);
 		assertThat(modelAndView).isNull();
 		assertThat(attributes).doesNotContainKey("exception");
-		assertThat(attributes).containsEntry("message", "Test");
+		assertThat(attributes.get("message")).isEqualTo("Test");
 	}
 
 	@Test
 	void servletErrorWithMessage() {
 		RuntimeException ex = new RuntimeException("Test");
-		this.request.setAttribute("jakarta.servlet.error.exception", ex);
+		this.request.setAttribute("javax.servlet.error.exception", ex);
 		Map<String, Object> attributes = this.errorAttributes.getErrorAttributes(this.webRequest,
 				ErrorAttributeOptions.of(Include.MESSAGE));
 		assertThat(this.errorAttributes.getError(this.webRequest)).isSameAs(ex);
 		assertThat(this.webRequest.getAttribute(ErrorAttributes.ERROR_ATTRIBUTE, WebRequest.SCOPE_REQUEST))
 			.isSameAs(ex);
 		assertThat(attributes).doesNotContainKey("exception");
-		assertThat(attributes).containsEntry("message", "Test");
+		assertThat(attributes.get("message")).isEqualTo("Test");
 	}
 
 	@Test
 	void servletErrorWithoutMessage() {
 		RuntimeException ex = new RuntimeException("Test");
-		this.request.setAttribute("jakarta.servlet.error.exception", ex);
+		this.request.setAttribute("javax.servlet.error.exception", ex);
 		Map<String, Object> attributes = this.errorAttributes.getErrorAttributes(this.webRequest,
 				ErrorAttributeOptions.defaults());
 		assertThat(this.errorAttributes.getError(this.webRequest)).isSameAs(ex);
@@ -123,16 +124,16 @@ class DefaultErrorAttributesTests {
 
 	@Test
 	void servletMessageWithMessage() {
-		this.request.setAttribute("jakarta.servlet.error.message", "Test");
+		this.request.setAttribute("javax.servlet.error.message", "Test");
 		Map<String, Object> attributes = this.errorAttributes.getErrorAttributes(this.webRequest,
 				ErrorAttributeOptions.of(Include.MESSAGE));
 		assertThat(attributes).doesNotContainKey("exception");
-		assertThat(attributes).containsEntry("message", "Test");
+		assertThat(attributes.get("message")).isEqualTo("Test");
 	}
 
 	@Test
 	void servletMessageWithoutMessage() {
-		this.request.setAttribute("jakarta.servlet.error.message", "Test");
+		this.request.setAttribute("javax.servlet.error.message", "Test");
 		Map<String, Object> attributes = this.errorAttributes.getErrorAttributes(this.webRequest,
 				ErrorAttributeOptions.defaults());
 		assertThat(attributes).doesNotContainKey("exception");
@@ -141,48 +142,48 @@ class DefaultErrorAttributesTests {
 
 	@Test
 	void nullExceptionMessage() {
-		this.request.setAttribute("jakarta.servlet.error.exception", new RuntimeException());
-		this.request.setAttribute("jakarta.servlet.error.message", "Test");
+		this.request.setAttribute("javax.servlet.error.exception", new RuntimeException());
+		this.request.setAttribute("javax.servlet.error.message", "Test");
 		Map<String, Object> attributes = this.errorAttributes.getErrorAttributes(this.webRequest,
 				ErrorAttributeOptions.of(Include.MESSAGE));
 		assertThat(attributes).doesNotContainKey("exception");
-		assertThat(attributes).containsEntry("message", "Test");
+		assertThat(attributes.get("message")).isEqualTo("Test");
 	}
 
 	@Test
 	void nullExceptionMessageAndServletMessage() {
-		this.request.setAttribute("jakarta.servlet.error.exception", new RuntimeException());
+		this.request.setAttribute("javax.servlet.error.exception", new RuntimeException());
 		Map<String, Object> attributes = this.errorAttributes.getErrorAttributes(this.webRequest,
 				ErrorAttributeOptions.of(Include.MESSAGE));
 		assertThat(attributes).doesNotContainKey("exception");
-		assertThat(attributes).containsEntry("message", "No message available");
+		assertThat(attributes.get("message")).isEqualTo("No message available");
 	}
 
 	@Test
 	void unwrapServletException() {
 		RuntimeException ex = new RuntimeException("Test");
 		ServletException wrapped = new ServletException(new ServletException(ex));
-		this.request.setAttribute("jakarta.servlet.error.exception", wrapped);
+		this.request.setAttribute("javax.servlet.error.exception", wrapped);
 		Map<String, Object> attributes = this.errorAttributes.getErrorAttributes(this.webRequest,
 				ErrorAttributeOptions.of(Include.MESSAGE));
 		assertThat(this.errorAttributes.getError(this.webRequest)).isSameAs(wrapped);
 		assertThat(this.webRequest.getAttribute(ErrorAttributes.ERROR_ATTRIBUTE, WebRequest.SCOPE_REQUEST))
 			.isSameAs(wrapped);
 		assertThat(attributes).doesNotContainKey("exception");
-		assertThat(attributes).containsEntry("message", "Test");
+		assertThat(attributes.get("message")).isEqualTo("Test");
 	}
 
 	@Test
 	void getError() {
 		Error error = new OutOfMemoryError("Test error");
-		this.request.setAttribute("jakarta.servlet.error.exception", error);
+		this.request.setAttribute("javax.servlet.error.exception", error);
 		Map<String, Object> attributes = this.errorAttributes.getErrorAttributes(this.webRequest,
 				ErrorAttributeOptions.of(Include.MESSAGE));
 		assertThat(this.errorAttributes.getError(this.webRequest)).isSameAs(error);
 		assertThat(this.webRequest.getAttribute(ErrorAttributes.ERROR_ATTRIBUTE, WebRequest.SCOPE_REQUEST))
 			.isSameAs(error);
 		assertThat(attributes).doesNotContainKey("exception");
-		assertThat(attributes).containsEntry("message", "Test error");
+		assertThat(attributes.get("message")).isEqualTo("Test error");
 	}
 
 	@Test
@@ -212,17 +213,17 @@ class DefaultErrorAttributesTests {
 	}
 
 	private void testBindingResult(BindingResult bindingResult, Exception ex, ErrorAttributeOptions options) {
-		this.request.setAttribute("jakarta.servlet.error.exception", ex);
+		this.request.setAttribute("javax.servlet.error.exception", ex);
 		Map<String, Object> attributes = this.errorAttributes.getErrorAttributes(this.webRequest, options);
 		if (options.isIncluded(Include.MESSAGE)) {
-			assertThat(attributes).containsEntry("message",
-					"Validation failed for object='objectName'. Error count: 1");
+			assertThat(attributes.get("message"))
+				.isEqualTo("Validation failed for object='objectName'. Error count: 1");
 		}
 		else {
 			assertThat(attributes).doesNotContainKey("message");
 		}
 		if (options.isIncluded(Include.BINDING_ERRORS)) {
-			assertThat(attributes).containsEntry("errors", bindingResult.getAllErrors());
+			assertThat(attributes.get("errors")).isEqualTo(bindingResult.getAllErrors());
 		}
 		else {
 			assertThat(attributes).doesNotContainKey("errors");
@@ -233,17 +234,17 @@ class DefaultErrorAttributesTests {
 	void withExceptionAttribute() {
 		DefaultErrorAttributes errorAttributes = new DefaultErrorAttributes();
 		RuntimeException ex = new RuntimeException("Test");
-		this.request.setAttribute("jakarta.servlet.error.exception", ex);
+		this.request.setAttribute("javax.servlet.error.exception", ex);
 		Map<String, Object> attributes = errorAttributes.getErrorAttributes(this.webRequest,
 				ErrorAttributeOptions.of(Include.EXCEPTION, Include.MESSAGE));
-		assertThat(attributes).containsEntry("exception", RuntimeException.class.getName());
-		assertThat(attributes).containsEntry("message", "Test");
+		assertThat(attributes.get("exception")).isEqualTo(RuntimeException.class.getName());
+		assertThat(attributes.get("message")).isEqualTo("Test");
 	}
 
 	@Test
 	void withStackTraceAttribute() {
 		RuntimeException ex = new RuntimeException("Test");
-		this.request.setAttribute("jakarta.servlet.error.exception", ex);
+		this.request.setAttribute("javax.servlet.error.exception", ex);
 		Map<String, Object> attributes = this.errorAttributes.getErrorAttributes(this.webRequest,
 				ErrorAttributeOptions.of(Include.STACK_TRACE));
 		assertThat(attributes.get("trace").toString()).startsWith("java.lang");
@@ -252,7 +253,7 @@ class DefaultErrorAttributesTests {
 	@Test
 	void withoutStackTraceAttribute() {
 		RuntimeException ex = new RuntimeException("Test");
-		this.request.setAttribute("jakarta.servlet.error.exception", ex);
+		this.request.setAttribute("javax.servlet.error.exception", ex);
 		Map<String, Object> attributes = this.errorAttributes.getErrorAttributes(this.webRequest,
 				ErrorAttributeOptions.defaults());
 		assertThat(attributes).doesNotContainKey("trace");
@@ -260,10 +261,10 @@ class DefaultErrorAttributesTests {
 
 	@Test
 	void path() {
-		this.request.setAttribute("jakarta.servlet.error.request_uri", "path");
+		this.request.setAttribute("javax.servlet.error.request_uri", "path");
 		Map<String, Object> attributes = this.errorAttributes.getErrorAttributes(this.webRequest,
 				ErrorAttributeOptions.defaults());
-		assertThat(attributes).containsEntry("path", "path");
+		assertThat(attributes.get("path")).isEqualTo("path");
 	}
 
 	@Test
