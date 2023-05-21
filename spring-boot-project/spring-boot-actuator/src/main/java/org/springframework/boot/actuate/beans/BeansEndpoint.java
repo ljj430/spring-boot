@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import java.util.Map;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
-import org.springframework.boot.actuate.endpoint.OperationResponseBody;
 import org.springframework.boot.actuate.endpoint.annotation.Endpoint;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
 import org.springframework.context.ApplicationContext;
@@ -53,51 +52,53 @@ public class BeansEndpoint {
 	}
 
 	@ReadOperation
-	public BeansDescriptor beans() {
-		Map<String, ContextBeansDescriptor> contexts = new HashMap<>();
+	public ApplicationBeans beans() {
+		Map<String, ContextBeans> contexts = new HashMap<>();
 		ConfigurableApplicationContext context = this.context;
 		while (context != null) {
-			contexts.put(context.getId(), ContextBeansDescriptor.describing(context));
+			contexts.put(context.getId(), ContextBeans.describing(context));
 			context = getConfigurableParent(context);
 		}
-		return new BeansDescriptor(contexts);
+		return new ApplicationBeans(contexts);
 	}
 
 	private static ConfigurableApplicationContext getConfigurableParent(ConfigurableApplicationContext context) {
 		ApplicationContext parent = context.getParent();
-		if (parent instanceof ConfigurableApplicationContext configurableParent) {
-			return configurableParent;
+		if (parent instanceof ConfigurableApplicationContext) {
+			return (ConfigurableApplicationContext) parent;
 		}
 		return null;
 	}
 
 	/**
-	 * Description of an application's beans.
+	 * A description of an application's beans, primarily intended for serialization to
+	 * JSON.
 	 */
-	public static final class BeansDescriptor implements OperationResponseBody {
+	public static final class ApplicationBeans {
 
-		private final Map<String, ContextBeansDescriptor> contexts;
+		private final Map<String, ContextBeans> contexts;
 
-		private BeansDescriptor(Map<String, ContextBeansDescriptor> contexts) {
+		private ApplicationBeans(Map<String, ContextBeans> contexts) {
 			this.contexts = contexts;
 		}
 
-		public Map<String, ContextBeansDescriptor> getContexts() {
+		public Map<String, ContextBeans> getContexts() {
 			return this.contexts;
 		}
 
 	}
 
 	/**
-	 * Description of an application context beans.
+	 * A description of an application context, primarily intended for serialization to
+	 * JSON.
 	 */
-	public static final class ContextBeansDescriptor {
+	public static final class ContextBeans {
 
 		private final Map<String, BeanDescriptor> beans;
 
 		private final String parentId;
 
-		private ContextBeansDescriptor(Map<String, BeanDescriptor> beans, String parentId) {
+		private ContextBeans(Map<String, BeanDescriptor> beans, String parentId) {
 			this.beans = beans;
 			this.parentId = parentId;
 		}
@@ -110,13 +111,12 @@ public class BeansEndpoint {
 			return this.beans;
 		}
 
-		private static ContextBeansDescriptor describing(ConfigurableApplicationContext context) {
+		private static ContextBeans describing(ConfigurableApplicationContext context) {
 			if (context == null) {
 				return null;
 			}
 			ConfigurableApplicationContext parent = getConfigurableParent(context);
-			return new ContextBeansDescriptor(describeBeans(context.getBeanFactory()),
-					(parent != null) ? parent.getId() : null);
+			return new ContextBeans(describeBeans(context.getBeanFactory()), (parent != null) ? parent.getId() : null);
 		}
 
 		private static Map<String, BeanDescriptor> describeBeans(ConfigurableListableBeanFactory beanFactory) {
@@ -144,7 +144,8 @@ public class BeansEndpoint {
 	}
 
 	/**
-	 * Description of a bean.
+	 * A description of a bean in an application context, primarily intended for
+	 * serialization to JSON.
 	 */
 	public static final class BeanDescriptor {
 

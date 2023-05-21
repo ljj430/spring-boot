@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,10 +43,6 @@ class Neo4jHealthContributorConfigurations {
 	@Configuration(proxyBeanMethods = false)
 	static class Neo4jConfiguration extends CompositeHealthContributorConfiguration<Neo4jHealthIndicator, Driver> {
 
-		Neo4jConfiguration() {
-			super(Neo4jHealthIndicator::new);
-		}
-
 		@Bean
 		@ConditionalOnMissingBean(name = { "neo4jHealthIndicator", "neo4jHealthContributor" })
 		HealthContributor neo4jHealthContributor(Map<String, Driver> drivers) {
@@ -59,10 +55,6 @@ class Neo4jHealthContributorConfigurations {
 	@ConditionalOnClass(Flux.class)
 	static class Neo4jReactiveConfiguration
 			extends CompositeReactiveHealthContributorConfiguration<Neo4jReactiveHealthIndicator, Driver> {
-
-		Neo4jReactiveConfiguration() {
-			super(Neo4jReactiveHealthIndicator::new);
-		}
 
 		@Bean
 		@ConditionalOnMissingBean(name = { "neo4jHealthIndicator", "neo4jHealthContributor" })

@@ -46,7 +46,6 @@ import org.gradle.api.tasks.bundling.Jar;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
 import org.gradle.api.tasks.testing.Test;
-import org.gradle.external.javadoc.CoreJavadocOptions;
 
 import org.springframework.boot.build.architecture.ArchitecturePlugin;
 import org.springframework.boot.build.classpath.CheckClasspathForProhibitedDependencies;
@@ -60,7 +59,7 @@ import org.springframework.util.StringUtils;
  * plugin is applied:
  *
  * <ul>
- * <li>The project is configured with source and target compatibility of 17
+ * <li>The project is configured with source and target compatibility of 1.8
  * <li>{@link SpringJavaFormatPlugin Spring Java Format}, {@link CheckstylePlugin
  * Checkstyle}, {@link TestFailuresPlugin Test Failures}, and {@link ArchitecturePlugin
  * Architecture} plugins are applied
@@ -75,9 +74,9 @@ import org.springframework.util.StringUtils;
  * {@link JavaPlugin} applied
  * <li>{@link JavaCompile}, {@link Javadoc}, and {@link Format} tasks are configured to
  * use UTF-8 encoding
- * <li>{@link JavaCompile} tasks are configured to:
+ * <li>{@link JavaCompile} tasks are configured to use {@code -parameters}.
+ * <li>When building with Java 8, {@link JavaCompile} tasks are also configured to:
  * <ul>
- * <li>Use {@code -parameters}.
  * <li>Treat warnings as errors
  * <li>Enable {@code unchecked}, {@code deprecation}, {@code rawtypes}, and {@code varags}
  * warnings
@@ -103,7 +102,7 @@ import org.springframework.util.StringUtils;
  */
 class JavaConventions {
 
-	private static final String SOURCE_AND_TARGET_COMPATIBILITY = "17";
+	private static final String SOURCE_AND_TARGET_COMPATIBILITY = "1.8";
 
 	void apply(Project project) {
 		project.getPlugins().withType(JavaBasePlugin.class, (java) -> {
@@ -179,12 +178,7 @@ class JavaConventions {
 	}
 
 	private void configureJavadocConventions(Project project) {
-		project.getTasks().withType(Javadoc.class, (javadoc) -> {
-			CoreJavadocOptions options = (CoreJavadocOptions) javadoc.getOptions();
-			options.source("17");
-			options.encoding("UTF-8");
-			options.addStringOption("Xdoclint:none", "-quiet");
-		});
+		project.getTasks().withType(Javadoc.class, (javadoc) -> javadoc.getOptions().source("1.8").encoding("UTF-8"));
 	}
 
 	private void configureJavaConventions(Project project) {
@@ -202,15 +196,15 @@ class JavaConventions {
 				compile.setSourceCompatibility(SOURCE_AND_TARGET_COMPATIBILITY);
 				compile.setTargetCompatibility(SOURCE_AND_TARGET_COMPATIBILITY);
 			}
-			else if (buildingWithJava17(project)) {
+			else if (buildingWithJava8(project)) {
 				args.addAll(Arrays.asList("-Werror", "-Xlint:unchecked", "-Xlint:deprecation", "-Xlint:rawtypes",
 						"-Xlint:varargs"));
 			}
 		});
 	}
 
-	private boolean buildingWithJava17(Project project) {
-		return !project.hasProperty("toolchainVersion") && JavaVersion.current() == JavaVersion.VERSION_17;
+	private boolean buildingWithJava8(Project project) {
+		return !project.hasProperty("toolchainVersion") && JavaVersion.current() == JavaVersion.VERSION_1_8;
 	}
 
 	private void configureSpringJavaFormat(Project project) {
@@ -237,10 +231,11 @@ class JavaConventions {
 			.matching((configuration) -> configuration.getName().endsWith("Classpath")
 					|| JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME.equals(configuration.getName()))
 			.all((configuration) -> configuration.extendsFrom(dependencyManagement));
-		Dependency springBootParent = project.getDependencies()
-			.enforcedPlatform(project.getDependencies()
-				.project(Collections.singletonMap("path", ":spring-boot-project:spring-boot-parent")));
-		dependencyManagement.getDependencies().add(springBootParent);
+		String path = project.getName().contains("spring-boot-starter")
+				? ":spring-boot-project:spring-boot-dependencies" : ":spring-boot-project:spring-boot-parent";
+		Dependency dependency = project.getDependencies()
+			.enforcedPlatform(project.getDependencies().project(Collections.singletonMap("path", path)));
+		dependencyManagement.getDependencies().add(dependency);
 		project.getPlugins()
 			.withType(OptionalDependenciesPlugin.class,
 					(optionalDependencies) -> configurations

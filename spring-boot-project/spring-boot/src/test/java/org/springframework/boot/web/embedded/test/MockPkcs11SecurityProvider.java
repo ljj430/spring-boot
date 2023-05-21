@@ -33,7 +33,7 @@ public class MockPkcs11SecurityProvider extends Provider {
 	static final MockPkcs11SecurityProvider INSTANCE = new MockPkcs11SecurityProvider();
 
 	MockPkcs11SecurityProvider() {
-		super(NAME, "0.1", "Mock PKCS11 Provider");
+		super(NAME, 0.1, "Mock PKCS11 Provider");
 		putService(new Service(this, "KeyStore", "PKCS11", MockKeyStoreSpi.class.getName(), null, null));
 	}
 

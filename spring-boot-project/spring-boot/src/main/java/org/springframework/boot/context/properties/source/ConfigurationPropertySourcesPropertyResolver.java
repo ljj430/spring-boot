@@ -75,8 +75,8 @@ class ConfigurationPropertySourcesPropertyResolver extends AbstractPropertyResol
 		if (value == null) {
 			return null;
 		}
-		if (resolveNestedPlaceholders && value instanceof String string) {
-			value = resolveNestedPlaceholders(string);
+		if (resolveNestedPlaceholders && value instanceof String) {
+			value = resolveNestedPlaceholders((String) value);
 		}
 		return convertValueIfNecessary(value, targetValueType);
 	}
@@ -101,8 +101,8 @@ class ConfigurationPropertySourcesPropertyResolver extends AbstractPropertyResol
 		ConfigurationPropertySourcesPropertySource attached = (ConfigurationPropertySourcesPropertySource) ConfigurationPropertySources
 			.getAttached(this.propertySources);
 		Iterable<ConfigurationPropertySource> attachedSource = (attached != null) ? attached.getSource() : null;
-		if ((attachedSource instanceof SpringConfigurationPropertySources springSource)
-				&& springSource.isUsingSources(this.propertySources)) {
+		if ((attachedSource instanceof SpringConfigurationPropertySources)
+				&& ((SpringConfigurationPropertySources) attachedSource).isUsingSources(this.propertySources)) {
 			return attached;
 		}
 		return null;

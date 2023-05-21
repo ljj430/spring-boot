@@ -102,10 +102,7 @@ public class ManagementServerProperties {
 	}
 
 	private String cleanBasePath(String basePath) {
-		String candidate = null;
-		if (StringUtils.hasLength(basePath)) {
-			candidate = basePath.strip();
-		}
+		String candidate = StringUtils.trimWhitespace(basePath);
 		if (StringUtils.hasText(candidate)) {
 			if (!candidate.startsWith("/")) {
 				candidate = "/" + candidate;

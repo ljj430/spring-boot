@@ -85,12 +85,13 @@ public class FilterAnnotations implements Iterable<TypeFilter> {
 	}
 
 	private TypeFilter createTypeFilter(FilterType filterType, String pattern) {
-		return switch (filterType) {
-			case ASPECTJ -> new AspectJTypeFilter(pattern, this.classLoader);
-			case REGEX -> new RegexPatternTypeFilter(Pattern.compile(pattern));
-			default ->
-				throw new IllegalArgumentException("Filter type not supported with String pattern: " + filterType);
-		};
+		switch (filterType) {
+			case ASPECTJ:
+				return new AspectJTypeFilter(pattern, this.classLoader);
+			case REGEX:
+				return new RegexPatternTypeFilter(Pattern.compile(pattern));
+		}
+		throw new IllegalArgumentException("Filter type not supported with String pattern: " + filterType);
 	}
 
 	@Override

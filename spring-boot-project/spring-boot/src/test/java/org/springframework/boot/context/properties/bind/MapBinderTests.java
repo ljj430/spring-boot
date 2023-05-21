@@ -186,9 +186,9 @@ class MapBinderTests {
 		source.put("foo", "bar");
 		this.sources.add(source);
 		Map<String, Object> result = this.binder.bind("", Bindable.mapOf(String.class, Object.class)).get();
-		assertThat(result).containsEntry("commit", Collections.singletonMap("id", "abcdefg"));
-		assertThat(result).containsEntry("branch", "master");
-		assertThat(result).containsEntry("foo", "bar");
+		assertThat(result.get("commit")).isEqualTo(Collections.singletonMap("id", "abcdefg"));
+		assertThat(result.get("branch")).isEqualTo("master");
+		assertThat(result.get("foo")).isEqualTo("bar");
 	}
 
 	@Test
@@ -366,7 +366,7 @@ class MapBinderTests {
 		source.put("foo.bar[2].value", "c");
 		this.sources.add(source);
 		Map<String, List<JavaBean>> map = this.binder.bind("foo", target).get();
-		List<String> values = map.get("bar").stream().map(JavaBean::getValue).toList();
+		List<String> values = map.get("bar").stream().map(JavaBean::getValue).collect(Collectors.toList());
 		assertThat(values).containsExactly("a", "b", "c");
 
 	}
@@ -431,7 +431,7 @@ class MapBinderTests {
 		mockSource.put("foo.bar.baz[2].value", "c");
 		this.sources.add(mockSource);
 		Map<String, List<JavaBean>> map = this.binder.bind("foo", target).get();
-		List<String> values = map.get("bar.baz").stream().map(JavaBean::getValue).toList();
+		List<String> values = map.get("bar.baz").stream().map(JavaBean::getValue).collect(Collectors.toList());
 		assertThat(values).containsExactly("a", "b", "c");
 	}
 
@@ -505,8 +505,8 @@ class MapBinderTests {
 		source.put("foo", "a,b");
 		this.sources.add(source);
 		Map<String, String> map = binder.bind("foo", STRING_STRING_MAP).get();
-		assertThat(map).containsKey("a");
-		assertThat(map).containsKey("b");
+		assertThat(map.get("a")).isNotNull();
+		assertThat(map.get("b")).isNotNull();
 	}
 
 	@Test
@@ -521,8 +521,8 @@ class MapBinderTests {
 		source.put("foo.b", "b");
 		this.sources.add(source);
 		Map<String, String> map = binder.bind("foo", STRING_STRING_MAP).get();
-		assertThat(map).containsEntry("a", "a");
-		assertThat(map).containsEntry("b", "b");
+		assertThat(map.get("a")).isEqualTo("a");
+		assertThat(map.get("b")).isEqualTo("b");
 	}
 
 	@Test
@@ -652,7 +652,7 @@ class MapBinderTests {
 
 	static class NestableFoo {
 
-		private final Map<String, NestableFoo> foos = new LinkedHashMap<>();
+		private Map<String, NestableFoo> foos = new LinkedHashMap<>();
 
 		private String value;
 
@@ -704,7 +704,7 @@ class MapBinderTests {
 
 	static class ExampleCustomWithDefaultConstructorBean {
 
-		private final MyCustomWithDefaultConstructorMap items = new MyCustomWithDefaultConstructorMap();
+		private MyCustomWithDefaultConstructorMap items = new MyCustomWithDefaultConstructorMap();
 
 		MyCustomWithDefaultConstructorMap getItems() {
 			return this.items;

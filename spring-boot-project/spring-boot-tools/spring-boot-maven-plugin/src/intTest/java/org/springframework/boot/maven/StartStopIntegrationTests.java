@@ -33,6 +33,15 @@ import static org.assertj.core.api.Assertions.contentOf;
 class StartStopIntegrationTests {
 
 	@TestTemplate
+	@Deprecated
+	void startStopWithForkDisabledWaitsForApplicationToBeReadyAndThenRequestsShutdown(MavenBuild mavenBuild) {
+		mavenBuild.project("start-stop-fork-disabled")
+			.goals("verify")
+			.execute((project) -> assertThat(buildLog(project)).contains("isReady: true")
+				.contains("Shutdown requested"));
+	}
+
+	@TestTemplate
 	void startStopWaitsForApplicationToBeReadyAndThenRequestsShutdown(MavenBuild mavenBuild) {
 		mavenBuild.project("start-stop")
 			.goals("verify")

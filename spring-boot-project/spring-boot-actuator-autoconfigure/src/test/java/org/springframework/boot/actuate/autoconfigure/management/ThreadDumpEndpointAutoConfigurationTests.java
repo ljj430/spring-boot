@@ -28,7 +28,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Tests for {@link ThreadDumpEndpointAutoConfiguration}.
  *
  * @author Phillip Webb
- * @author Moritz Halbritter
  */
 class ThreadDumpEndpointAutoConfigurationTests {
 
