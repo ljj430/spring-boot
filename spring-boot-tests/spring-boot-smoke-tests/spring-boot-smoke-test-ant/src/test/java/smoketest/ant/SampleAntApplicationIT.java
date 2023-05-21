@@ -42,7 +42,7 @@ public class SampleAntApplicationIT {
 			.directory(libs)
 			.start();
 		process.waitFor(5, TimeUnit.MINUTES);
-		assertThat(process.exitValue()).isEqualTo(0);
+		assertThat(process.exitValue()).isZero();
 		String output = FileCopyUtils.copyToString(new InputStreamReader(process.getInputStream()));
 		assertThat(output).contains("Spring Boot Ant Example");
 	}

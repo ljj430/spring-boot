@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
 import org.springframework.boot.convert.DurationUnit;
 
 /**
@@ -74,12 +73,12 @@ public class FlywayProperties {
 	 * duration suffix is not specified, seconds will be used.
 	 */
 	@DurationUnit(ChronoUnit.SECONDS)
-	private Duration connectRetriesInterval;
+	private Duration connectRetriesInterval = Duration.ofSeconds(120);
 
 	/**
 	 * Maximum number of retries when trying to obtain a lock.
 	 */
-	private Integer lockRetryCount;
+	private int lockRetryCount = 50;
 
 	/**
 	 * Default schema name managed by Flyway (case-sensitive).
@@ -142,7 +141,7 @@ public class FlywayProperties {
 	/**
 	 * Separator of default placeholders.
 	 */
-	private String placeholderSeparator;
+	private String placeholderSeparator = ":";
 
 	/**
 	 * Perform placeholder replacement in migration scripts.
@@ -209,7 +208,7 @@ public class FlywayProperties {
 	/**
 	 * Whether to disable cleaning of the database.
 	 */
-	private boolean cleanDisabled;
+	private boolean cleanDisabled = true;
 
 	/**
 	 * Whether to automatically call clean when a validation error occurs.
@@ -221,30 +220,6 @@ public class FlywayProperties {
 	 * applying them.
 	 */
 	private boolean group;
-
-	/**
-	 * Whether to ignore missing migrations when reading the schema history table.
-	 */
-	@Deprecated
-	private boolean ignoreMissingMigrations;
-
-	/**
-	 * Whether to ignore ignored migrations when reading the schema history table.
-	 */
-	@Deprecated
-	private boolean ignoreIgnoredMigrations;
-
-	/**
-	 * Whether to ignore pending migrations when reading the schema history table.
-	 */
-	@Deprecated
-	private boolean ignorePendingMigrations;
-
-	/**
-	 * Whether to ignore future migrations when reading the schema history table.
-	 */
-	@Deprecated
-	private boolean ignoreFutureMigrations = true;
 
 	/**
 	 * Whether to allow mixing transactional and non-transactional statements within the
@@ -378,19 +353,14 @@ public class FlywayProperties {
 	private Boolean detectEncoding;
 
 	/**
-	 * Filename prefix for baseline migrations. Requires Flyway Teams.
-	 */
-	private String baselineMigrationPrefix;
-
-	/**
 	 * Prefix of placeholders in migration scripts.
 	 */
-	private String scriptPlaceholderPrefix;
+	private String scriptPlaceholderPrefix = "FP__";
 
 	/**
 	 * Suffix of placeholders in migration scripts.
 	 */
-	private String scriptPlaceholderSuffix;
+	private String scriptPlaceholderSuffix = "__";
 
 	public boolean isEnabled() {
 		return this.enabled;
@@ -440,7 +410,7 @@ public class FlywayProperties {
 		this.connectRetriesInterval = connectRetriesInterval;
 	}
 
-	public Integer getLockRetryCount() {
+	public int getLockRetryCount() {
 		return this.lockRetryCount;
 	}
 
@@ -664,50 +634,6 @@ public class FlywayProperties {
 		this.group = group;
 	}
 
-	@Deprecated
-	@DeprecatedConfigurationProperty(replacement = "spring.flyway.ignore-migration-patterns")
-	public boolean isIgnoreMissingMigrations() {
-		return this.ignoreMissingMigrations;
-	}
-
-	@Deprecated
-	public void setIgnoreMissingMigrations(boolean ignoreMissingMigrations) {
-		this.ignoreMissingMigrations = ignoreMissingMigrations;
-	}
-
-	@Deprecated
-	@DeprecatedConfigurationProperty(replacement = "spring.flyway.ignore-migration-patterns")
-	public boolean isIgnoreIgnoredMigrations() {
-		return this.ignoreIgnoredMigrations;
-	}
-
-	@Deprecated
-	public void setIgnoreIgnoredMigrations(boolean ignoreIgnoredMigrations) {
-		this.ignoreIgnoredMigrations = ignoreIgnoredMigrations;
-	}
-
-	@Deprecated
-	@DeprecatedConfigurationProperty(replacement = "spring.flyway.ignore-migration-patterns")
-	public boolean isIgnorePendingMigrations() {
-		return this.ignorePendingMigrations;
-	}
-
-	@Deprecated
-	public void setIgnorePendingMigrations(boolean ignorePendingMigrations) {
-		this.ignorePendingMigrations = ignorePendingMigrations;
-	}
-
-	@Deprecated
-	@DeprecatedConfigurationProperty(replacement = "spring.flyway.ignore-migration-patterns")
-	public boolean isIgnoreFutureMigrations() {
-		return this.ignoreFutureMigrations;
-	}
-
-	@Deprecated
-	public void setIgnoreFutureMigrations(boolean ignoreFutureMigrations) {
-		this.ignoreFutureMigrations = ignoreFutureMigrations;
-	}
-
 	public boolean isMixed() {
 		return this.mixed;
 	}
@@ -860,17 +786,6 @@ public class FlywayProperties {
 		this.oracleKerberosCacheFile = oracleKerberosCacheFile;
 	}
 
-	@DeprecatedConfigurationProperty(replacement = "spring.flyway.kerberos-config-file")
-	@Deprecated
-	public String getOracleKerberosConfigFile() {
-		return getKerberosConfigFile();
-	}
-
-	@Deprecated
-	public void setOracleKerberosConfigFile(String oracleKerberosConfigFile) {
-		setKerberosConfigFile(oracleKerberosConfigFile);
-	}
-
 	public Boolean getOutputQueryResults() {
 		return this.outputQueryResults;
 	}
@@ -909,14 +824,6 @@ public class FlywayProperties {
 
 	public void setDetectEncoding(final Boolean detectEncoding) {
 		this.detectEncoding = detectEncoding;
-	}
-
-	public String getBaselineMigrationPrefix() {
-		return this.baselineMigrationPrefix;
-	}
-
-	public void setBaselineMigrationPrefix(String baselineMigrationPrefix) {
-		this.baselineMigrationPrefix = baselineMigrationPrefix;
 	}
 
 	public String getScriptPlaceholderPrefix() {

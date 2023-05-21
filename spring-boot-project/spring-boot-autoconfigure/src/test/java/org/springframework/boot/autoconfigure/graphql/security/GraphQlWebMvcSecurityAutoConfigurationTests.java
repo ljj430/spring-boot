@@ -34,12 +34,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.graphql.execution.ErrorType;
 import org.springframework.graphql.execution.RuntimeWiringConfigurer;
-import org.springframework.graphql.execution.SecurityContextThreadLocalAccessor;
 import org.springframework.graphql.execution.SecurityDataFetcherExceptionResolver;
 import org.springframework.http.MediaType;
 import org.springframework.lang.Nullable;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.userdetails.User;
@@ -77,10 +76,8 @@ class GraphQlWebMvcSecurityAutoConfigurationTests {
 
 	@Test
 	void contributesSecurityComponents() {
-		this.contextRunner.run((context) -> {
-			assertThat(context).hasSingleBean(SecurityDataFetcherExceptionResolver.class);
-			assertThat(context).hasSingleBean(SecurityContextThreadLocalAccessor.class);
-		});
+		this.contextRunner
+			.run((context) -> assertThat(context).hasSingleBean(SecurityDataFetcherExceptionResolver.class));
 	}
 
 	@Test
@@ -157,7 +154,7 @@ class GraphQlWebMvcSecurityAutoConfigurationTests {
 
 	@Configuration(proxyBeanMethods = false)
 	@EnableWebSecurity
-	@EnableGlobalMethodSecurity(prePostEnabled = true)
+	@EnableMethodSecurity(prePostEnabled = true)
 	@SuppressWarnings("deprecation")
 	static class SecurityConfig {
 
@@ -166,7 +163,7 @@ class GraphQlWebMvcSecurityAutoConfigurationTests {
 			return http.csrf((c) -> c.disable())
 				// Demonstrate that method security works
 				// Best practice to use both for defense in depth
-				.authorizeRequests((requests) -> requests.anyRequest().permitAll())
+				.authorizeHttpRequests((requests) -> requests.anyRequest().permitAll())
 				.httpBasic(withDefaults())
 				.build();
 		}
