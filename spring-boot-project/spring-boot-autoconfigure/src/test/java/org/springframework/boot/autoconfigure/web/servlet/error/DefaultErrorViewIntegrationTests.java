@@ -81,7 +81,7 @@ class DefaultErrorViewIntegrationTests {
 		MvcResult response = this.mockMvc
 			.perform(
 					get("/error")
-						.requestAttr("jakarta.servlet.error.exception",
+						.requestAttr("javax.servlet.error.exception",
 								new RuntimeException("<script>alert('Hello World')</script>"))
 						.accept(MediaType.TEXT_HTML))
 			.andExpect(status().is5xxServerError())
@@ -96,7 +96,7 @@ class DefaultErrorViewIntegrationTests {
 	void testErrorWithSpelEscape() throws Exception {
 		String spel = "${T(" + getClass().getName() + ").injectCall()}";
 		MvcResult response = this.mockMvc
-			.perform(get("/error").requestAttr("jakarta.servlet.error.exception", new RuntimeException(spel))
+			.perform(get("/error").requestAttr("javax.servlet.error.exception", new RuntimeException(spel))
 				.accept(MediaType.TEXT_HTML))
 			.andExpect(status().is5xxServerError())
 			.andReturn();

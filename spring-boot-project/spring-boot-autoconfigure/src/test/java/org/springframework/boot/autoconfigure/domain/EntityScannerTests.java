@@ -19,8 +19,9 @@ package org.springframework.boot.autoconfigure.domain;
 import java.util.Collections;
 import java.util.Set;
 
-import jakarta.persistence.Embeddable;
-import jakarta.persistence.Entity;
+import javax.persistence.Embeddable;
+import javax.persistence.Entity;
+
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 

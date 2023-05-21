@@ -23,6 +23,7 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 
@@ -118,7 +119,7 @@ class CollectionBinderTests {
 					.getUnboundProperties();
 				assertThat(unbound).hasSize(1);
 				ConfigurationProperty property = unbound.iterator().next();
-				assertThat(property.getName()).hasToString("foo[3]");
+				assertThat(property.getName().toString()).isEqualTo("foo[3]");
 				assertThat(property.getValue()).isEqualTo("3");
 			});
 	}
@@ -137,7 +138,7 @@ class CollectionBinderTests {
 					.getUnboundProperties();
 				assertThat(unbound).hasSize(1);
 				ConfigurationProperty property = unbound.iterator().next();
-				assertThat(property.getName()).hasToString("foo[4].value");
+				assertThat(property.getName().toString()).isEqualTo("foo[4].value");
 				assertThat(property.getValue()).isEqualTo("4");
 			});
 	}
@@ -265,7 +266,7 @@ class CollectionBinderTests {
 		source.put("foo", "");
 		this.sources.add(source);
 		List<String> result = this.binder.bind("foo", STRING_LIST).get();
-		assertThat(result).isEmpty();
+		assertThat(result).isNotNull().isEmpty();
 	}
 
 	@Test
@@ -278,7 +279,7 @@ class CollectionBinderTests {
 		Bindable<List<JavaBean>> target = Bindable.listOf(JavaBean.class);
 		List<JavaBean> result = this.binder.bind("foo", target).get();
 		assertThat(result).hasSize(3);
-		List<String> values = result.stream().map(JavaBean::getValue).toList();
+		List<String> values = result.stream().map(JavaBean::getValue).collect(Collectors.toList());
 		assertThat(values).containsExactly("a", "b", "c");
 	}
 
@@ -432,7 +433,7 @@ class CollectionBinderTests {
 
 	static class ExampleCollectionBean {
 
-		private final List<String> items = new ArrayList<>();
+		private List<String> items = new ArrayList<>();
 
 		private Set<String> itemsSet = new LinkedHashSet<>();
 
@@ -479,7 +480,7 @@ class CollectionBinderTests {
 
 	static class ExampleCustomWithDefaultConstructorBean {
 
-		private final MyCustomWithDefaultConstructorList items = new MyCustomWithDefaultConstructorList();
+		private MyCustomWithDefaultConstructorList items = new MyCustomWithDefaultConstructorList();
 
 		MyCustomWithDefaultConstructorList getItems() {
 			return this.items;

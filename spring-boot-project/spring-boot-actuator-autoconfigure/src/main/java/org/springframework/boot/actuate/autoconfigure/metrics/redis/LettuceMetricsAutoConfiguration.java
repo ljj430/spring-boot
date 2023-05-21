@@ -47,7 +47,7 @@ public class LettuceMetricsAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	MicrometerOptions micrometerOptions() {
-		return MicrometerOptions.create();
+		return MicrometerOptions.builder().histogram(true).build();
 	}
 
 	@Bean

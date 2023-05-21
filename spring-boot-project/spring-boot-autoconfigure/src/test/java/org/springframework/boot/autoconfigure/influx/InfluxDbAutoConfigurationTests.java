@@ -38,9 +38,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Sergey Kuptsov
  * @author Stephane Nicoll
  * @author Eddú Meléndez
- * @author Moritz Halbritter
- * @author Andy Wilkinson
- * @author Phillip Webb
  */
 class InfluxDbAutoConfigurationTests {
 

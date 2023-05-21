@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.boot.actuate.logging;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,14 +25,10 @@ import java.util.NavigableSet;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.springframework.aot.hint.annotation.RegisterReflectionForBinding;
-import org.springframework.boot.actuate.endpoint.OperationResponseBody;
 import org.springframework.boot.actuate.endpoint.annotation.Endpoint;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
 import org.springframework.boot.actuate.endpoint.annotation.Selector;
 import org.springframework.boot.actuate.endpoint.annotation.WriteOperation;
-import org.springframework.boot.actuate.logging.LoggersEndpoint.GroupLoggerLevelsDescriptor;
-import org.springframework.boot.actuate.logging.LoggersEndpoint.SingleLoggerLevelsDescriptor;
 import org.springframework.boot.logging.LogLevel;
 import org.springframework.boot.logging.LoggerConfiguration;
 import org.springframework.boot.logging.LoggerGroup;
@@ -49,7 +46,6 @@ import org.springframework.util.Assert;
  * @since 2.0.0
  */
 @Endpoint(id = "loggers")
-@RegisterReflectionForBinding({ GroupLoggerLevelsDescriptor.class, SingleLoggerLevelsDescriptor.class })
 public class LoggersEndpoint {
 
 	private final LoggingSystem loggingSystem;
@@ -69,30 +65,34 @@ public class LoggersEndpoint {
 	}
 
 	@ReadOperation
-	public LoggersDescriptor loggers() {
+	public Map<String, Object> loggers() {
 		Collection<LoggerConfiguration> configurations = this.loggingSystem.getLoggerConfigurations();
 		if (configurations == null) {
-			return LoggersDescriptor.NONE;
+			return Collections.emptyMap();
 		}
-		return new LoggersDescriptor(getLevels(), getLoggers(configurations), getGroups());
+		Map<String, Object> result = new LinkedHashMap<>();
+		result.put("levels", getLevels());
+		result.put("loggers", getLoggers(configurations));
+		result.put("groups", getGroups());
+		return result;
 	}
 
-	private Map<String, GroupLoggerLevelsDescriptor> getGroups() {
-		Map<String, GroupLoggerLevelsDescriptor> groups = new LinkedHashMap<>();
+	private Map<String, LoggerLevels> getGroups() {
+		Map<String, LoggerLevels> groups = new LinkedHashMap<>();
 		this.loggerGroups.forEach((group) -> groups.put(group.getName(),
-				new GroupLoggerLevelsDescriptor(group.getConfiguredLevel(), group.getMembers())));
+				new GroupLoggerLevels(group.getConfiguredLevel(), group.getMembers())));
 		return groups;
 	}
 
 	@ReadOperation
-	public LoggerLevelsDescriptor loggerLevels(@Selector String name) {
+	public LoggerLevels loggerLevels(@Selector String name) {
 		Assert.notNull(name, "Name must not be null");
 		LoggerGroup group = this.loggerGroups.get(name);
 		if (group != null) {
-			return new GroupLoggerLevelsDescriptor(group.getConfiguredLevel(), group.getMembers());
+			return new GroupLoggerLevels(group.getConfiguredLevel(), group.getMembers());
 		}
 		LoggerConfiguration configuration = this.loggingSystem.getLoggerConfiguration(name);
-		return (configuration != null) ? new SingleLoggerLevelsDescriptor(configuration) : null;
+		return (configuration != null) ? new SingleLoggerLevels(configuration) : null;
 	}
 
 	@WriteOperation
@@ -111,59 +111,22 @@ public class LoggersEndpoint {
 		return new TreeSet<>(levels).descendingSet();
 	}
 
-	private Map<String, LoggerLevelsDescriptor> getLoggers(Collection<LoggerConfiguration> configurations) {
-		Map<String, LoggerLevelsDescriptor> loggers = new LinkedHashMap<>(configurations.size());
+	private Map<String, LoggerLevels> getLoggers(Collection<LoggerConfiguration> configurations) {
+		Map<String, LoggerLevels> loggers = new LinkedHashMap<>(configurations.size());
 		for (LoggerConfiguration configuration : configurations) {
-			loggers.put(configuration.getName(), new SingleLoggerLevelsDescriptor(configuration));
+			loggers.put(configuration.getName(), new SingleLoggerLevels(configuration));
 		}
 		return loggers;
 	}
 
 	/**
-	 * Description of loggers.
+	 * Levels configured for a given logger exposed in a JSON friendly way.
 	 */
-	public static class LoggersDescriptor implements OperationResponseBody {
+	public static class LoggerLevels {
 
-		/**
-		 * Empty description.
-		 */
-		public static final LoggersDescriptor NONE = new LoggersDescriptor(null, null, null);
+		private String configuredLevel;
 
-		private final NavigableSet<LogLevel> levels;
-
-		private final Map<String, LoggerLevelsDescriptor> loggers;
-
-		private final Map<String, GroupLoggerLevelsDescriptor> groups;
-
-		public LoggersDescriptor(NavigableSet<LogLevel> levels, Map<String, LoggerLevelsDescriptor> loggers,
-				Map<String, GroupLoggerLevelsDescriptor> groups) {
-			this.levels = levels;
-			this.loggers = loggers;
-			this.groups = groups;
-		}
-
-		public NavigableSet<LogLevel> getLevels() {
-			return this.levels;
-		}
-
-		public Map<String, LoggerLevelsDescriptor> getLoggers() {
-			return this.loggers;
-		}
-
-		public Map<String, GroupLoggerLevelsDescriptor> getGroups() {
-			return this.groups;
-		}
-
-	}
-
-	/**
-	 * Description of levels configured for a given logger.
-	 */
-	public static class LoggerLevelsDescriptor implements OperationResponseBody {
-
-		private final String configuredLevel;
-
-		public LoggerLevelsDescriptor(LogLevel configuredLevel) {
+		public LoggerLevels(LogLevel configuredLevel) {
 			this.configuredLevel = getName(configuredLevel);
 		}
 
@@ -177,14 +140,11 @@ public class LoggersEndpoint {
 
 	}
 
-	/**
-	 * Description of levels configured for a given group logger.
-	 */
-	public static class GroupLoggerLevelsDescriptor extends LoggerLevelsDescriptor {
+	public static class GroupLoggerLevels extends LoggerLevels {
 
-		private final List<String> members;
+		private List<String> members;
 
-		public GroupLoggerLevelsDescriptor(LogLevel configuredLevel, List<String> members) {
+		public GroupLoggerLevels(LogLevel configuredLevel, List<String> members) {
 			super(configuredLevel);
 			this.members = members;
 		}
@@ -195,14 +155,11 @@ public class LoggersEndpoint {
 
 	}
 
-	/**
-	 * Description of levels configured for a given single logger.
-	 */
-	public static class SingleLoggerLevelsDescriptor extends LoggerLevelsDescriptor {
+	public static class SingleLoggerLevels extends LoggerLevels {
 
-		private final String effectiveLevel;
+		private String effectiveLevel;
 
-		public SingleLoggerLevelsDescriptor(LoggerConfiguration configuration) {
+		public SingleLoggerLevels(LoggerConfiguration configuration) {
 			super(configuration.getConfiguredLevel());
 			this.effectiveLevel = getName(configuration.getEffectiveLevel());
 		}

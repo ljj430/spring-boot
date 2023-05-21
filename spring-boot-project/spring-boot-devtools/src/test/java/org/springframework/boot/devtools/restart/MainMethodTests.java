@@ -34,7 +34,7 @@ import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
  */
 class MainMethodTests {
 
-	private static final ThreadLocal<MainMethod> mainMethod = new ThreadLocal<>();
+	private static ThreadLocal<MainMethod> mainMethod = new ThreadLocal<>();
 
 	private Method actualMain;
 
@@ -54,6 +54,14 @@ class MainMethodTests {
 		MainMethod method = new TestThread(Valid::main).test();
 		assertThat(method.getMethod()).isEqualTo(this.actualMain);
 		assertThat(method.getDeclaringClassName()).isEqualTo(this.actualMain.getDeclaringClass().getName());
+	}
+
+	@Test // gh-35214
+	void nestedMainMethod() throws Exception {
+		MainMethod method = new TestThread(Nested::main).test();
+		Method nestedMain = Nested.class.getMethod("main", String[].class);
+		assertThat(method.getMethod()).isEqualTo(nestedMain);
+		assertThat(method.getDeclaringClassName()).isEqualTo(nestedMain.getDeclaringClass().getName());
 	}
 
 	@Test
@@ -110,6 +118,15 @@ class MainMethodTests {
 
 		private static void someOtherMethod() {
 			mainMethod.set(new MainMethod());
+		}
+
+	}
+
+	public static class Nested {
+
+		public static void main(String... args) {
+			mainMethod.set(new MainMethod());
+			Valid.main(args);
 		}
 
 	}

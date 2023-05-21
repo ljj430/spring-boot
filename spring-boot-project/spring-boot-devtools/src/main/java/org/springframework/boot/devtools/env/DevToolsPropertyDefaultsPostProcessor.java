@@ -30,7 +30,6 @@ import org.springframework.boot.devtools.logger.DevToolsLogFactory;
 import org.springframework.boot.devtools.restart.Restarter;
 import org.springframework.boot.devtools.system.DevToolsEnablementDeducer;
 import org.springframework.boot.env.EnvironmentPostProcessor;
-import org.springframework.core.NativeDetector;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.env.ConfigurableEnvironment;
@@ -64,12 +63,19 @@ public class DevToolsPropertyDefaultsPostProcessor implements EnvironmentPostPro
 	private static final Map<String, Object> PROPERTIES;
 
 	static {
-		if (NativeDetector.inNativeImage()) {
-			PROPERTIES = Collections.emptyMap();
+		Properties properties = new Properties();
+		try (InputStream stream = DevToolsPropertyDefaultsPostProcessor.class
+			.getResourceAsStream("devtools-property-defaults.properties")) {
+			properties.load(stream);
 		}
-		else {
-			PROPERTIES = loadDefaultProperties();
+		catch (IOException ex) {
+			throw new RuntimeException("Failed to load devtools-property-defaults.properties", ex);
 		}
+		Map<String, Object> map = new HashMap<>();
+		for (String name : properties.stringPropertyNames()) {
+			map.put(name, properties.getProperty(name));
+		}
+		PROPERTIES = Collections.unmodifiableMap(map);
 	}
 
 	@Override
@@ -130,26 +136,6 @@ public class DevToolsPropertyDefaultsPostProcessor implements EnvironmentPostPro
 		catch (IllegalArgumentException ex) {
 			return null;
 		}
-	}
-
-	private static Map<String, Object> loadDefaultProperties() {
-		Properties properties = new Properties();
-		try (InputStream stream = DevToolsPropertyDefaultsPostProcessor.class
-			.getResourceAsStream("devtools-property-defaults.properties")) {
-			if (stream == null) {
-				throw new RuntimeException(
-						"Failed to load devtools-property-defaults.properties because it doesn't exist");
-			}
-			properties.load(stream);
-		}
-		catch (IOException ex) {
-			throw new RuntimeException("Failed to load devtools-property-defaults.properties", ex);
-		}
-		Map<String, Object> map = new HashMap<>();
-		for (String name : properties.stringPropertyNames()) {
-			map.put(name, properties.getProperty(name));
-		}
-		return Collections.unmodifiableMap(map);
 	}
 
 }

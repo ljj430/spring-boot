@@ -19,6 +19,7 @@ package org.springframework.boot.actuate.couchbase;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.couchbase.client.core.diagnostics.ClusterState;
 import com.couchbase.client.core.diagnostics.DiagnosticsResult;
@@ -48,7 +49,7 @@ class CouchbaseHealth {
 					.stream()
 					.flatMap(Collection::stream)
 					.map(this::describe)
-					.toList());
+					.collect(Collectors.toList()));
 	}
 
 	private boolean isCouchbaseUp(DiagnosticsResult diagnostics) {

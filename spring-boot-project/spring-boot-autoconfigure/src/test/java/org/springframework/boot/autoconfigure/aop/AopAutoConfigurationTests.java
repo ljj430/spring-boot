@@ -32,7 +32,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -169,7 +169,7 @@ class AopAutoConfigurationTests {
 
 	}
 
-	@EnableMethodSecurity(prePostEnabled = true)
+	@EnableGlobalMethodSecurity(prePostEnabled = true)
 	@Configuration(proxyBeanMethods = false)
 	static class EnableGlobalMethodSecurityConfiguration {
 
