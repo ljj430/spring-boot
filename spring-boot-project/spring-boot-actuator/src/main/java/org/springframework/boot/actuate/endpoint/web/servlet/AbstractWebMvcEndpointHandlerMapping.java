@@ -26,16 +26,14 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import reactor.core.publisher.Flux;
 
-import org.springframework.aot.hint.RuntimeHints;
-import org.springframework.aot.hint.RuntimeHintsRegistrar;
-import org.springframework.aot.hint.annotation.Reflective;
-import org.springframework.aot.hint.annotation.ReflectiveRuntimeHintsRegistrar;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.actuate.endpoint.InvalidEndpointRequestException;
 import org.springframework.boot.actuate.endpoint.InvocationContext;
@@ -50,9 +48,7 @@ import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
 import org.springframework.boot.actuate.endpoint.web.WebOperation;
 import org.springframework.boot.actuate.endpoint.web.WebOperationRequestPredicate;
 import org.springframework.boot.actuate.endpoint.web.WebServerNamespace;
-import org.springframework.boot.actuate.endpoint.web.servlet.AbstractWebMvcEndpointHandlerMapping.AbstractWebMvcEndpointHandlerMappingRuntimeHints;
 import org.springframework.boot.web.context.WebServerApplicationContext;
-import org.springframework.context.annotation.ImportRuntimeHints;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -73,8 +69,11 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.HandlerMapping;
+import org.springframework.web.servlet.handler.MatchableHandlerMapping;
+import org.springframework.web.servlet.handler.RequestMatchResult;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfoHandlerMapping;
+import org.springframework.web.util.pattern.PathPatternParser;
 
 /**
  * A custom {@link HandlerMapping} that makes {@link ExposableWebEndpoint web endpoints}
@@ -86,9 +85,8 @@ import org.springframework.web.servlet.mvc.method.RequestMappingInfoHandlerMappi
  * @author Brian Clozel
  * @since 2.0.0
  */
-@ImportRuntimeHints(AbstractWebMvcEndpointHandlerMappingRuntimeHints.class)
 public abstract class AbstractWebMvcEndpointHandlerMapping extends RequestMappingInfoHandlerMapping
-		implements InitializingBean {
+		implements InitializingBean, MatchableHandlerMapping {
 
 	private final EndpointMapping endpointMapping;
 
@@ -131,18 +129,45 @@ public abstract class AbstractWebMvcEndpointHandlerMapping extends RequestMappin
 	public AbstractWebMvcEndpointHandlerMapping(EndpointMapping endpointMapping,
 			Collection<ExposableWebEndpoint> endpoints, EndpointMediaTypes endpointMediaTypes,
 			CorsConfiguration corsConfiguration, boolean shouldRegisterLinksMapping) {
+		this(endpointMapping, endpoints, endpointMediaTypes, corsConfiguration, shouldRegisterLinksMapping, null);
+	}
+
+	/**
+	 * Creates a new {@code AbstractWebMvcEndpointHandlerMapping} that provides mappings
+	 * for the operations of the given endpoints.
+	 * @param endpointMapping the base mapping for all endpoints
+	 * @param endpoints the web endpoints
+	 * @param endpointMediaTypes media types consumed and produced by the endpoints
+	 * @param corsConfiguration the CORS configuration for the endpoints or {@code null}
+	 * @param shouldRegisterLinksMapping whether the links endpoint should be registered
+	 * @param pathPatternParser the path pattern parser
+	 */
+	public AbstractWebMvcEndpointHandlerMapping(EndpointMapping endpointMapping,
+			Collection<ExposableWebEndpoint> endpoints, EndpointMediaTypes endpointMediaTypes,
+			CorsConfiguration corsConfiguration, boolean shouldRegisterLinksMapping,
+			PathPatternParser pathPatternParser) {
 		this.endpointMapping = endpointMapping;
 		this.endpoints = endpoints;
 		this.endpointMediaTypes = endpointMediaTypes;
 		this.corsConfiguration = corsConfiguration;
 		this.shouldRegisterLinksMapping = shouldRegisterLinksMapping;
+		setPatternParser(pathPatternParser);
 		setOrder(-100);
 	}
 
 	@Override
+	@SuppressWarnings("deprecation")
 	public void afterPropertiesSet() {
 		this.builderConfig = new RequestMappingInfo.BuilderConfiguration();
-		this.builderConfig.setPatternParser(getPatternParser());
+		if (getPatternParser() != null) {
+			this.builderConfig.setPatternParser(getPatternParser());
+		}
+		else {
+			this.builderConfig.setPathMatcher(null);
+			this.builderConfig.setTrailingSlashMatch(true);
+			this.builderConfig.setSuffixPatternMatch(false);
+
+		}
 		super.afterPropertiesSet();
 	}
 
@@ -162,6 +187,19 @@ public abstract class AbstractWebMvcEndpointHandlerMapping extends RequestMappin
 	protected HandlerMethod createHandlerMethod(Object handler, Method method) {
 		HandlerMethod handlerMethod = super.createHandlerMethod(handler, method);
 		return new WebMvcEndpointHandlerMethod(handlerMethod.getBean(), handlerMethod.getMethod());
+	}
+
+	@Override
+	public RequestMatchResult match(HttpServletRequest request, String pattern) {
+		Assert.isNull(getPatternParser(), "This HandlerMapping uses PathPatterns.");
+		RequestMappingInfo info = RequestMappingInfo.paths(pattern).options(this.builderConfig).build();
+		RequestMappingInfo matchingInfo = info.getMatchingCondition(request);
+		if (matchingInfo == null) {
+			return null;
+		}
+		Set<String> patterns = matchingInfo.getPatternsCondition().getPatterns();
+		String lookupPath = getUrlPathHelper().getLookupPathForRequest(request);
+		return new RequestMatchResult(patterns.iterator().next(), lookupPath, getPathMatcher());
 	}
 
 	private void registerMappingForOperation(ExposableWebEndpoint endpoint, WebOperation operation) {
@@ -205,9 +243,7 @@ public abstract class AbstractWebMvcEndpointHandlerMapping extends RequestMappin
 	}
 
 	private void registerLinksMapping() {
-		String path = this.endpointMapping.getPath();
-		String linksPath = (StringUtils.hasLength(path)) ? this.endpointMapping.createSubPath("/") : "/";
-		RequestMappingInfo mapping = RequestMappingInfo.paths(linksPath)
+		RequestMappingInfo mapping = RequestMappingInfo.paths(this.endpointMapping.createSubPath(""))
 			.methods(RequestMethod.GET)
 			.produces(this.endpointMediaTypes.getProduced().toArray(new String[0]))
 			.options(this.builderConfig)
@@ -318,7 +354,7 @@ public abstract class AbstractWebMvcEndpointHandlerMapping extends RequestMappin
 					});
 				InvocationContext invocationContext = new InvocationContext(securityContext, arguments,
 						serverNamespaceArgumentResolver, producibleOperationArgumentResolver);
-				return handleResult(this.operation.invoke(invocationContext), HttpMethod.valueOf(request.getMethod()));
+				return handleResult(this.operation.invoke(invocationContext), HttpMethod.resolve(request.getMethod()));
 			}
 			catch (InvalidEndpointRequestException ex) {
 				throw new InvalidEndpointBadRequestException(ex);
@@ -380,9 +416,10 @@ public abstract class AbstractWebMvcEndpointHandlerMapping extends RequestMappin
 				return new ResponseEntity<>(
 						(httpMethod != HttpMethod.GET) ? HttpStatus.NO_CONTENT : HttpStatus.NOT_FOUND);
 			}
-			if (!(result instanceof WebEndpointResponse<?> response)) {
+			if (!(result instanceof WebEndpointResponse)) {
 				return convertIfNecessary(result);
 			}
+			WebEndpointResponse<?> response = (WebEndpointResponse<?>) result;
 			MediaType contentType = (response.getContentType() != null) ? new MediaType(response.getContentType())
 					: null;
 			return ResponseEntity.status(response.getStatus())
@@ -423,7 +460,6 @@ public abstract class AbstractWebMvcEndpointHandlerMapping extends RequestMappin
 		}
 
 		@ResponseBody
-		@Reflective
 		Object handle(HttpServletRequest request, @RequestBody(required = false) Map<String, String> body) {
 			return this.operation.handle(request, body);
 		}
@@ -484,17 +520,6 @@ public abstract class AbstractWebMvcEndpointHandlerMapping extends RequestMappin
 		@Override
 		public boolean isUserInRole(String role) {
 			return this.request.isUserInRole(role);
-		}
-
-	}
-
-	static class AbstractWebMvcEndpointHandlerMappingRuntimeHints implements RuntimeHintsRegistrar {
-
-		private final ReflectiveRuntimeHintsRegistrar reflectiveRegistrar = new ReflectiveRuntimeHintsRegistrar();
-
-		@Override
-		public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
-			this.reflectiveRegistrar.registerRuntimeHints(hints, OperationHandler.class);
 		}
 
 	}

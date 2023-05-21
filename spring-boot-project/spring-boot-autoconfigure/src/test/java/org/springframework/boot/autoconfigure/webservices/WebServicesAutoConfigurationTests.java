@@ -53,8 +53,7 @@ class WebServicesAutoConfigurationTests {
 		this.contextRunner.withPropertyValues("spring.webservices.path=invalid")
 			.run((context) -> assertThat(context).getFailure()
 				.isInstanceOf(BeanCreationException.class)
-				.rootCause()
-				.hasMessageContaining("Path must start with '/'"));
+				.hasMessageContaining("Failed to bind properties under 'spring.webservices'"));
 	}
 
 	@Test

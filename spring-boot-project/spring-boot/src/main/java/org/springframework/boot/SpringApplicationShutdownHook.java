@@ -16,6 +16,7 @@
 
 package org.springframework.boot;
 
+import java.security.AccessControlException;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashSet;
@@ -84,7 +85,12 @@ class SpringApplicationShutdownHook implements Runnable {
 	}
 
 	void addRuntimeShutdownHook() {
-		Runtime.getRuntime().addShutdownHook(new Thread(this, "SpringApplicationShutdownHook"));
+		try {
+			Runtime.getRuntime().addShutdownHook(new Thread(this, "SpringApplicationShutdownHook"));
+		}
+		catch (AccessControlException ex) {
+			// Not allowed in some environments
+		}
 	}
 
 	void deregisterFailedApplicationContext(ConfigurableApplicationContext applicationContext) {

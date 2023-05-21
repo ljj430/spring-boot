@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.boot.system;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.api.condition.EnabledOnJre;
 import org.junit.jupiter.api.condition.JRE;
 
@@ -36,47 +37,101 @@ class JavaVersionTests {
 
 	@Test
 	void compareToWhenComparingSmallerToGreaterShouldBeLessThanZero() {
-		assertThat(JavaVersion.SEVENTEEN).isLessThan(JavaVersion.EIGHTEEN);
+		assertThat(JavaVersion.EIGHT.compareTo(JavaVersion.NINE)).isLessThan(0);
 	}
 
 	@Test
 	void compareToWhenComparingGreaterToSmallerShouldBeGreaterThanZero() {
-		assertThat(JavaVersion.EIGHTEEN).isGreaterThan(JavaVersion.SEVENTEEN);
+		assertThat(JavaVersion.NINE.compareTo(JavaVersion.EIGHT)).isGreaterThan(0);
 	}
 
 	@Test
 	void compareToWhenComparingSameShouldBeZero() {
-		assertThat(JavaVersion.SEVENTEEN).isEqualByComparingTo(JavaVersion.SEVENTEEN);
+		assertThat(JavaVersion.EIGHT.compareTo(JavaVersion.EIGHT)).isEqualTo(0);
 	}
 
 	@Test
 	void isEqualOrNewerThanWhenComparingSameShouldBeTrue() {
-		assertThat(JavaVersion.SEVENTEEN.isEqualOrNewerThan(JavaVersion.SEVENTEEN)).isTrue();
+		assertThat(JavaVersion.EIGHT.isEqualOrNewerThan(JavaVersion.EIGHT)).isTrue();
 	}
 
 	@Test
 	void isEqualOrNewerThanWhenSmallerToGreaterShouldBeFalse() {
-		assertThat(JavaVersion.SEVENTEEN.isEqualOrNewerThan(JavaVersion.EIGHTEEN)).isFalse();
+		assertThat(JavaVersion.EIGHT.isEqualOrNewerThan(JavaVersion.NINE)).isFalse();
 	}
 
 	@Test
 	void isEqualOrNewerThanWhenGreaterToSmallerShouldBeTrue() {
-		assertThat(JavaVersion.EIGHTEEN.isEqualOrNewerThan(JavaVersion.SEVENTEEN)).isTrue();
+		assertThat(JavaVersion.NINE.isEqualOrNewerThan(JavaVersion.EIGHT)).isTrue();
 	}
 
 	@Test
 	void isOlderThanThanWhenComparingSameShouldBeFalse() {
-		assertThat(JavaVersion.SEVENTEEN.isOlderThan(JavaVersion.SEVENTEEN)).isFalse();
+		assertThat(JavaVersion.EIGHT.isOlderThan(JavaVersion.EIGHT)).isFalse();
 	}
 
 	@Test
 	void isOlderThanWhenSmallerToGreaterShouldBeTrue() {
-		assertThat(JavaVersion.SEVENTEEN.isOlderThan(JavaVersion.EIGHTEEN)).isTrue();
+		assertThat(JavaVersion.EIGHT.isOlderThan(JavaVersion.NINE)).isTrue();
 	}
 
 	@Test
 	void isOlderThanWhenGreaterToSmallerShouldBeFalse() {
-		assertThat(JavaVersion.EIGHTEEN.isOlderThan(JavaVersion.SEVENTEEN)).isFalse();
+		assertThat(JavaVersion.NINE.isOlderThan(JavaVersion.EIGHT)).isFalse();
+	}
+
+	@Test
+	@EnabledOnJre(JRE.JAVA_8)
+	void currentJavaVersionEight() {
+		assertThat(JavaVersion.getJavaVersion()).isEqualTo(JavaVersion.EIGHT);
+	}
+
+	@Test
+	@EnabledOnJre(JRE.JAVA_9)
+	void currentJavaVersionNine() {
+		assertThat(JavaVersion.getJavaVersion()).isEqualTo(JavaVersion.NINE);
+	}
+
+	@Test
+	@EnabledOnJre(JRE.JAVA_10)
+	void currentJavaVersionTen() {
+		assertThat(JavaVersion.getJavaVersion()).isEqualTo(JavaVersion.TEN);
+	}
+
+	@Test
+	@EnabledOnJre(JRE.JAVA_11)
+	void currentJavaVersionEleven() {
+		assertThat(JavaVersion.getJavaVersion()).isEqualTo(JavaVersion.ELEVEN);
+	}
+
+	@Test
+	@EnabledOnJre(JRE.JAVA_12)
+	void currentJavaVersionTwelve() {
+		assertThat(JavaVersion.getJavaVersion()).isEqualTo(JavaVersion.TWELVE);
+	}
+
+	@Test
+	@EnabledOnJre(JRE.JAVA_13)
+	void currentJavaVersionThirteen() {
+		assertThat(JavaVersion.getJavaVersion()).isEqualTo(JavaVersion.THIRTEEN);
+	}
+
+	@Test
+	@EnabledOnJre(JRE.JAVA_14)
+	void currentJavaVersionFourteen() {
+		assertThat(JavaVersion.getJavaVersion()).isEqualTo(JavaVersion.FOURTEEN);
+	}
+
+	@Test
+	@EnabledOnJre(JRE.JAVA_15)
+	void currentJavaVersionFifteen() {
+		assertThat(JavaVersion.getJavaVersion()).isEqualTo(JavaVersion.FIFTEEN);
+	}
+
+	@Test
+	@EnabledOnJre(JRE.JAVA_16)
+	void currentJavaVersionSixteen() {
+		assertThat(JavaVersion.getJavaVersion()).isEqualTo(JavaVersion.SIXTEEN);
 	}
 
 	@Test
@@ -92,9 +147,13 @@ class JavaVersionTests {
 	}
 
 	@Test
-	@EnabledOnJre(JRE.JAVA_19)
+	@EnabledIf("java19")
 	void currentJavaVersionNineteen() {
 		assertThat(JavaVersion.getJavaVersion()).isEqualTo(JavaVersion.NINETEEN);
+	}
+
+	static boolean java19() {
+		return "19".equals(System.getProperty("java.version"));
 	}
 
 }

@@ -16,7 +16,6 @@
 
 package org.springframework.boot.autoconfigure.integration;
 
-import java.time.Duration;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -24,7 +23,6 @@ import java.util.concurrent.TimeUnit;
 import javax.management.MBeanServer;
 import javax.sql.DataSource;
 
-import io.micrometer.observation.ObservationRegistry;
 import io.rsocket.transport.ClientTransport;
 import io.rsocket.transport.netty.client.TcpClientTransport;
 import org.assertj.core.api.InstanceOfAssertFactories;
@@ -53,6 +51,7 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.integration.annotation.IntegrationComponentScan;
 import org.springframework.integration.annotation.MessagingGateway;
 import org.springframework.integration.annotation.ServiceActivator;
@@ -63,8 +62,6 @@ import org.springframework.integration.context.IntegrationContextUtils;
 import org.springframework.integration.core.MessageSource;
 import org.springframework.integration.endpoint.MessageProcessorMessageSource;
 import org.springframework.integration.gateway.RequestReplyExchanger;
-import org.springframework.integration.handler.BridgeHandler;
-import org.springframework.integration.handler.LoggingHandler;
 import org.springframework.integration.handler.MessageProcessor;
 import org.springframework.integration.rsocket.ClientRSocketConnector;
 import org.springframework.integration.rsocket.IntegrationRSocketEndpoint;
@@ -387,6 +384,18 @@ class IntegrationAutoConfigurationTests {
 	}
 
 	@Test
+	@Deprecated
+	@SuppressWarnings("deprecation")
+	void whenTheUserDefinesTheirOwnIntegrationDataSourceInitializerThenTheAutoConfiguredInitializerBacksOff() {
+		this.contextRunner.withUserConfiguration(CustomIntegrationDataSourceInitializerConfiguration.class)
+			.withConfiguration(AutoConfigurations.of(DataSourceAutoConfiguration.class,
+					DataSourceTransactionManagerAutoConfiguration.class))
+			.run((context) -> assertThat(context).doesNotHaveBean(IntegrationDataSourceScriptDatabaseInitializer.class)
+				.hasSingleBean(IntegrationDataSourceInitializer.class)
+				.hasBean("customInitializer"));
+	}
+
+	@Test
 	void whenTheUserDefinesTheirOwnDatabaseInitializerThenTheAutoConfiguredIntegrationInitializerRemains() {
 		this.contextRunner.withUserConfiguration(CustomDatabaseInitializerConfiguration.class)
 			.withConfiguration(AutoConfigurations.of(DataSourceAutoConfiguration.class,
@@ -419,7 +428,7 @@ class IntegrationAutoConfigurationTests {
 			.run((context) -> {
 				assertThat(context).hasSingleBean(PollerMetadata.class);
 				PollerMetadata metadata = context.getBean(PollerMetadata.DEFAULT_POLLER, PollerMetadata.class);
-				assertThat(metadata.getMaxMessagesPerPoll()).isOne();
+				assertThat(metadata.getMaxMessagesPerPoll()).isEqualTo(1L);
 				assertThat(metadata.getReceiveTimeout()).isEqualTo(10000L);
 				assertThat(metadata.getTrigger()).asInstanceOf(InstanceOfAssertFactories.type(CronTrigger.class))
 					.satisfies((trigger) -> assertThat(trigger.getExpression()).isEqualTo("* * * ? * *"));
@@ -434,7 +443,7 @@ class IntegrationAutoConfigurationTests {
 			.run((context) -> assertThat(context).hasFailed()
 				.getFailure()
 				.hasRootCauseExactlyInstanceOf(MutuallyExclusiveConfigurationPropertiesException.class)
-				.rootCause()
+				.getRootCause()
 				.asInstanceOf(InstanceOfAssertFactories.type(MutuallyExclusiveConfigurationPropertiesException.class))
 				.satisfies((ex) -> {
 					assertThat(ex.getConfiguredNames()).containsExactlyInAnyOrder("spring.integration.poller.cron",
@@ -455,7 +464,7 @@ class IntegrationAutoConfigurationTests {
 				PollerMetadata metadata = context.getBean(PollerMetadata.DEFAULT_POLLER, PollerMetadata.class);
 				assertThat(metadata.getTrigger()).asInstanceOf(InstanceOfAssertFactories.type(PeriodicTrigger.class))
 					.satisfies((trigger) -> {
-						assertThat(trigger.getPeriodDuration()).isEqualTo(Duration.ofSeconds(5));
+						assertThat(trigger.getPeriod()).isEqualTo(5000L);
 						assertThat(trigger.isFixedRate()).isFalse();
 					});
 			});
@@ -470,7 +479,7 @@ class IntegrationAutoConfigurationTests {
 				PollerMetadata metadata = context.getBean(PollerMetadata.DEFAULT_POLLER, PollerMetadata.class);
 				assertThat(metadata.getTrigger()).asInstanceOf(InstanceOfAssertFactories.type(PeriodicTrigger.class))
 					.satisfies((trigger) -> {
-						assertThat(trigger.getPeriodDuration()).isEqualTo(Duration.ofSeconds(5));
+						assertThat(trigger.getPeriod()).isEqualTo(5000L);
 						assertThat(trigger.isFixedRate()).isTrue();
 					});
 			});
@@ -492,20 +501,6 @@ class IntegrationAutoConfigurationTests {
 				.extracting(DirectChannel::isLoggingEnabled)
 				.isEqualTo(false));
 
-	}
-
-	@Test
-	void integrationManagementInstrumentedWithObservation() {
-		this.contextRunner.withPropertyValues("spring.integration.management.observation-patterns=testHandler")
-			.withBean("testHandler", LoggingHandler.class, () -> new LoggingHandler("warn"))
-			.withBean(ObservationRegistry.class, ObservationRegistry::create)
-			.withBean(BridgeHandler.class, BridgeHandler::new)
-			.run((context) -> {
-				assertThat(context).getBean("testHandler").extracting("observationRegistry").isNotNull();
-				assertThat(context).getBean(BridgeHandler.class)
-					.extracting("observationRegistry")
-					.isEqualTo(ObservationRegistry.NOOP);
-			});
 	}
 
 	@Configuration(proxyBeanMethods = false)
@@ -579,6 +574,18 @@ class IntegrationAutoConfigurationTests {
 		@Bean
 		DataSourceScriptDatabaseInitializer customInitializer(DataSource dataSource) {
 			return new DataSourceScriptDatabaseInitializer(dataSource, new DatabaseInitializationSettings());
+		}
+
+	}
+
+	@Deprecated
+	@Configuration(proxyBeanMethods = false)
+	static class CustomIntegrationDataSourceInitializerConfiguration {
+
+		@Bean
+		IntegrationDataSourceInitializer customInitializer(DataSource dataSource, ResourceLoader resourceLoader,
+				IntegrationProperties properties) {
+			return new IntegrationDataSourceInitializer(dataSource, resourceLoader, properties);
 		}
 
 	}

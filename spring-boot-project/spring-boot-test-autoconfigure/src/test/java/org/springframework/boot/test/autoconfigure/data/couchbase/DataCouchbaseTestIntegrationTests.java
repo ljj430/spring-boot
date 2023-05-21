@@ -40,7 +40,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
  *
  * @author Eddú Meléndez
  */
-@DataCouchbaseTest(properties = "spring.couchbase.env.timeouts.connect=2m")
+@DataCouchbaseTest
 @Testcontainers(disabledWithoutDocker = true)
 class DataCouchbaseTestIntegrationTests {
 

@@ -16,7 +16,8 @@
 
 package org.springframework.boot.autoconfigure.jms.artemis;
 
-import jakarta.jms.ConnectionFactory;
+import javax.jms.ConnectionFactory;
+
 import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
 import org.apache.commons.pool2.PooledObject;
 import org.messaginghub.pooled.jms.JmsPoolConnectionFactory;

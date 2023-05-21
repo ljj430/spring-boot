@@ -29,7 +29,6 @@ import org.springframework.boot.context.config.ConfigDataEnvironmentPostProcesso
 import org.springframework.boot.env.EnvironmentPostProcessor;
 import org.springframework.boot.json.JsonParser;
 import org.springframework.boot.json.JsonParserFactory;
-import org.springframework.boot.logging.DeferredLogFactory;
 import org.springframework.core.Ordered;
 import org.springframework.core.env.CommandLinePropertySource;
 import org.springframework.core.env.ConfigurableEnvironment;
@@ -102,11 +101,10 @@ public class CloudFoundryVcapEnvironmentPostProcessor implements EnvironmentPost
 
 	/**
 	 * Create a new {@link CloudFoundryVcapEnvironmentPostProcessor} instance.
-	 * @param logFactory the log factory to use
-	 * @since 3.0.0
+	 * @param logger the logger to use
 	 */
-	public CloudFoundryVcapEnvironmentPostProcessor(DeferredLogFactory logFactory) {
-		this.logger = logFactory.getLog(CloudFoundryVcapEnvironmentPostProcessor.class);
+	public CloudFoundryVcapEnvironmentPostProcessor(Log logger) {
+		this.logger = logger;
 	}
 
 	public void setOrder(int order) {

@@ -82,12 +82,12 @@ public class JettyWebServerFactoryCustomizer
 		PropertyMapper propertyMapper = PropertyMapper.get();
 		propertyMapper.from(threadProperties::getAcceptors).whenNonNull().to(factory::setAcceptors);
 		propertyMapper.from(threadProperties::getSelectors).whenNonNull().to(factory::setSelectors);
-		propertyMapper.from(properties::getMaxHttpRequestHeaderSize)
+		propertyMapper.from(properties::getMaxHttpHeaderSize)
 			.whenNonNull()
 			.asInt(DataSize::toBytes)
 			.when(this::isPositive)
-			.to((maxHttpRequestHeaderSize) -> factory
-				.addServerCustomizers(new MaxHttpRequestHeaderSizeCustomizer(maxHttpRequestHeaderSize)));
+			.to((maxHttpHeaderSize) -> factory
+				.addServerCustomizers(new MaxHttpHeaderSizeCustomizer(maxHttpHeaderSize)));
 		propertyMapper.from(jettyProperties::getMaxHttpFormPostSize)
 			.asInt(DataSize::toBytes)
 			.when(this::isPositive)
@@ -115,8 +115,8 @@ public class JettyWebServerFactoryCustomizer
 	private void customizeIdleTimeout(ConfigurableJettyWebServerFactory factory, Duration connectionTimeout) {
 		factory.addServerCustomizers((server) -> {
 			for (org.eclipse.jetty.server.Connector connector : server.getConnectors()) {
-				if (connector instanceof AbstractConnector abstractConnector) {
-					abstractConnector.setIdleTimeout(connectionTimeout.toMillis());
+				if (connector instanceof AbstractConnector) {
+					((AbstractConnector) connector).setIdleTimeout(connectionTimeout.toMillis());
 				}
 			}
 		});
@@ -132,14 +132,14 @@ public class JettyWebServerFactoryCustomizer
 
 			private void setHandlerMaxHttpFormPostSize(Handler... handlers) {
 				for (Handler handler : handlers) {
-					if (handler instanceof ContextHandler contextHandler) {
-						contextHandler.setMaxFormContentSize(maxHttpFormPostSize);
+					if (handler instanceof ContextHandler) {
+						((ContextHandler) handler).setMaxFormContentSize(maxHttpFormPostSize);
 					}
-					else if (handler instanceof HandlerWrapper wrapper) {
-						setHandlerMaxHttpFormPostSize(wrapper.getHandler());
+					else if (handler instanceof HandlerWrapper) {
+						setHandlerMaxHttpFormPostSize(((HandlerWrapper) handler).getHandler());
 					}
-					else if (handler instanceof HandlerCollection collection) {
-						setHandlerMaxHttpFormPostSize(collection.getHandlers());
+					else if (handler instanceof HandlerCollection) {
+						setHandlerMaxHttpFormPostSize(((HandlerCollection) handler).getHandlers());
 					}
 				}
 			}
@@ -199,12 +199,12 @@ public class JettyWebServerFactoryCustomizer
 		return CustomRequestLog.NCSA_FORMAT;
 	}
 
-	private static class MaxHttpRequestHeaderSizeCustomizer implements JettyServerCustomizer {
+	private static class MaxHttpHeaderSizeCustomizer implements JettyServerCustomizer {
 
-		private final int maxRequestHeaderSize;
+		private final int maxHttpHeaderSize;
 
-		MaxHttpRequestHeaderSizeCustomizer(int maxRequestHeaderSize) {
-			this.maxRequestHeaderSize = maxRequestHeaderSize;
+		MaxHttpHeaderSizeCustomizer(int maxHttpHeaderSize) {
+			this.maxHttpHeaderSize = maxHttpHeaderSize;
 		}
 
 		@Override
@@ -219,7 +219,7 @@ public class JettyWebServerFactoryCustomizer
 		private void customize(ConnectionFactory factory) {
 			if (factory instanceof HttpConfiguration.ConnectionFactory) {
 				((HttpConfiguration.ConnectionFactory) factory).getHttpConfiguration()
-					.setRequestHeaderSize(this.maxRequestHeaderSize);
+					.setRequestHeaderSize(this.maxHttpHeaderSize);
 			}
 		}
 

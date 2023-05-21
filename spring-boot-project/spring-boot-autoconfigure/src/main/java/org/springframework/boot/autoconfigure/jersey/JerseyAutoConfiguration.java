@@ -19,16 +19,17 @@ package org.springframework.boot.autoconfigure.jersey;
 import java.util.Collections;
 import java.util.EnumSet;
 
+import javax.servlet.DispatcherType;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRegistration;
+import javax.ws.rs.ext.ContextResolver;
+import javax.xml.bind.annotation.XmlElement;
+
 import com.fasterxml.jackson.databind.AnnotationIntrospector;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.cfg.MapperConfig;
-import com.fasterxml.jackson.module.jakarta.xmlbind.JakartaXmlBindAnnotationIntrospector;
-import jakarta.servlet.DispatcherType;
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRegistration;
-import jakarta.ws.rs.ext.ContextResolver;
-import jakarta.xml.bind.annotation.XmlElement;
+import com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.glassfish.jersey.jackson.JacksonFeature;
@@ -193,12 +194,12 @@ public class JerseyAutoConfiguration implements ServletContextAware {
 		}
 
 		@Configuration(proxyBeanMethods = false)
-		@ConditionalOnClass({ JakartaXmlBindAnnotationIntrospector.class, XmlElement.class })
+		@ConditionalOnClass({ JaxbAnnotationIntrospector.class, XmlElement.class })
 		static class JaxbObjectMapperCustomizer {
 
 			@Autowired
 			void addJaxbAnnotationIntrospector(ObjectMapper objectMapper) {
-				JakartaXmlBindAnnotationIntrospector jaxbAnnotationIntrospector = new JakartaXmlBindAnnotationIntrospector(
+				JaxbAnnotationIntrospector jaxbAnnotationIntrospector = new JaxbAnnotationIntrospector(
 						objectMapper.getTypeFactory());
 				objectMapper.setAnnotationIntrospectors(
 						createPair(objectMapper.getSerializationConfig(), jaxbAnnotationIntrospector),
@@ -206,7 +207,7 @@ public class JerseyAutoConfiguration implements ServletContextAware {
 			}
 
 			private AnnotationIntrospector createPair(MapperConfig<?> config,
-					JakartaXmlBindAnnotationIntrospector jaxbAnnotationIntrospector) {
+					JaxbAnnotationIntrospector jaxbAnnotationIntrospector) {
 				return AnnotationIntrospector.pair(config.getAnnotationIntrospector(), jaxbAnnotationIntrospector);
 			}
 

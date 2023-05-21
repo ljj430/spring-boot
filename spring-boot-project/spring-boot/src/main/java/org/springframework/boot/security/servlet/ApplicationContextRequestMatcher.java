@@ -18,7 +18,7 @@ package org.springframework.boot.security.servlet;
 
 import java.util.function.Supplier;
 
-import jakarta.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.context.ApplicationContext;
