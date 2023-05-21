@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2020 the original author or authors.
+ * Copyright 2012-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,24 +42,9 @@ class ManagementServerPropertiesTests {
 	}
 
 	@Test
-	@Deprecated
-	void defaultContextPathIsEmptyString() {
-		ManagementServerProperties properties = new ManagementServerProperties();
-		assertThat(properties.getServlet().getContextPath()).isEqualTo("");
-	}
-
-	@Test
-	@Deprecated
-	void definedContextPath() {
-		ManagementServerProperties properties = new ManagementServerProperties();
-		properties.getServlet().setContextPath("/foo");
-		assertThat(properties.getServlet().getContextPath()).isEqualTo("/foo");
-	}
-
-	@Test
 	void defaultBasePathIsEmptyString() {
 		ManagementServerProperties properties = new ManagementServerProperties();
-		assertThat(properties.getBasePath()).isEqualTo("");
+		assertThat(properties.getBasePath()).isEmpty();
 	}
 
 	@Test
@@ -70,14 +55,6 @@ class ManagementServerPropertiesTests {
 	}
 
 	@Test
-	@Deprecated
-	void trailingSlashOfContextPathIsRemoved() {
-		ManagementServerProperties properties = new ManagementServerProperties();
-		properties.getServlet().setContextPath("/foo/");
-		assertThat(properties.getServlet().getContextPath()).isEqualTo("/foo");
-	}
-
-	@Test
 	void trailingSlashOfBasePathIsRemoved() {
 		ManagementServerProperties properties = new ManagementServerProperties();
 		properties.setBasePath("/foo/");
@@ -85,18 +62,10 @@ class ManagementServerPropertiesTests {
 	}
 
 	@Test
-	@Deprecated
-	void slashOfContextPathIsDefaultValue() {
-		ManagementServerProperties properties = new ManagementServerProperties();
-		properties.getServlet().setContextPath("/");
-		assertThat(properties.getServlet().getContextPath()).isEqualTo("");
-	}
-
-	@Test
 	void slashOfBasePathIsDefaultValue() {
 		ManagementServerProperties properties = new ManagementServerProperties();
 		properties.setBasePath("/");
-		assertThat(properties.getBasePath()).isEqualTo("");
+		assertThat(properties.getBasePath()).isEmpty();
 	}
 
 }

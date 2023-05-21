@@ -21,8 +21,8 @@ org.springframework.boot.context.config.StandardConfigDataLoader
 
 # Application Context Factories
 org.springframework.boot.ApplicationContextFactory=\
-org.springframework.boot.web.reactive.context.AnnotationConfigReactiveWebServerApplicationContext.Factory,\
-org.springframework.boot.web.servlet.context.AnnotationConfigServletWebServerApplicationContext.Factory
+org.springframework.boot.web.reactive.context.ReactiveWebServerApplicationContextFactory,\
+org.springframework.boot.web.servlet.context.ServletWebServerApplicationContextFactory
 
 # Run Listeners
 org.springframework.boot.SpringApplicationRunListener=\
@@ -70,6 +70,7 @@ org.springframework.boot.diagnostics.analyzer.BeanNotOfRequiredTypeFailureAnalyz
 org.springframework.boot.diagnostics.analyzer.BindFailureAnalyzer,\
 org.springframework.boot.diagnostics.analyzer.BindValidationFailureAnalyzer,\
 org.springframework.boot.diagnostics.analyzer.UnboundConfigurationPropertyFailureAnalyzer,\
+org.springframework.boot.diagnostics.analyzer.MutuallyExclusiveConfigurationPropertiesFailureAnalyzer,\
 org.springframework.boot.diagnostics.analyzer.NoSuchMethodFailureAnalyzer,\
 org.springframework.boot.diagnostics.analyzer.NoUniqueBeanDefinitionFailureAnalyzer,\
 org.springframework.boot.diagnostics.analyzer.PortInUseFailureAnalyzer,\
@@ -78,6 +79,7 @@ org.springframework.boot.diagnostics.analyzer.InvalidConfigurationPropertyNameFa
 org.springframework.boot.diagnostics.analyzer.InvalidConfigurationPropertyValueFailureAnalyzer,\
 org.springframework.boot.diagnostics.analyzer.PatternParseFailureAnalyzer,\
 org.springframework.boot.liquibase.LiquibaseChangelogMissingFailureAnalyzer,\
+org.springframework.boot.web.context.MissingWebServerFactoryBeanFailureAnalyzer,\
 org.springframework.boot.web.embedded.tomcat.ConnectorStartFailureAnalyzer
 
 # Failure Analysis Reporters
@@ -87,7 +89,6 @@ org.springframework.boot.diagnostics.LoggingFailureAnalysisReporter
 # Database Initializer Detectors
 org.springframework.boot.sql.init.dependency.DatabaseInitializerDetector=\
 org.springframework.boot.flyway.FlywayDatabaseInitializerDetector,\
-org.springframework.boot.jdbc.AbstractDataSourceInitializerDatabaseInitializerDetector,\
 org.springframework.boot.jdbc.init.DataSourceScriptDatabaseInitializerDetector,\
 org.springframework.boot.liquibase.LiquibaseDatabaseInitializerDetector,\
 org.springframework.boot.orm.jpa.JpaDatabaseInitializerDetector,\

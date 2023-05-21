@@ -20,24 +20,14 @@ dependencies {
 	optional("com.google.code.gson:gson")
 	optional("com.jayway.jsonpath:json-path")
 	optional("com.sun.xml.messaging.saaj:saaj-impl")
-	optional("io.rest-assured:rest-assured") {
-		exclude group: "commons-logging", module: "commons-logging"
-		exclude group: "javax.activation", module: "activation"
-		exclude group: "javax.xml.bind", module: "jaxb-api"
-	}
 	optional("net.sourceforge.htmlunit:htmlunit") {
 		exclude group: "commons-logging", module: "commons-logging"
 	}
-	optional("org.hibernate:hibernate-core") {
-		exclude group: "commons-logging", module: "commons-logging"
-		exclude group: "javax.activation", module: "javax.activation-api"
-		exclude group: "javax.persistence", module: "javax.persistence-api"
-		exclude group: "javax.xml.bind", module: "jaxb-api"
-		exclude group: "org.jboss.spec.javax.transaction", module: "jboss-transaction-api_1.2_spec"
-	}
+	optional("org.hibernate.orm:hibernate-core")
 	optional("org.junit.jupiter:junit-jupiter-api")
 	optional("org.seleniumhq.selenium:htmlunit-driver") {
-		exclude group: "commons-logging", module: "commons-logging"
+		exclude(group: "commons-logging", module: "commons-logging")
+		exclude(group: "com.sun.activation", module: "jakarta.activation")
 	}
 	optional("org.seleniumhq.selenium:selenium-api")
 	optional("org.springframework:spring-orm")
@@ -48,6 +38,8 @@ dependencies {
 	optional("org.springframework.data:spring-data-cassandra") {
 		exclude group: "org.slf4j", module: "jcl-over-slf4j"
 	}
+	optional("org.springframework.data:spring-data-couchbase")
+	optional("org.springframework.data:spring-data-elasticsearch")
 	optional("org.springframework.data:spring-data-jdbc")
 	optional("org.springframework.data:spring-data-jpa")
 	optional("org.springframework.data:spring-data-ldap")
@@ -55,14 +47,11 @@ dependencies {
 	optional("org.springframework.data:spring-data-neo4j")
 	optional("org.springframework.data:spring-data-r2dbc")
 	optional("org.springframework.data:spring-data-redis")
+	optional("org.springframework.graphql:spring-graphql-test")
 	optional("org.springframework.restdocs:spring-restdocs-mockmvc") {
 		exclude group: "javax.servlet", module: "javax.servlet-api"
 	}
-	optional("org.springframework.restdocs:spring-restdocs-restassured") {
-		exclude group: "commons-logging", module: "commons-logging"
-		exclude group: "javax.activation", module: "activation"
-		exclude group: "javax.xml.bind", module: "jaxb-api"
-	}
+	optional("org.springframework.restdocs:spring-restdocs-restassured")
 	optional("org.springframework.restdocs:spring-restdocs-webtestclient")
 	optional("org.springframework.security:spring-security-config")
 	optional("org.springframework.security:spring-security-test")
@@ -71,27 +60,30 @@ dependencies {
 	optional("org.apache.tomcat.embed:tomcat-embed-core")
 	optional("org.mongodb:mongodb-driver-reactivestreams")
 	optional("org.mongodb:mongodb-driver-sync")
+	optional("io.micrometer:micrometer-tracing")
 
 	testImplementation(project(":spring-boot-project:spring-boot-actuator"))
 	testImplementation(project(":spring-boot-project:spring-boot-actuator-autoconfigure"))
 	testImplementation(project(":spring-boot-project:spring-boot-tools:spring-boot-test-support"))
+	testImplementation(project(":spring-boot-project:spring-boot-testcontainers"))
 	testImplementation("ch.qos.logback:logback-classic")
 	testImplementation("com.fasterxml.jackson.module:jackson-module-parameter-names")
 	testImplementation("com.h2database:h2")
 	testImplementation("com.unboundid:unboundid-ldapsdk")
 	testImplementation("io.lettuce:lettuce-core")
 	testImplementation("io.micrometer:micrometer-registry-prometheus")
+	testImplementation("io.projectreactor.netty:reactor-netty-http")
 	testImplementation("io.projectreactor:reactor-core")
 	testImplementation("io.projectreactor:reactor-test")
 	testImplementation("io.r2dbc:r2dbc-h2")
 	testImplementation("jakarta.json:jakarta.json-api")
 	testImplementation("org.apache.commons:commons-pool2")
-	testImplementation("org.apache.johnzon:johnzon-jsonb")
 	testImplementation("org.apache.tomcat.embed:tomcat-embed-el")
 	testImplementation("org.aspectj:aspectjrt")
 	testImplementation("org.aspectj:aspectjweaver")
 	testImplementation("org.assertj:assertj-core")
 	testImplementation("org.awaitility:awaitility")
+	testImplementation("org.eclipse:yasson")
 	testImplementation("org.hibernate.validator:hibernate-validator")
 	testImplementation("org.hsqldb:hsqldb")
 	testImplementation("org.jooq:jooq") {
@@ -103,9 +95,12 @@ dependencies {
 	testImplementation("org.mockito:mockito-core")
 	testImplementation("org.mockito:mockito-junit-jupiter")
 	testImplementation("org.skyscreamer:jsonassert")
+	testImplementation("org.springframework:spring-core-test")
 	testImplementation("org.springframework.hateoas:spring-hateoas")
 	testImplementation("org.springframework.plugin:spring-plugin-core")
 	testImplementation("org.testcontainers:cassandra")
+	testImplementation("org.testcontainers:couchbase")
+	testImplementation("org.testcontainers:elasticsearch")
 	testImplementation("org.testcontainers:junit-jupiter")
 	testImplementation("org.testcontainers:mongodb")
 	testImplementation("org.testcontainers:neo4j")

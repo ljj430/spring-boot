@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2021 the original author or authors.
+ * Copyright 2012-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -222,7 +222,7 @@ public class RepackageMojo extends AbstractPackagerMojo {
 	}
 
 	private FileTime parseOutputTimestamp() {
-		// Maven ignore a single-character timestamp as it is "useful to override a full
+		// Maven ignores a single-character timestamp as it is "useful to override a full
 		// value during pom inheritance"
 		if (this.outputTimestamp == null || this.outputTimestamp.length() < 2) {
 			return null;
@@ -279,7 +279,7 @@ public class RepackageMojo extends AbstractPackagerMojo {
 
 	private void updateArtifact(Artifact source, File target, File original) {
 		if (this.attach) {
-			attachArtifact(source, target);
+			attachArtifact(source, target, original);
 		}
 		else if (source.getFile().equals(target) && original.exists()) {
 			String artifactId = (this.classifier != null) ? "artifact with classifier " + this.classifier
@@ -292,7 +292,7 @@ public class RepackageMojo extends AbstractPackagerMojo {
 		}
 	}
 
-	private void attachArtifact(Artifact source, File target) {
+	private void attachArtifact(Artifact source, File target, File original) {
 		if (this.classifier != null && !source.getFile().equals(target)) {
 			getLog().info("Attaching repackaged archive " + target + " with classifier " + this.classifier);
 			this.projectHelper.attachArtifact(this.project, this.project.getPackaging(), this.classifier, target);
@@ -300,7 +300,10 @@ public class RepackageMojo extends AbstractPackagerMojo {
 		else {
 			String artifactId = (this.classifier != null) ? "artifact with classifier " + this.classifier
 					: "main artifact";
-			getLog().info("Replacing " + artifactId + " with repackaged archive");
+			getLog()
+				.info(String.format("Replacing %s %s with repackaged archive, adding nested dependencies in BOOT-INF/.",
+						artifactId, source.getFile()));
+			getLog().info("The original artifact has been renamed to " + original);
 			source.setFile(target);
 		}
 	}

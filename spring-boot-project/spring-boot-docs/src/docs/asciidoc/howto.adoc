@@ -7,7 +7,7 @@ include::attributes.adoc[]
 This section provides answers to some common '`how do I do that...`' questions that often arise when using Spring Boot.
 Its coverage is not exhaustive, but it does cover quite a lot.
 
-If you have a specific problem that we do not cover here, you might want to check out https://stackoverflow.com/tags/spring-boot[stackoverflow.com] to see if someone has already provided an answer.
+If you have a specific problem that we do not cover here, you might want to check https://stackoverflow.com/tags/spring-boot[stackoverflow.com] to see if someone has already provided an answer.
 This is also a great place to ask new questions (please use the `spring-boot` tag).
 
 We are also more than happy to extend this section.
@@ -33,6 +33,8 @@ include::howto/data-access.adoc[]
 
 include::howto/data-initialization.adoc[]
 
+include::howto/nosql.adoc[]
+
 include::howto/messaging.adoc[]
 
 include::howto/batch.adoc[]
@@ -46,5 +48,7 @@ include::howto/hotswapping.adoc[]
 include::howto/testing.adoc[]
 
 include::howto/build.adoc[]
+
+include::howto/aot.adoc[]
 
 include::howto/traditional-deployment.adoc[]

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.springframework.boot.jdbc;
 
+import java.beans.PropertyVetoException;
 import java.lang.reflect.Method;
 import java.sql.SQLException;
 import java.util.Collections;
@@ -27,6 +28,7 @@ import java.util.function.Supplier;
 
 import javax.sql.DataSource;
 
+import com.mchange.v2.c3p0.ComboPooledDataSource;
 import com.zaxxer.hikari.HikariDataSource;
 import oracle.jdbc.datasource.OracleDataSource;
 import oracle.ucp.jdbc.PoolDataSource;
@@ -236,7 +238,23 @@ public final class DataSourceBuilder<T extends DataSource> {
 				throw new IllegalStateException("Unable to unwrap embedded database", ex);
 			}
 		}
-		return new DataSourceBuilder<>(dataSource);
+		return new DataSourceBuilder<>(unwrap(dataSource));
+	}
+
+	private static DataSource unwrap(DataSource dataSource) {
+		try {
+			while (dataSource.isWrapperFor(DataSource.class)) {
+				DataSource unwrapped = dataSource.unwrap(DataSource.class);
+				if (unwrapped == dataSource) {
+					return unwrapped;
+				}
+				dataSource = unwrapped;
+			}
+		}
+		catch (SQLException ex) {
+			// Try to continue with the existing, potentially still wrapped, DataSource
+		}
+		return dataSource;
 	}
 
 	/**
@@ -281,17 +299,17 @@ public final class DataSourceBuilder<T extends DataSource> {
 		}
 
 		Method findSetter(Class<?> type) {
-			return extracted("set", type, String.class);
+			return findMethod("set", type, String.class);
 		}
 
 		Method findGetter(Class<?> type) {
-			return extracted("get", type);
+			return findMethod("get", type);
 		}
 
-		private Method extracted(String prefix, Class<?> type, Class<?>... paramTypes) {
-			for (String candidate : this.names) {
-				Method method = ReflectionUtils.findMethod(type, prefix + StringUtils.capitalize(candidate),
-						paramTypes);
+		private Method findMethod(String prefix, Class<?> type, Class<?>... paramTypes) {
+			for (String name : this.names) {
+				String candidate = prefix + StringUtils.capitalize(name);
+				Method method = ReflectionUtils.findMethod(type, candidate, paramTypes);
 				if (method != null) {
 					return method;
 				}
@@ -327,7 +345,7 @@ public final class DataSourceBuilder<T extends DataSource> {
 		@SuppressWarnings("unchecked")
 		MappedDataSourceProperties() {
 			this.dataSourceType = (Class<T>) ResolvableType.forClass(MappedDataSourceProperties.class, getClass())
-					.resolveGeneric();
+				.resolveGeneric();
 		}
 
 		@Override
@@ -391,6 +409,8 @@ public final class DataSourceBuilder<T extends DataSource> {
 					MappedDbcp2DataSource::new);
 			result = lookup(classLoader, type, result, "oracle.ucp.jdbc.PoolDataSourceImpl",
 					OraclePoolDataSourceProperties::new, "oracle.jdbc.OracleConnection");
+			result = lookup(classLoader, type, result, "com.mchange.v2.c3p0.ComboPooledDataSource",
+					ComboPooledDataSourceProperties::new);
 			return result;
 		}
 
@@ -645,7 +665,30 @@ public final class DataSourceBuilder<T extends DataSource> {
 			add(DataSourceProperty.DRIVER_CLASS_NAME, PoolDataSource::getConnectionFactoryClassName,
 					PoolDataSource::setConnectionFactoryClassName);
 			add(DataSourceProperty.USERNAME, PoolDataSource::getUser, PoolDataSource::setUser);
-			add(DataSourceProperty.PASSWORD, PoolDataSource::getPassword, PoolDataSource::setPassword);
+			add(DataSourceProperty.PASSWORD, null, PoolDataSource::setPassword);
+		}
+
+	}
+
+	/**
+	 * {@link DataSourceProperties} for C3P0.
+	 */
+	private static class ComboPooledDataSourceProperties extends MappedDataSourceProperties<ComboPooledDataSource> {
+
+		ComboPooledDataSourceProperties() {
+			add(DataSourceProperty.URL, ComboPooledDataSource::getJdbcUrl, ComboPooledDataSource::setJdbcUrl);
+			add(DataSourceProperty.DRIVER_CLASS_NAME, ComboPooledDataSource::getDriverClass, this::setDriverClass);
+			add(DataSourceProperty.USERNAME, ComboPooledDataSource::getUser, ComboPooledDataSource::setUser);
+			add(DataSourceProperty.PASSWORD, ComboPooledDataSource::getPassword, ComboPooledDataSource::setPassword);
+		}
+
+		private void setDriverClass(ComboPooledDataSource dataSource, String driverClass) {
+			try {
+				dataSource.setDriverClass(driverClass);
+			}
+			catch (PropertyVetoException ex) {
+				throw new IllegalArgumentException(ex);
+			}
 		}
 
 	}

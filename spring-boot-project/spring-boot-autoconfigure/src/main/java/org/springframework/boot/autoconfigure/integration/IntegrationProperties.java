@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2021 the original author or authors.
+ * Copyright 2012-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,12 @@
 package org.springframework.boot.autoconfigure.integration;
 
 import java.net.URI;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.jdbc.DataSourceInitializationMode;
+import org.springframework.boot.sql.init.DatabaseInitializationMode;
 
 /**
  * Configuration properties for Spring Integration.
@@ -44,6 +45,10 @@ public class IntegrationProperties {
 
 	private final RSocket rsocket = new RSocket();
 
+	private final Poller poller = new Poller();
+
+	private final Management management = new Management();
+
 	public Channel getChannel() {
 		return this.channel;
 	}
@@ -62,6 +67,14 @@ public class IntegrationProperties {
 
 	public RSocket getRsocket() {
 		return this.rsocket;
+	}
+
+	public Poller getPoller() {
+		return this.poller;
+	}
+
+	public Management getManagement() {
+		return this.management;
 	}
 
 	public static class Channel {
@@ -157,7 +170,7 @@ public class IntegrationProperties {
 	public static class Error {
 
 		/**
-		 * Whether to not silently ignore messages on the global 'errorChannel' when they
+		 * Whether to not silently ignore messages on the global 'errorChannel' when there
 		 * are no subscribers.
 		 */
 		private boolean requireSubscribers = true;
@@ -205,7 +218,7 @@ public class IntegrationProperties {
 		/**
 		 * Database schema initialization mode.
 		 */
-		private DataSourceInitializationMode initializeSchema = DataSourceInitializationMode.EMBEDDED;
+		private DatabaseInitializationMode initializeSchema = DatabaseInitializationMode.EMBEDDED;
 
 		public String getSchema() {
 			return this.schema;
@@ -223,11 +236,11 @@ public class IntegrationProperties {
 			this.platform = platform;
 		}
 
-		public DataSourceInitializationMode getInitializeSchema() {
+		public DatabaseInitializationMode getInitializeSchema() {
 			return this.initializeSchema;
 		}
 
-		public void setInitializeSchema(DataSourceInitializationMode initializeSchema) {
+		public void setInitializeSchema(DatabaseInitializationMode initializeSchema) {
 			this.initializeSchema = initializeSchema;
 		}
 
@@ -293,7 +306,7 @@ public class IntegrationProperties {
 		public static class Server {
 
 			/**
-			 * Whether to handle message mapping for RSocket via Spring Integration.
+			 * Whether to handle message mapping for RSocket through Spring Integration.
 			 */
 			private boolean messageMappingEnabled;
 
@@ -305,6 +318,127 @@ public class IntegrationProperties {
 				this.messageMappingEnabled = messageMappingEnabled;
 			}
 
+		}
+
+	}
+
+	public static class Poller {
+
+		/**
+		 * Maximum number of messages to poll per polling cycle.
+		 */
+		private int maxMessagesPerPoll = Integer.MIN_VALUE; // PollerMetadata.MAX_MESSAGES_UNBOUNDED
+
+		/**
+		 * How long to wait for messages on poll.
+		 */
+		private Duration receiveTimeout = Duration.ofSeconds(1); // PollerMetadata.DEFAULT_RECEIVE_TIMEOUT
+
+		/**
+		 * Polling delay period. Mutually exclusive with 'cron' and 'fixedRate'.
+		 */
+		private Duration fixedDelay;
+
+		/**
+		 * Polling rate period. Mutually exclusive with 'fixedDelay' and 'cron'.
+		 */
+		private Duration fixedRate;
+
+		/**
+		 * Polling initial delay. Applied for 'fixedDelay' and 'fixedRate'; ignored for
+		 * 'cron'.
+		 */
+		private Duration initialDelay;
+
+		/**
+		 * Cron expression for polling. Mutually exclusive with 'fixedDelay' and
+		 * 'fixedRate'.
+		 */
+		private String cron;
+
+		public int getMaxMessagesPerPoll() {
+			return this.maxMessagesPerPoll;
+		}
+
+		public void setMaxMessagesPerPoll(int maxMessagesPerPoll) {
+			this.maxMessagesPerPoll = maxMessagesPerPoll;
+		}
+
+		public Duration getReceiveTimeout() {
+			return this.receiveTimeout;
+		}
+
+		public void setReceiveTimeout(Duration receiveTimeout) {
+			this.receiveTimeout = receiveTimeout;
+		}
+
+		public Duration getFixedDelay() {
+			return this.fixedDelay;
+		}
+
+		public void setFixedDelay(Duration fixedDelay) {
+			this.fixedDelay = fixedDelay;
+		}
+
+		public Duration getFixedRate() {
+			return this.fixedRate;
+		}
+
+		public void setFixedRate(Duration fixedRate) {
+			this.fixedRate = fixedRate;
+		}
+
+		public Duration getInitialDelay() {
+			return this.initialDelay;
+		}
+
+		public void setInitialDelay(Duration initialDelay) {
+			this.initialDelay = initialDelay;
+		}
+
+		public String getCron() {
+			return this.cron;
+		}
+
+		public void setCron(String cron) {
+			this.cron = cron;
+		}
+
+	}
+
+	public static class Management {
+
+		/**
+		 * Whether Spring Integration components should perform logging in the main
+		 * message flow. When disabled, such logging will be skipped without checking the
+		 * logging level. When enabled, such logging is controlled as normal by the
+		 * logging system's log level configuration.
+		 */
+		private boolean defaultLoggingEnabled = true;
+
+		/**
+		 * Comma-separated list of simple patterns to match against the names of Spring
+		 * Integration components. When matched, observation instrumentation will be
+		 * performed for the component. Please refer to the javadoc of the smartMatch
+		 * method of Spring Integration's PatternMatchUtils for details of the pattern
+		 * syntax.
+		 */
+		private List<String> observationPatterns = new ArrayList<>();
+
+		public boolean isDefaultLoggingEnabled() {
+			return this.defaultLoggingEnabled;
+		}
+
+		public void setDefaultLoggingEnabled(boolean defaultLoggingEnabled) {
+			this.defaultLoggingEnabled = defaultLoggingEnabled;
+		}
+
+		public List<String> getObservationPatterns() {
+			return this.observationPatterns;
+		}
+
+		public void setObservationPatterns(List<String> observationPatterns) {
+			this.observationPatterns = observationPatterns;
 		}
 
 	}

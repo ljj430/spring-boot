@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,8 +35,8 @@ import org.springframework.util.CollectionUtils;
 
 /**
  * A single element that may directly or indirectly contribute configuration data to the
- * {@link Environment}. There are several different {@link Kind kinds} of contributor, all
- * are immutable and will be replaced with new versions as imports are processed.
+ * {@link Environment}. There are several {@link Kind kinds} of contributor, all are
+ * immutable and will be replaced with new versions as imports are processed.
  * <p>
  * Contributors may provide a set of imports that should be processed and ultimately
  * turned into children. There are two distinct import phases:
@@ -54,7 +54,7 @@ import org.springframework.util.CollectionUtils;
 class ConfigDataEnvironmentContributor implements Iterable<ConfigDataEnvironmentContributor> {
 
 	private static final ConfigData.Options EMPTY_LOCATION_OPTIONS = ConfigData.Options
-			.of(ConfigData.Option.IGNORE_IMPORTS);
+		.of(ConfigData.Option.IGNORE_IMPORTS);
 
 	private final ConfigDataLocation location;
 
@@ -225,7 +225,7 @@ class ConfigDataEnvironmentContributor implements Iterable<ConfigDataEnvironment
 	}
 
 	/**
-	 * Create an new {@link ConfigDataEnvironmentContributor} with bound
+	 * Create a new {@link ConfigDataEnvironmentContributor} with bound
 	 * {@link ConfigDataProperties}.
 	 * @param contributors the contributors used for binding
 	 * @param activationContext the activation context
@@ -237,7 +237,6 @@ class ConfigDataEnvironmentContributor implements Iterable<ConfigDataEnvironment
 		PlaceholdersResolver placeholdersResolver = new ConfigDataEnvironmentContributorPlaceholdersResolver(
 				contributors, activationContext, this, true);
 		Binder binder = new Binder(sources, placeholdersResolver, null, null, null);
-		UseLegacyConfigProcessingException.throwIfRequested(binder);
 		ConfigDataProperties properties = ConfigDataProperties.get(binder);
 		if (properties != null && this.configDataOptions.contains(ConfigData.Option.IGNORE_IMPORTS)) {
 			properties = properties.withoutImports();
@@ -305,8 +304,9 @@ class ConfigDataEnvironmentContributor implements Iterable<ConfigDataEnvironment
 		}
 		for (ConfigDataEnvironmentContributor contributor : contributors) {
 			for (ImportPhase importPhase : ImportPhase.values()) {
-				if (contributor.getChildren(importPhase).stream()
-						.anyMatch((child) -> child.hasConfigDataOption(ConfigData.Option.PROFILE_SPECIFIC))) {
+				if (contributor.getChildren(importPhase)
+					.stream()
+					.anyMatch((child) -> child.hasConfigDataOption(ConfigData.Option.PROFILE_SPECIFIC))) {
 					return true;
 				}
 			}
@@ -315,7 +315,7 @@ class ConfigDataEnvironmentContributor implements Iterable<ConfigDataEnvironment
 	}
 
 	/**
-	 * Create a new {@link ConfigDataEnvironmentContributor} instance where a existing
+	 * Create a new {@link ConfigDataEnvironmentContributor} instance where an existing
 	 * child is replaced.
 	 * @param existing the existing node that should be replaced
 	 * @param replacement the replacement node that should be used instead

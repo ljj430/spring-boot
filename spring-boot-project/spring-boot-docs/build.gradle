@@ -1,9 +1,9 @@
 plugins {
 	id "java"
-	id "groovy"
 	id "org.asciidoctor.jvm.convert"
 	id "org.springframework.boot.conventions"
 	id "org.springframework.boot.deployed"
+	id 'org.jetbrains.kotlin.jvm'
 }
 
 description = "Spring Boot Docs"
@@ -14,6 +14,8 @@ configurations {
 	configurationProperties
 	gradlePluginDocumentation
 	mavenPluginDocumentation
+	remoteSpringApplicationExample
+	springApplicationExample
 	testSlices
 }
 
@@ -47,15 +49,18 @@ dependencies {
 	asciidoctorExtensions(project(path: ":spring-boot-project:spring-boot-actuator-autoconfigure"))
 	asciidoctorExtensions(project(path: ":spring-boot-project:spring-boot-autoconfigure"))
 	asciidoctorExtensions(project(path: ":spring-boot-project:spring-boot-devtools"))
+	asciidoctorExtensions(project(path: ":spring-boot-project:spring-boot-docker-compose"))
 
 	autoConfiguration(project(path: ":spring-boot-project:spring-boot-autoconfigure", configuration: "autoConfigurationMetadata"))
 	autoConfiguration(project(path: ":spring-boot-project:spring-boot-actuator-autoconfigure", configuration: "autoConfigurationMetadata"))
 	autoConfiguration(project(path: ":spring-boot-project:spring-boot-devtools", configuration: "autoConfigurationMetadata"))
+	autoConfiguration(project(path: ":spring-boot-project:spring-boot-testcontainers", configuration: "autoConfigurationMetadata"))
 
 	configurationProperties(project(path: ":spring-boot-project:spring-boot", configuration: "configurationPropertiesMetadata"))
 	configurationProperties(project(path: ":spring-boot-project:spring-boot-actuator", configuration: "configurationPropertiesMetadata"))
 	configurationProperties(project(path: ":spring-boot-project:spring-boot-actuator-autoconfigure", configuration: "configurationPropertiesMetadata"))
 	configurationProperties(project(path: ":spring-boot-project:spring-boot-autoconfigure", configuration: "configurationPropertiesMetadata"))
+	configurationProperties(project(path: ":spring-boot-project:spring-boot-docker-compose", configuration: "configurationPropertiesMetadata"))
 	configurationProperties(project(path: ":spring-boot-project:spring-boot-devtools", configuration: "configurationPropertiesMetadata"))
 	configurationProperties(project(path: ":spring-boot-project:spring-boot-test-autoconfigure", configuration: "configurationPropertiesMetadata"))
 
@@ -64,49 +69,54 @@ dependencies {
 	implementation(project(path: ":spring-boot-project:spring-boot-actuator"))
 	implementation(project(path: ":spring-boot-project:spring-boot-actuator-autoconfigure"))
 	implementation(project(path: ":spring-boot-project:spring-boot-autoconfigure"))
-	implementation(project(path: ":spring-boot-project:spring-boot-cli"))
+	implementation(project(path: ":spring-boot-project:spring-boot-docker-compose"))
+	implementation(project(path: ":spring-boot-project:spring-boot-tools:spring-boot-cli"))
 	implementation(project(path: ":spring-boot-project:spring-boot-tools:spring-boot-loader-tools"))
 	implementation(project(path: ":spring-boot-project:spring-boot-test"))
 	implementation(project(path: ":spring-boot-project:spring-boot-test-autoconfigure"))
+	implementation(project(path: ":spring-boot-project:spring-boot-testcontainers"))
+	implementation(project(path: ":spring-boot-project:spring-boot-devtools"))
 	implementation("ch.qos.logback:logback-classic")
 	implementation("com.zaxxer:HikariCP")
 	implementation("io.micrometer:micrometer-core")
 	implementation("io.micrometer:micrometer-registry-graphite")
 	implementation("io.micrometer:micrometer-registry-jmx")
 	implementation("io.projectreactor.netty:reactor-netty-http")
-	implementation("io.r2dbc:r2dbc-postgresql")
 	implementation("io.undertow:undertow-core")
 	implementation("jakarta.annotation:jakarta.annotation-api")
 	implementation("jakarta.jms:jakarta.jms-api")
 	implementation("jakarta.persistence:jakarta.persistence-api")
 	implementation("jakarta.servlet:jakarta.servlet-api")
+	implementation("jakarta.validation:jakarta.validation-api")
 	implementation("net.sourceforge.htmlunit:htmlunit") {
 		exclude group: "commons-logging", module: "commons-logging"
+		exclude group: "xml-apis", module: "xml-apis"
 	}
+	implementation("org.apache.httpcomponents.client5:httpclient5")
 	implementation("org.apache.commons:commons-dbcp2") {
 		exclude group: "commons-logging", module: "commons-logging"
 	}
 	implementation("org.apache.kafka:kafka-streams")
 	implementation("org.apache.logging.log4j:log4j-to-slf4j")
-	implementation("org.apache.solr:solr-solrj") {
-		exclude group: "commons-logging", module: "commons-logging"
-		exclude group: "org.slf4j", module: "jcl-over-slf4j"
-	}
 	implementation("org.apache.tomcat.embed:tomcat-embed-core")
 	implementation("org.assertj:assertj-core")
-	implementation("org.glassfish.jersey.core:jersey-server")
+	implementation("org.cache2k:cache2k-spring")
+	implementation("org.apache.groovy:groovy")
 	implementation("org.glassfish.jersey.containers:jersey-container-servlet-core")
-	implementation("org.hibernate:hibernate-jcache") {
+	implementation("org.glassfish.jersey.core:jersey-server")
+	implementation("org.hibernate.orm:hibernate-jcache") {
 		exclude group: "javax.activation", module: "javax.activation-api"
 		exclude group: "javax.persistence", module: "javax.persistence-api"
 		exclude group: "javax.xml.bind", module: "jaxb-api"
 		exclude group: "org.jboss.spec.javax.transaction", module: "jboss-transaction-api_1.2_spec"
 	}
+	implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
 	implementation("org.jooq:jooq") {
 		exclude group: "javax.xml.bind", module: "jaxb-api"
 	}
 	implementation("org.mockito:mockito-core")
 	implementation("org.mongodb:mongodb-driver-sync")
+	implementation("org.postgresql:r2dbc-postgresql")
 	implementation("org.quartz-scheduler:quartz")
 	implementation("org.slf4j:jul-to-slf4j")
 	implementation("org.springframework:spring-jdbc")
@@ -125,22 +135,26 @@ dependencies {
 	implementation("org.springframework.data:spring-data-elasticsearch") {
 		exclude group: "commons-logging", module: "commons-logging"
 	}
+	implementation("org.springframework.data:spring-data-envers") {
+		exclude group: "javax.activation", module: "javax.activation-api"
+		exclude group: "javax.persistence", module: "javax.persistence-api"
+		exclude group: "javax.xml.bind", module: "jaxb-api"
+		exclude group: "org.jboss.spec.javax.transaction", module: "jboss-transaction-api_1.2_spec"
+	}
 	implementation("org.springframework.data:spring-data-jpa")
 	implementation("org.springframework.data:spring-data-ldap")
 	implementation("org.springframework.data:spring-data-mongodb")
 	implementation("org.springframework.data:spring-data-neo4j")
 	implementation("org.springframework.data:spring-data-redis")
 	implementation("org.springframework.data:spring-data-r2dbc")
+	implementation("org.springframework.graphql:spring-graphql")
+	implementation("org.springframework.graphql:spring-graphql-test")
 	implementation("org.springframework.kafka:spring-kafka")
 	implementation("org.springframework.kafka:spring-kafka-test")
 	implementation("org.springframework.restdocs:spring-restdocs-mockmvc") {
 		exclude group: "javax.servlet", module: "javax.servlet-api"
 	}
-	implementation("org.springframework.restdocs:spring-restdocs-restassured") {
-		exclude group: "commons-logging", module: "commons-logging"
-		exclude group: "javax.activation", module: "activation"
-		exclude group: "javax.xml.bind", module: "jaxb-api"
-	}
+	implementation("org.springframework.restdocs:spring-restdocs-restassured")
 	implementation("org.springframework.restdocs:spring-restdocs-webtestclient")
 	implementation("org.springframework.security:spring-security-config")
 	implementation("org.springframework.security:spring-security-oauth2-client")
@@ -150,10 +164,19 @@ dependencies {
 	implementation("org.springframework.ws:spring-ws-test")
 	implementation("org.testcontainers:junit-jupiter")
 	implementation("org.testcontainers:neo4j")
+	implementation("org.testcontainers:mongodb")
 	implementation("org.junit.jupiter:junit-jupiter")
 	implementation("org.yaml:snakeyaml")
 
 	mavenPluginDocumentation(project(path: ":spring-boot-project:spring-boot-tools:spring-boot-maven-plugin", configuration: "documentation"))
+
+	remoteSpringApplicationExample(platform(project(":spring-boot-project:spring-boot-dependencies")))
+	remoteSpringApplicationExample(project(":spring-boot-project:spring-boot-devtools"))
+	remoteSpringApplicationExample(project(":spring-boot-project:spring-boot-starters:spring-boot-starter-logging"))
+	remoteSpringApplicationExample("org.springframework:spring-web")
+
+	springApplicationExample(platform(project(":spring-boot-project:spring-boot-dependencies")))
+	springApplicationExample(project(path: ":spring-boot-project:spring-boot-starters:spring-boot-starter-web"))
 
 	testImplementation(project(":spring-boot-project:spring-boot-actuator-autoconfigure"))
 	testImplementation(project(":spring-boot-project:spring-boot-tools:spring-boot-test-support"))
@@ -174,11 +197,9 @@ task dependencyVersions(type: org.springframework.boot.build.constraints.Extract
 task aggregatedJavadoc(type: Javadoc) {
 	dependsOn dependencyVersions
 	project.rootProject.gradle.projectsEvaluated {
-		Set<String> excludedProjects = ['spring-boot-antlib', 'spring-boot-configuration-metadata', 'spring-boot-configuration-processor',
-				'spring-boot-gradle-plugin', 'spring-boot-jarmode-layertools', 'spring-boot-maven-plugin']
-		Set<Project> publishedProjects = rootProject.subprojects.findAll { it != project}
+		Set<Project> publishedProjects = rootProject.subprojects.findAll { it != project }
 			.findAll { it.plugins.hasPlugin(JavaPlugin) && it.plugins.hasPlugin(MavenPublishPlugin) }
-			.findAll { !excludedProjects.contains(it.name) }
+			.findAll { !it.path.contains(":spring-boot-tools:") }
 			.findAll { !it.name.startsWith('spring-boot-starter') }
 		dependsOn publishedProjects.javadoc
 		source publishedProjects.javadoc.source
@@ -187,12 +208,9 @@ task aggregatedJavadoc(type: Javadoc) {
 		options {
 			author = true
 			docTitle = "Spring Boot ${project.version} API"
-			encoding = "UTF-8"
 			memberLevel = "protected"
 			outputLevel = "quiet"
-			source = "1.8"
 			splitIndex = true
-			stylesheetFile = file("src/main/javadoc/spring-javadoc.css")
 			use = true
 			windowTitle = "Spring Boot ${project.version} API"
 		}
@@ -201,12 +219,11 @@ task aggregatedJavadoc(type: Javadoc) {
 			def tomcatVersion = "${versionConstraints["org.apache.tomcat:tomcat-annotations-api"]}"
 			def tomcatDocsVersion = tomcatVersion.substring(0, tomcatVersion.lastIndexOf("."));
 			options.links = [
-				"https://docs.oracle.com/javase/8/docs/api/",
-				"https://docs.oracle.com/javaee/7/api/",
+				"https://docs.oracle.com/en/java/javase/17/docs/api/",
 				"https://docs.spring.io/spring-framework/docs/${versionConstraints["org.springframework:spring-core"]}/javadoc-api/",
 				"https://docs.spring.io/spring-security/site/docs/${versionConstraints["org.springframework.security:spring-security-core"]}/api/",
+				"https://jakarta.ee/specifications/platform/9/apidocs/",
 				"https://tomcat.apache.org/tomcat-${tomcatDocsVersion}-doc/api/",
-				"https://www.thymeleaf.org/apidocs/thymeleaf/${versionConstraints["org.thymeleaf:thymeleaf"]}/"
 			] as String[]
 		}
 	}
@@ -245,20 +262,60 @@ task documentConfigurationProperties(type: org.springframework.boot.build.contex
 
 task documentDevtoolsPropertyDefaults(type: org.springframework.boot.build.devtools.DocumentDevtoolsPropertyDefaults) {}
 
+task runRemoteSpringApplicationExample(type: org.springframework.boot.build.docs.ApplicationRunner) {
+	classpath = configurations.remoteSpringApplicationExample
+	mainClass = "org.springframework.boot.devtools.RemoteSpringApplication"
+	args = ["https://myapp.example.com", "--spring.devtools.remote.secret=secret", "--spring.devtools.livereload.port=0"]
+	output = file("$buildDir/example-output/remote-spring-application.txt")
+	expectedLogging = "Started RemoteSpringApplication in "
+	applicationJar = "/Users/myuser/.m2/repository/org/springframework/boot/spring-boot-devtools/${project.version}/spring-boot-devtools-${project.version}.jar"
+	normalizeLiveReloadPort()
+}
+
+task runSpringApplicationExample(type: org.springframework.boot.build.docs.ApplicationRunner) {
+	classpath = configurations.springApplicationExample + sourceSets.main.output
+	mainClass = "org.springframework.boot.docs.features.springapplication.MyApplication"
+	args = ["--server.port=0"]
+	output = file("$buildDir/example-output/spring-application.txt")
+	expectedLogging = "Started MyApplication in "
+	normalizeTomcatPort()
+}
+
+task runLoggingFormatExample(type: org.springframework.boot.build.docs.ApplicationRunner) {
+	classpath = configurations.springApplicationExample + sourceSets.main.output
+	mainClass = "org.springframework.boot.docs.features.springapplication.MyApplication"
+	args = ["--spring.main.banner-mode=off", "--server.port=0"]
+	output = file("$buildDir/example-output/logging-format.txt")
+	expectedLogging = "Started MyApplication in "
+	normalizeTomcatPort()
+}
+
 tasks.withType(org.asciidoctor.gradle.jvm.AbstractAsciidoctorTask) {
+	outputs.doNotCacheIf("This task uses log files as inputs which contain changing data (timestamp, pid)") { true }
 	dependsOn dependencyVersions
+	inputs.files(runRemoteSpringApplicationExample).withPropertyName("runRemoteSpringApplicationExample").withPathSensitivity(PathSensitivity.RELATIVE)
+	inputs.files(runSpringApplicationExample).withPropertyName("runSpringApplicationExample").withPathSensitivity(PathSensitivity.RELATIVE)
+	inputs.files(runLoggingFormatExample).withPropertyName("runLoggingFormatExample").withPathSensitivity(PathSensitivity.RELATIVE)
 	asciidoctorj {
 		fatalWarnings = ['^((?!successfully validated).)*$']
 	}
 	doFirst {
 		def versionConstraints = dependencyVersions.versionConstraints
-		attributes	"jetty-version": versionConstraints["org.eclipse.jetty:jetty-server"],
+		def securityVersion = versionConstraints["org.springframework.security:spring-security-core"]
+		if (securityVersion.endsWith("-SNAPSHOT")) {
+			securityVersion = securityVersion.substring(0, securityVersion.length() - "-SNAPSHOT".length())
+		}
+		attributes  "hibernate-version": versionConstraints["org.hibernate.orm:hibernate-core"].split("\\.").take(2).join('.'),
+					"jetty-version": versionConstraints["org.eclipse.jetty:jetty-server"],
 					"jooq-version": versionConstraints["org.jooq:jooq"],
+					"lettuce-version": versionConstraints["io.lettuce:lettuce-core"],
+					"native-build-tools-version": nativeBuildToolsVersion,
 					"spring-amqp-version": versionConstraints["org.springframework.amqp:spring-amqp"],
 					"spring-batch-version": versionConstraints["org.springframework.batch:spring-batch-core"],
 					"spring-boot-version": project.version,
 					"spring-data-commons-version": versionConstraints["org.springframework.data:spring-data-commons"],
 					"spring-data-couchbase-version": versionConstraints["org.springframework.data:spring-data-couchbase"],
+					"spring-data-envers-version": versionConstraints["org.springframework.data:spring-data-envers"],
 					"spring-data-jdbc-version": versionConstraints["org.springframework.data:spring-data-jdbc"],
 					"spring-data-jpa-version": versionConstraints["org.springframework.data:spring-data-jpa"],
 					"spring-data-mongodb-version": versionConstraints["org.springframework.data:spring-data-mongodb"],
@@ -266,10 +323,16 @@ tasks.withType(org.asciidoctor.gradle.jvm.AbstractAsciidoctorTask) {
 					"spring-data-r2dbc-version": versionConstraints["org.springframework.data:spring-data-r2dbc"],
 					"spring-data-rest-version": versionConstraints["org.springframework.data:spring-data-rest-core"],
 					"spring-framework-version": versionConstraints["org.springframework:spring-core"],
-					"spring-kafka-version": versionConstraints["org.springframework.kafka:spring-kafka"],
+					"spring-graphql-version": versionConstraints["org.springframework.graphql:spring-graphql"],
 					"spring-integration-version": versionConstraints["org.springframework.integration:spring-integration-core"],
-					"spring-security-version": versionConstraints["org.springframework.security:spring-security-core"],
-					"spring-webservices-version": versionConstraints["org.springframework.ws:spring-ws-core"]
+					"spring-kafka-version": versionConstraints["org.springframework.kafka:spring-kafka"],
+					"spring-security-version": securityVersion,
+					"spring-authorization-server-version": versionConstraints["org.springframework.security:spring-security-oauth2-authorization-server"],
+					"spring-webservices-version": versionConstraints["org.springframework.ws:spring-ws-core"],
+					"tomcat-version": tomcatVersion.split("\\.").take(2).join('.'),
+					"remote-spring-application-output": runRemoteSpringApplicationExample.outputs.files.singleFile,
+					"spring-application-output": runSpringApplicationExample.outputs.files.singleFile,
+					"logging-format-output": runLoggingFormatExample.outputs.files.singleFile
 	}
 }
 
@@ -308,8 +371,14 @@ syncDocumentationSourceForAsciidoctor {
 	from("src/test/java") {
 		into "test/java"
 	}
+	from("src/main/kotlin") {
+		into "main/kotlin"
+	}
 	from("src/main/groovy") {
 		into "main/groovy"
+	}
+	from("src/main/resources") {
+		into "main/resources"
 	}
 }
 
@@ -330,8 +399,14 @@ syncDocumentationSourceForAsciidoctorMultipage {
 	from("src/test/java") {
 		into "test/java"
 	}
+	from("src/main/kotlin") {
+		into "main/kotlin"
+	}
 	from("src/main/groovy") {
 		into "main/groovy"
+	}
+	from("src/main/resources") {
+		into "main/resources"
 	}
 }
 
@@ -352,8 +427,14 @@ syncDocumentationSourceForAsciidoctorPdf {
 	from("src/test/java") {
 		into "test/java"
 	}
+	from("src/main/kotlin") {
+		into "main/kotlin"
+	}
 	from("src/main/groovy") {
 		into "main/groovy"
+	}
+	from("src/main/resources") {
+		into "main/resources"
 	}
 }
 

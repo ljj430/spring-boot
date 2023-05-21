@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,15 +41,16 @@ import org.gradle.api.tasks.TaskAction;
  */
 public class DocumentDevtoolsPropertyDefaults extends DefaultTask {
 
-	private Configuration devtools;
+	private final Configuration devtools;
 
 	private final RegularFileProperty outputFile;
 
 	public DocumentDevtoolsPropertyDefaults() {
 		this.devtools = getProject().getConfigurations().create("devtools");
 		this.outputFile = getProject().getObjects().fileProperty();
-		this.outputFile.convention(getProject().getLayout().getBuildDirectory()
-				.file("docs/generated/using/devtools-property-defaults.adoc"));
+		this.outputFile.convention(getProject().getLayout()
+			.getBuildDirectory()
+			.file("docs/generated/using/devtools-property-defaults.adoc"));
 		Map<String, String> dependency = new HashMap<>();
 		dependency.put("path", ":spring-boot-project:spring-boot-devtools");
 		dependency.put("configuration", "propertyDefaults");

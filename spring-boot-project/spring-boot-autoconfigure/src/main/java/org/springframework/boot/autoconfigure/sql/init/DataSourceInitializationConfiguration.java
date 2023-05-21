@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2021 the original author or authors.
+ * Copyright 2012-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,9 +22,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnSingleCandidate;
 import org.springframework.boot.jdbc.DataSourceBuilder;
-import org.springframework.boot.jdbc.init.DataSourceScriptDatabaseInitializer;
-import org.springframework.boot.sql.init.AbstractScriptDatabaseInitializer;
-import org.springframework.boot.sql.init.DatabaseInitializationSettings;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.datasource.SimpleDriverDataSource;
@@ -32,23 +29,25 @@ import org.springframework.jdbc.datasource.init.DatabasePopulator;
 import org.springframework.util.StringUtils;
 
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnMissingBean(AbstractScriptDatabaseInitializer.class)
+@ConditionalOnMissingBean({ SqlDataSourceScriptDatabaseInitializer.class, SqlR2dbcScriptDatabaseInitializer.class })
 @ConditionalOnSingleCandidate(DataSource.class)
 @ConditionalOnClass(DatabasePopulator.class)
 class DataSourceInitializationConfiguration {
 
 	@Bean
-	DataSourceScriptDatabaseInitializer dataSourceScriptDatabaseInitializer(DataSource dataSource,
-			SqlInitializationProperties initializationProperties) {
-		DatabaseInitializationSettings settings = SettingsCreator.createFrom(initializationProperties);
-		return new DataSourceScriptDatabaseInitializer(determineDataSource(dataSource,
-				initializationProperties.getUsername(), initializationProperties.getPassword()), settings);
+	SqlDataSourceScriptDatabaseInitializer dataSourceScriptDatabaseInitializer(DataSource dataSource,
+			SqlInitializationProperties properties) {
+		return new SqlDataSourceScriptDatabaseInitializer(
+				determineDataSource(dataSource, properties.getUsername(), properties.getPassword()), properties);
 	}
 
 	private static DataSource determineDataSource(DataSource dataSource, String username, String password) {
 		if (StringUtils.hasText(username) && StringUtils.hasText(password)) {
-			return DataSourceBuilder.derivedFrom(dataSource).username(username).password(password)
-					.type(SimpleDriverDataSource.class).build();
+			return DataSourceBuilder.derivedFrom(dataSource)
+				.username(username)
+				.password(password)
+				.type(SimpleDriverDataSource.class)
+				.build();
 		}
 		return dataSource;
 	}

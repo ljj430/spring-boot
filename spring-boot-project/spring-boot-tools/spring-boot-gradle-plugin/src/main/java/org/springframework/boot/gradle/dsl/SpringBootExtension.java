@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2021 the original author or authors.
+ * Copyright 2012-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,9 @@ import java.io.File;
 
 import org.gradle.api.Action;
 import org.gradle.api.Project;
-import org.gradle.api.model.ReplacedBy;
 import org.gradle.api.plugins.BasePlugin;
 import org.gradle.api.plugins.JavaPlugin;
-import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskContainer;
@@ -31,7 +30,6 @@ import org.gradle.api.tasks.TaskProvider;
 import org.gradle.jvm.tasks.Jar;
 
 import org.springframework.boot.gradle.tasks.buildinfo.BuildInfo;
-import org.springframework.boot.gradle.tasks.buildinfo.BuildInfoProperties;
 
 /**
  * Entry point to Spring Boot's Gradle DSL.
@@ -66,28 +64,6 @@ public class SpringBootExtension {
 	}
 
 	/**
-	 * Returns the fully-qualified main class name of the application.
-	 * @return the fully-qualified name of the application's main class
-	 * @deprecated since 2.4.0 for removal in 2.6.0 in favor of {@link #getMainClass()}.
-	 */
-	@Deprecated
-	@ReplacedBy("mainClass")
-	public String getMainClassName() {
-		return this.mainClass.getOrNull();
-	}
-
-	/**
-	 * Sets the fully-qualified main class name of the application.
-	 * @param mainClassName the fully-qualified name of the application's main class
-	 * @deprecated since 2.4.0 for removal in 2.6.0 in favor of {@link #getMainClass} and
-	 * {@link Property#set(Object)}
-	 */
-	@Deprecated
-	public void setMainClassName(String mainClassName) {
-		this.mainClass.set(mainClassName);
-	}
-
-	/**
 	 * Creates a new {@link BuildInfo} task named {@code bootBuildInfo} and configures the
 	 * Java plugin's {@code classes} task to depend upon it.
 	 * <p>
@@ -115,12 +91,9 @@ public class SpringBootExtension {
 				this::configureBuildInfoTask);
 		this.project.getPlugins().withType(JavaPlugin.class, (plugin) -> {
 			tasks.named(JavaPlugin.CLASSES_TASK_NAME).configure((task) -> task.dependsOn(bootBuildInfo));
-			this.project.afterEvaluate((evaluated) -> bootBuildInfo.configure((buildInfo) -> {
-				BuildInfoProperties properties = buildInfo.getProperties();
-				if (properties.getArtifact() == null) {
-					properties.setArtifact(determineArtifactBaseName());
-				}
-			}));
+			bootBuildInfo.configure((buildInfo) -> buildInfo.getProperties()
+				.getArtifact()
+				.convention(this.project.provider(() -> determineArtifactBaseName())));
 		});
 		if (configurer != null) {
 			bootBuildInfo.configure(configurer);
@@ -130,13 +103,18 @@ public class SpringBootExtension {
 	private void configureBuildInfoTask(BuildInfo task) {
 		task.setGroup(BasePlugin.BUILD_GROUP);
 		task.setDescription("Generates a META-INF/build-info.properties file.");
-		task.getConventionMapping().map("destinationDir",
-				() -> new File(determineMainSourceSetResourcesOutputDir(), "META-INF"));
+		task.getDestinationDir()
+			.convention(this.project.getLayout()
+				.dir(this.project.provider(() -> new File(determineMainSourceSetResourcesOutputDir(), "META-INF"))));
 	}
 
 	private File determineMainSourceSetResourcesOutputDir() {
-		return this.project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets()
-				.getByName(SourceSet.MAIN_SOURCE_SET_NAME).getOutput().getResourcesDir();
+		return this.project.getExtensions()
+			.getByType(JavaPluginExtension.class)
+			.getSourceSets()
+			.getByName(SourceSet.MAIN_SOURCE_SET_NAME)
+			.getOutput()
+			.getResourcesDir();
 	}
 
 	private String determineArtifactBaseName() {

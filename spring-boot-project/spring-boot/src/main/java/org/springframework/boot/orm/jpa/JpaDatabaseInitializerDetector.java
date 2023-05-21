@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2021 the original author or authors.
+ * Copyright 2012-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-import javax.persistence.EntityManagerFactory;
+import jakarta.persistence.EntityManagerFactory;
 
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
@@ -64,7 +64,7 @@ class JpaDatabaseInitializerDetector extends AbstractBeansOfTypeDatabaseInitiali
 			String initializerName = iterator.next();
 			BeanDefinition initializerDefinition = beanFactory.getBeanDefinition(initializerName);
 			if (JpaDatabaseInitializerDetector.class.getName()
-					.equals(initializerDefinition.getAttribute(DatabaseInitializerDetector.class.getName()))) {
+				.equals(initializerDefinition.getAttribute(DatabaseInitializerDetector.class.getName()))) {
 				iterator.remove();
 				jpaInitializers.add(initializerName);
 			}

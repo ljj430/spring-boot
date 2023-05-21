@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2020 the original author or authors.
+ * Copyright 2012-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 
 package org.springframework.boot.autoconfigure.mongo;
 
-import java.util.stream.Collectors;
-
 import com.mongodb.MongoClientSettings;
 import com.mongodb.MongoClientSettings.Builder;
 import com.mongodb.connection.netty.NettyStreamFactoryFactory;
@@ -29,15 +27,16 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.ssl.SslBundles;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
-import org.springframework.core.env.Environment;
 
 /**
  * {@link EnableAutoConfiguration Auto-configuration} for Reactive Mongo.
@@ -47,17 +46,23 @@ import org.springframework.core.env.Environment;
  * @author Scott Frederick
  * @since 2.0.0
  */
-@Configuration(proxyBeanMethods = false)
+@AutoConfiguration
 @ConditionalOnClass({ MongoClient.class, Flux.class })
 @EnableConfigurationProperties(MongoProperties.class)
 public class MongoReactiveAutoConfiguration {
+
+	@Bean
+	@ConditionalOnMissingBean(MongoConnectionDetails.class)
+	PropertiesMongoConnectionDetails mongoConnectionDetails(MongoProperties properties) {
+		return new PropertiesMongoConnectionDetails(properties);
+	}
 
 	@Bean
 	@ConditionalOnMissingBean
 	public MongoClient reactiveStreamsMongoClient(
 			ObjectProvider<MongoClientSettingsBuilderCustomizer> builderCustomizers, MongoClientSettings settings) {
 		ReactiveMongoClientFactory factory = new ReactiveMongoClientFactory(
-				builderCustomizers.orderedStream().collect(Collectors.toList()));
+				builderCustomizers.orderedStream().toList());
 		return factory.createMongoClient(settings);
 	}
 
@@ -71,9 +76,10 @@ public class MongoReactiveAutoConfiguration {
 		}
 
 		@Bean
-		MongoPropertiesClientSettingsBuilderCustomizer mongoPropertiesCustomizer(MongoProperties properties,
-				Environment environment) {
-			return new MongoPropertiesClientSettingsBuilderCustomizer(properties, environment);
+		StandardMongoClientSettingsBuilderCustomizer standardMongoSettingsCustomizer(MongoProperties properties,
+				MongoConnectionDetails connectionDetails, ObjectProvider<SslBundles> sslBundles) {
+			return new StandardMongoClientSettingsBuilderCustomizer(connectionDetails.getConnectionString(),
+					properties.getUuidRepresentation(), properties.getSsl(), sslBundles.getIfAvailable());
 		}
 
 	}
@@ -94,14 +100,14 @@ public class MongoReactiveAutoConfiguration {
 	/**
 	 * {@link MongoClientSettingsBuilderCustomizer} to apply Mongo client settings.
 	 */
-	private static final class NettyDriverMongoClientSettingsBuilderCustomizer
+	static final class NettyDriverMongoClientSettingsBuilderCustomizer
 			implements MongoClientSettingsBuilderCustomizer, DisposableBean {
 
 		private final ObjectProvider<MongoClientSettings> settings;
 
 		private volatile EventLoopGroup eventLoopGroup;
 
-		private NettyDriverMongoClientSettingsBuilderCustomizer(ObjectProvider<MongoClientSettings> settings) {
+		NettyDriverMongoClientSettingsBuilderCustomizer(ObjectProvider<MongoClientSettings> settings) {
 			this.settings = settings;
 		}
 
@@ -110,8 +116,8 @@ public class MongoReactiveAutoConfiguration {
 			if (!isStreamFactoryFactoryDefined(this.settings.getIfAvailable())) {
 				NioEventLoopGroup eventLoopGroup = new NioEventLoopGroup();
 				this.eventLoopGroup = eventLoopGroup;
-				builder.streamFactoryFactory(
-						NettyStreamFactoryFactory.builder().eventLoopGroup(eventLoopGroup).build());
+				builder
+					.streamFactoryFactory(NettyStreamFactoryFactory.builder().eventLoopGroup(eventLoopGroup).build());
 			}
 		}
 

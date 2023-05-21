@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,17 +85,6 @@ public abstract class AbstractJarWriter implements LoaderClassesWriter {
 		writeEntry(entry, manifest::write);
 	}
 
-	/**
-	 * Write all entries from the specified jar file.
-	 * @param jarFile the source jar file
-	 * @throws IOException if the entries cannot be written
-	 * @deprecated since 2.4.8 for removal in 2.6.0
-	 */
-	@Deprecated
-	public void writeEntries(JarFile jarFile) throws IOException {
-		writeEntries(jarFile, EntryTransformer.NONE, UnpackHandler.NEVER, (entry) -> null);
-	}
-
 	final void writeEntries(JarFile jarFile, EntryTransformer entryTransformer, UnpackHandler unpackHandler,
 			Function<JarEntry, Library> libraryLookup) throws IOException {
 		Enumeration<JarEntry> entries = jarFile.entries();
@@ -139,11 +128,8 @@ public abstract class AbstractJarWriter implements LoaderClassesWriter {
 	 */
 	@Override
 	public void writeEntry(String entryName, InputStream inputStream) throws IOException {
-		try {
+		try (inputStream) {
 			writeEntry(entryName, new InputStreamEntryWriter(inputStream));
-		}
-		finally {
-			inputStream.close();
 		}
 	}
 
@@ -386,8 +372,8 @@ public abstract class AbstractJarWriter implements LoaderClassesWriter {
 	}
 
 	/**
-	 * An {@code UnpackHandler} determines whether or not unpacking is required and
-	 * provides a SHA1 hash if required.
+	 * An {@code UnpackHandler} determines whether unpacking is required and provides a
+	 * SHA-1 hash if required.
 	 */
 	interface UnpackHandler {
 

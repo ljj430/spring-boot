@@ -20,6 +20,20 @@ bom {
 			]
 		}
 	}
+	library("API Guardian", "1.1.0") {
+		group("org.apiguardian") {
+			modules = [
+				"apiguardian-api"
+			]
+		}
+	}
+	library("C3P0", "0.9.5.5") {
+		group("com.mchange") {
+			modules = [
+					"c3p0"
+			]
+		}
+	}
 	library("Commons Compress", "1.21") {
 		group("org.apache.commons") {
 			modules = [
@@ -34,15 +48,23 @@ bom {
 			]
 		}
 	}
-	library("Jakarta Inject", "1.0.5") {
+	library("Jakarta Inject", "2.0.1") {
 		group("jakarta.inject") {
 			modules = [
 				"jakarta.inject-api"
 			]
 		}
 	}
+	library("Janino", "3.1.8") {
+		group("org.codehaus.janino") {
+			imports = [
+				"janino"
+			]
+		}
+	}
 	library("JLine", "2.11") {
-		prohibit("[2.12,)") {
+		prohibit {
+			versionRange "[2.12,)"
 			because "it contains breaking changes"
 		}
 		group("jline") {
@@ -122,6 +144,13 @@ bom {
 			]
 		}
 	}
+	library("Native Gradle Plugin", "${nativeBuildToolsVersion}") {
+		group("org.graalvm.buildtools") {
+			modules = [
+				"native-gradle-plugin"
+			]
+		}
+	}
 	library("Plexus Build API", "0.0.7") {
 		group("org.sonatype.plexus") {
 			modules = [
@@ -150,11 +179,10 @@ bom {
 			]
 		}
 	}
-	library("Spock Framework", "2.0-groovy-3.0") {
+	library("Spock Framework", "2.2-M1-groovy-4.0") {
 		group("org.spockframework") {
-			modules = [
-				"spock-core",
-				"spock-spring"
+			imports = [
+				"spock-bom"
 			]
 		}
 	}
@@ -165,7 +193,7 @@ bom {
 			]
 		}
 	}
-	library("Spring Asciidoctor Extensions", "0.6.0") {
+	library("Spring Asciidoctor Extensions", "0.6.1") {
 		group("io.spring.asciidoctor") {
 			modules = [
 				"spring-asciidoctor-extensions-spring-boot",
@@ -173,15 +201,13 @@ bom {
 			]
 		}
 	}
-	library("Testcontainers", "1.16.2") {
-		group("org.testcontainers") {
-			imports = [
-				"testcontainers-bom"
-			]
-		}
-	}
 }
 
 dependencies {
 	api(enforcedPlatform(project(":spring-boot-project:spring-boot-dependencies")))
+}
+
+tasks.withType(GenerateModuleMetadata).configureEach {
+	// Internal module so enforced platform dependencies are OK
+	suppressedValidationErrors.add('enforced-platform')
 }

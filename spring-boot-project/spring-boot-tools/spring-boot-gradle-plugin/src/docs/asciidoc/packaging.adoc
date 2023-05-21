@@ -76,6 +76,8 @@ include::../gradle/packaging/only-boot-jar.gradle[tags=disable-jar]
 include::../gradle/packaging/only-boot-jar.gradle.kts[tags=disable-jar]
 ----
 
+WARNING: Do not disable the `jar` task when creating native images.
+See https://github.com/spring-projects/spring-boot/issues/33238[#33238] for details.
 
 
 [[packaging-executable.configuring]]
@@ -88,7 +90,7 @@ A number of configuration options that are specific to executable jars and wars 
 
 [[packaging-executable.configuring.main-class]]
 === Configuring the Main Class
-By default, the executable archive's main class will be configured automatically by looking for a class with a `public static void main(String[])` method in directories on the task's classpath.
+By default, the executable archive's main class will be configured automatically by looking for a class with a `public static void main(String[])` method in the main source set's output.
 
 The main class can also be configured explicitly using the task's `mainClass` property:
 
@@ -206,7 +208,7 @@ On Unix-like platforms, this launch script allows the archive to be run directly
 
 NOTE: Currently, some tools do not accept this format so you may not always be able to use this technique.
 For example, `jar -xf` may silently fail to extract a jar or war that has been made fully-executable.
-It is recommended that you only enable this option if you intend to execute it directly, rather than running it with `java -jar`, deploying it to a servlet container, or including it in an OCI image.
+It is recommended that you only enable this option if you intend to execute it directly, rather than running it with `java -jar` or deploying it to a servlet container.
 
 To use this feature, the inclusion of the launch script must be enabled:
 

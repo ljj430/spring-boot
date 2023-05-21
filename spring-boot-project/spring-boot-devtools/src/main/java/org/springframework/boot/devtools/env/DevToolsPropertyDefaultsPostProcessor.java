@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.springframework.boot.devtools.env;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -25,12 +26,11 @@ import java.util.Properties;
 import org.apache.commons.logging.Log;
 
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.context.properties.bind.BindResult;
-import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.boot.devtools.logger.DevToolsLogFactory;
 import org.springframework.boot.devtools.restart.Restarter;
 import org.springframework.boot.devtools.system.DevToolsEnablementDeducer;
 import org.springframework.boot.env.EnvironmentPostProcessor;
+import org.springframework.core.NativeDetector;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.env.ConfigurableEnvironment;
@@ -64,19 +64,12 @@ public class DevToolsPropertyDefaultsPostProcessor implements EnvironmentPostPro
 	private static final Map<String, Object> PROPERTIES;
 
 	static {
-		Properties properties = new Properties();
-		try (InputStream stream = DevToolsPropertyDefaultsPostProcessor.class
-				.getResourceAsStream("devtools-property-defaults.properties")) {
-			properties.load(stream);
+		if (NativeDetector.inNativeImage()) {
+			PROPERTIES = Collections.emptyMap();
 		}
-		catch (IOException ex) {
-			throw new RuntimeException("Failed to load devtools-property-defaults.properties", ex);
+		else {
+			PROPERTIES = loadDefaultProperties();
 		}
-		Map<String, Object> map = new HashMap<>();
-		for (String name : properties.stringPropertyNames()) {
-			map.put(name, properties.getProperty(name));
-		}
-		PROPERTIES = map;
 	}
 
 	@Override
@@ -85,9 +78,7 @@ public class DevToolsPropertyDefaultsPostProcessor implements EnvironmentPostPro
 			if (canAddProperties(environment)) {
 				logger.info(LogMessage.format("Devtools property defaults active! Set '%s' to 'false' to disable",
 						ENABLED));
-				Map<String, Object> properties = new HashMap<>(PROPERTIES);
-				properties.putAll(getResourceProperties(environment));
-				environment.getPropertySources().addLast(new MapPropertySource("devtools", properties));
+				environment.getPropertySources().addLast(new MapPropertySource("devtools", PROPERTIES));
 			}
 			if (isWebApplication(environment) && !environment.containsProperty(WEB_LOGGING)) {
 				logger.info(LogMessage.format(
@@ -95,27 +86,6 @@ public class DevToolsPropertyDefaultsPostProcessor implements EnvironmentPostPro
 						WEB_LOGGING));
 			}
 		}
-	}
-
-	private Map<String, String> getResourceProperties(Environment environment) {
-		Map<String, String> resourceProperties = new HashMap<>();
-		String prefix = determineResourcePropertiesPrefix(environment);
-		resourceProperties.put(prefix + "cache.period", "0");
-		resourceProperties.put(prefix + "chain.cache", "false");
-		return resourceProperties;
-	}
-
-	@SuppressWarnings("deprecation")
-	private String determineResourcePropertiesPrefix(Environment environment) {
-		if (ClassUtils.isPresent("org.springframework.boot.autoconfigure.web.ResourceProperties",
-				getClass().getClassLoader())) {
-			BindResult<org.springframework.boot.autoconfigure.web.ResourceProperties> result = Binder.get(environment)
-					.bind("spring.resources", org.springframework.boot.autoconfigure.web.ResourceProperties.class);
-			if (result.isBound() && result.get().hasBeenCustomized()) {
-				return "spring.resources.";
-			}
-		}
-		return "spring.web.resources.";
 	}
 
 	private boolean isLocalApplication(ConfigurableEnvironment environment) {
@@ -160,6 +130,26 @@ public class DevToolsPropertyDefaultsPostProcessor implements EnvironmentPostPro
 		catch (IllegalArgumentException ex) {
 			return null;
 		}
+	}
+
+	private static Map<String, Object> loadDefaultProperties() {
+		Properties properties = new Properties();
+		try (InputStream stream = DevToolsPropertyDefaultsPostProcessor.class
+			.getResourceAsStream("devtools-property-defaults.properties")) {
+			if (stream == null) {
+				throw new RuntimeException(
+						"Failed to load devtools-property-defaults.properties because it doesn't exist");
+			}
+			properties.load(stream);
+		}
+		catch (IOException ex) {
+			throw new RuntimeException("Failed to load devtools-property-defaults.properties", ex);
+		}
+		Map<String, Object> map = new HashMap<>();
+		for (String name : properties.stringPropertyNames()) {
+			map.put(name, properties.getProperty(name));
+		}
+		return Collections.unmodifiableMap(map);
 	}
 
 }

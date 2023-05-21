@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2021 the original author or authors.
+ * Copyright 2012-2023 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import org.gradle.testkit.runner.TaskOutcome;
 import org.junit.jupiter.api.TestTemplate;
 
 import org.springframework.boot.gradle.junit.GradleCompatibility;
-import org.springframework.boot.gradle.testkit.GradleBuild;
+import org.springframework.boot.testsupport.gradle.testkit.GradleBuild;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -44,7 +44,10 @@ class MavenPublishingIntegrationTests {
 		assertThat(result.task(":publish").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
 		assertThat(artifactWithSuffix("jar")).isFile();
 		assertThat(artifactWithSuffix("pom")).is(pomWith().groupId("com.example")
-				.artifactId(this.gradleBuild.getProjectDir().getName()).version("1.0").noPackaging().noDependencies());
+			.artifactId(this.gradleBuild.getProjectDir().getName())
+			.version("1.0")
+			.noPackaging()
+			.noDependencies());
 	}
 
 	@TestTemplate
@@ -52,9 +55,11 @@ class MavenPublishingIntegrationTests {
 		BuildResult result = this.gradleBuild.build("publish");
 		assertThat(result.task(":publish").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
 		assertThat(artifactWithSuffix("war")).isFile();
-		assertThat(artifactWithSuffix("pom"))
-				.is(pomWith().groupId("com.example").artifactId(this.gradleBuild.getProjectDir().getName())
-						.version("1.0").packaging("war").noDependencies());
+		assertThat(artifactWithSuffix("pom")).is(pomWith().groupId("com.example")
+			.artifactId(this.gradleBuild.getProjectDir().getName())
+			.version("1.0")
+			.packaging("war")
+			.noDependencies());
 	}
 
 	private File artifactWithSuffix(String suffix) {
