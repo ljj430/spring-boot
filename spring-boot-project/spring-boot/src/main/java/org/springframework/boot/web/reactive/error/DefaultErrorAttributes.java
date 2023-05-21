@@ -100,8 +100,11 @@ public class DefaultErrorAttributes implements ErrorAttributes {
 	}
 
 	private HttpStatus determineHttpStatus(Throwable error, MergedAnnotation<ResponseStatus> responseStatusAnnotation) {
-		if (error instanceof ResponseStatusException) {
-			return ((ResponseStatusException) error).getStatus();
+		if (error instanceof ResponseStatusException responseStatusException) {
+			HttpStatus httpStatus = HttpStatus.resolve(responseStatusException.getStatusCode().value());
+			if (httpStatus != null) {
+				return httpStatus;
+			}
 		}
 		return responseStatusAnnotation.getValue("code", HttpStatus.class).orElse(HttpStatus.INTERNAL_SERVER_ERROR);
 	}
@@ -110,8 +113,8 @@ public class DefaultErrorAttributes implements ErrorAttributes {
 		if (error instanceof BindingResult) {
 			return error.getMessage();
 		}
-		if (error instanceof ResponseStatusException) {
-			return ((ResponseStatusException) error).getReason();
+		if (error instanceof ResponseStatusException responseStatusException) {
+			return responseStatusException.getReason();
 		}
 		String reason = responseStatusAnnotation.getValue("reason", String.class).orElse("");
 		if (StringUtils.hasText(reason)) {
@@ -139,8 +142,7 @@ public class DefaultErrorAttributes implements ErrorAttributes {
 		if (includeStackTrace) {
 			addStackTrace(errorAttributes, error);
 		}
-		if (error instanceof BindingResult) {
-			BindingResult result = (BindingResult) error;
+		if (error instanceof BindingResult result) {
 			if (result.hasErrors()) {
 				errorAttributes.put("errors", result.getAllErrors());
 			}

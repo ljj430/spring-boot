@@ -43,7 +43,7 @@ class SysVinitLaunchScriptIntegrationTests extends AbstractLaunchScriptIntegrati
 	}
 
 	static List<Object[]> parameters() {
-		return parameters((file) -> !file.getName().contains("CentOS"));
+		return filterParameters((file) -> !file.getName().contains("CentOS"));
 	}
 
 	@ParameterizedTest(name = "{0} {1}")

@@ -26,10 +26,10 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.stream.Stream;
 
 import org.springframework.boot.convert.ApplicationConversionService;
 import org.springframework.boot.origin.Origin;
@@ -204,8 +204,9 @@ public class ConfigTreePropertySource extends EnumerablePropertySource<Path> imp
 		static Map<String, PropertyFile> findAll(Path sourceDirectory, Set<Option> options) {
 			try {
 				Map<String, PropertyFile> propertyFiles = new TreeMap<>();
-				Files.find(sourceDirectory, MAX_DEPTH, PropertyFile::isPropertyFile, FileVisitOption.FOLLOW_LINKS)
-					.forEach((path) -> {
+				try (Stream<Path> pathStream = Files.find(sourceDirectory, MAX_DEPTH, PropertyFile::isPropertyFile,
+						FileVisitOption.FOLLOW_LINKS)) {
+					pathStream.forEach((path) -> {
 						String name = getName(sourceDirectory.relativize(path));
 						if (StringUtils.hasText(name)) {
 							if (options.contains(Option.USE_LOWERCASE_NAMES)) {
@@ -214,6 +215,7 @@ public class ConfigTreePropertySource extends EnumerablePropertySource<Path> imp
 							propertyFiles.put(name, new PropertyFile(path, options));
 						}
 					});
+				}
 				return Collections.unmodifiableMap(propertyFiles);
 			}
 			catch (IOException ex) {
@@ -226,9 +228,8 @@ public class ConfigTreePropertySource extends EnumerablePropertySource<Path> imp
 		}
 
 		private static boolean hasHiddenPathElement(Path path) {
-			Iterator<Path> iterator = path.iterator();
-			while (iterator.hasNext()) {
-				if (iterator.next().toString().startsWith("..")) {
+			for (Path element : path) {
+				if (element.toString().startsWith("..")) {
 					return true;
 				}
 			}

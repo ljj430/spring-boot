@@ -73,7 +73,7 @@ public class DataSourceHealthContributorAutoConfiguration implements Initializin
 
 	public DataSourceHealthContributorAutoConfiguration(
 			ObjectProvider<DataSourcePoolMetadataProvider> metadataProviders) {
-		this.metadataProviders = metadataProviders.orderedStream().collect(Collectors.toList());
+		this.metadataProviders = metadataProviders.orderedStream().toList();
 	}
 
 	@Override
@@ -104,8 +104,7 @@ public class DataSourceHealthContributorAutoConfiguration implements Initializin
 	}
 
 	private HealthContributor createContributor(DataSource source) {
-		if (source instanceof AbstractRoutingDataSource) {
-			AbstractRoutingDataSource routingDataSource = (AbstractRoutingDataSource) source;
+		if (source instanceof AbstractRoutingDataSource routingDataSource) {
 			return new RoutingDataSourceHealthContributor(routingDataSource, this::createContributor);
 		}
 		return new DataSourceHealthIndicator(source, getValidationQuery(source));
