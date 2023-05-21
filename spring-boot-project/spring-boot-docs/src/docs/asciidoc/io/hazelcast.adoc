@@ -10,9 +10,6 @@ Spring Boot first attempts to create a client by checking the following configur
 * A `hazelcast-client.xml` in the working directory or at the root of the classpath.
 * A `hazelcast-client.yaml` (or `hazelcast-client.yml`) in the working directory or at the root of the classpath.
 
-WARNING: Hazelcast 3 support is deprecated.
-If you still need to downgrade to Hazelcast 3, `hazelcast-client` should be added to the classpath to configure a client.
-
 If a client can not be created, Spring Boot attempts to configure an embedded server.
 If you define a `com.hazelcast.config.Config` bean, Spring Boot uses that.
 If your configuration defines an instance name, Spring Boot tries to locate an existing instance rather than creating a new one.
@@ -26,7 +23,7 @@ You could also specify the Hazelcast configuration file to use through configura
 	    config: "classpath:config/my-hazelcast.xml"
 ----
 
-Otherwise, Spring Boot tries to find the Hazelcast configuration from the default locations: `hazelcast.xml` in the working directory or at the root of the classpath, or a `.yaml`/`.yml` counterpart in the same locations.
+Otherwise, Spring Boot tries to find the Hazelcast configuration from the default locations: `hazelcast.xml` in the working directory or at the root of the classpath, or a YAML counterpart in the same locations.
 We also check if the `hazelcast.config` system property is set.
 See the https://docs.hazelcast.org/docs/latest/manual/html-single/[Hazelcast documentation] for more details.
 
