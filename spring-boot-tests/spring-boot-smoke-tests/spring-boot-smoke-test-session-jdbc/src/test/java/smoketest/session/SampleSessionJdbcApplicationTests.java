@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package smoketest.session;
 
 import java.net.URI;
 import java.util.Base64;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -28,15 +27,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -58,8 +53,9 @@ class SampleSessionJdbcApplicationTests {
 
 	@Test
 	void sessionExpiry() throws Exception {
-		String cookie = performLogin();
-		String sessionId1 = performRequest(ROOT_URI, cookie).getBody();
+		ResponseEntity<String> firstResponse = performRequest(ROOT_URI, null);
+		String sessionId1 = firstResponse.getBody();
+		String cookie = firstResponse.getHeaders().getFirst("Set-Cookie");
 		String sessionId2 = performRequest(ROOT_URI, cookie).getBody();
 		assertThat(sessionId1).isEqualTo(sessionId2);
 		Thread.sleep(2100);
@@ -67,27 +63,15 @@ class SampleSessionJdbcApplicationTests {
 		assertThat(loginPage).containsIgnoringCase("login");
 	}
 
-	private String performLogin() {
-		HttpHeaders headers = new HttpHeaders();
-		headers.setAccept(Collections.singletonList(MediaType.TEXT_HTML));
-		headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-		MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
-		form.set("username", "user");
-		form.set("password", "password");
-		ResponseEntity<String> entity = this.restTemplate.exchange("/login", HttpMethod.POST,
-				new HttpEntity<>(form, headers), String.class);
-		return entity.getHeaders().getFirst("Set-Cookie");
-	}
-
 	@Test
 	@SuppressWarnings("unchecked")
 	void sessionsEndpointShouldReturnUserSession() {
-		performLogin();
+		performRequest(ROOT_URI, null);
 		ResponseEntity<Map<String, Object>> response = getSessions();
 		assertThat(response).isNotNull();
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 		List<Map<String, Object>> sessions = (List<Map<String, Object>>) response.getBody().get("sessions");
-		assertThat(sessions).hasSize(1);
+		assertThat(sessions.size()).isEqualTo(1);
 	}
 
 	private ResponseEntity<String> performRequest(URI uri, String cookie) {
@@ -115,7 +99,7 @@ class SampleSessionJdbcApplicationTests {
 		HttpHeaders headers = getHeaders(null);
 		RequestEntity<Object> request = new RequestEntity<>(headers, HttpMethod.GET,
 				URI.create("/actuator/sessions?username=user"));
-		ParameterizedTypeReference<Map<String, Object>> stringObjectMap = new ParameterizedTypeReference<>() {
+		ParameterizedTypeReference<Map<String, Object>> stringObjectMap = new ParameterizedTypeReference<Map<String, Object>>() {
 		};
 		return this.restTemplate.exchange(request, stringObjectMap);
 	}

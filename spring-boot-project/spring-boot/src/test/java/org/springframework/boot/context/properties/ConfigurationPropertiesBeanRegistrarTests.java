@@ -39,10 +39,9 @@ import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
  */
 class ConfigurationPropertiesBeanRegistrarTests {
 
-	private final BeanDefinitionRegistry registry = new DefaultListableBeanFactory();
+	private BeanDefinitionRegistry registry = new DefaultListableBeanFactory();
 
-	private final ConfigurationPropertiesBeanRegistrar registrar = new ConfigurationPropertiesBeanRegistrar(
-			this.registry);
+	private ConfigurationPropertiesBeanRegistrar registrar = new ConfigurationPropertiesBeanRegistrar(this.registry);
 
 	@Test
 	void registerWhenNotAlreadyRegisteredAddBeanDefinition() {
@@ -103,6 +102,7 @@ class ConfigurationPropertiesBeanRegistrarTests {
 
 	}
 
+	@ConstructorBinding
 	@ConfigurationProperties("valuecp")
 	static class ValueObjectConfigurationProperties {
 

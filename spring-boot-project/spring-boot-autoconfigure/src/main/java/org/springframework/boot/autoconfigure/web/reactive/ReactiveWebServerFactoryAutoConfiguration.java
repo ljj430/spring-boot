@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package org.springframework.boot.autoconfigure.web.reactive;
+
+import java.util.function.Supplier;
 
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
@@ -88,8 +90,8 @@ public class ReactiveWebServerFactoryAutoConfiguration {
 
 		@Override
 		public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
-			if (beanFactory instanceof ConfigurableListableBeanFactory listableBeanFactory) {
-				this.beanFactory = listableBeanFactory;
+			if (beanFactory instanceof ConfigurableListableBeanFactory) {
+				this.beanFactory = (ConfigurableListableBeanFactory) beanFactory;
 			}
 		}
 
@@ -100,13 +102,14 @@ public class ReactiveWebServerFactoryAutoConfiguration {
 				return;
 			}
 			registerSyntheticBeanIfMissing(registry, "webServerFactoryCustomizerBeanPostProcessor",
-					WebServerFactoryCustomizerBeanPostProcessor.class);
+					WebServerFactoryCustomizerBeanPostProcessor.class,
+					WebServerFactoryCustomizerBeanPostProcessor::new);
 		}
 
 		private <T> void registerSyntheticBeanIfMissing(BeanDefinitionRegistry registry, String name,
-				Class<T> beanClass) {
+				Class<T> beanClass, Supplier<T> instanceSupplier) {
 			if (ObjectUtils.isEmpty(this.beanFactory.getBeanNamesForType(beanClass, true, false))) {
-				RootBeanDefinition beanDefinition = new RootBeanDefinition(beanClass);
+				RootBeanDefinition beanDefinition = new RootBeanDefinition(beanClass, instanceSupplier);
 				beanDefinition.setSynthetic(true);
 				registry.registerBeanDefinition(name, beanDefinition);
 			}

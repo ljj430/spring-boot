@@ -51,7 +51,7 @@ class ConditionalOnJndiTests {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner();
 
-	private final MockableOnJndi condition = new MockableOnJndi();
+	private MockableOnJndi condition = new MockableOnJndi();
 
 	@BeforeEach
 	void setupThreadContextClassLoader() {
@@ -149,7 +149,7 @@ class ConditionalOnJndiTests {
 
 	static class MockableOnJndi extends OnJndiCondition {
 
-		private final boolean jndiAvailable = true;
+		private boolean jndiAvailable = true;
 
 		private String foundLocation;
 

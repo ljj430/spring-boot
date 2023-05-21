@@ -39,7 +39,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
  */
 class IgnoreErrorsBindHandlerTests {
 
-	private final List<ConfigurationPropertySource> sources = new ArrayList<>();
+	private List<ConfigurationPropertySource> sources = new ArrayList<>();
 
 	private Binder binder;
 
@@ -60,7 +60,7 @@ class IgnoreErrorsBindHandlerTests {
 	@Test
 	void bindWhenIgnoringErrorsShouldBind() {
 		Example bound = this.binder.bind("example", Bindable.of(Example.class), new IgnoreErrorsBindHandler()).get();
-		assertThat(bound.getFoo()).isZero();
+		assertThat(bound.getFoo()).isEqualTo(0);
 	}
 
 	static class Example {

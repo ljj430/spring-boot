@@ -35,13 +35,13 @@ public class HolidayEndpoint {
 
 	private static final String NAMESPACE_URI = "https://company.example.com/hr/schemas";
 
-	private final XPathExpression<Element> startDateExpression;
+	private XPathExpression<Element> startDateExpression;
 
-	private final XPathExpression<Element> endDateExpression;
+	private XPathExpression<Element> endDateExpression;
 
-	private final XPathExpression<String> nameExpression;
+	private XPathExpression<String> nameExpression;
 
-	private final HumanResourceService humanResourceService;
+	private HumanResourceService humanResourceService;
 
 	public HolidayEndpoint(HumanResourceService humanResourceService) {
 		this.humanResourceService = humanResourceService;

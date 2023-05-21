@@ -16,8 +16,6 @@
 
 package org.springframework.boot.test.web.client;
 
-import java.util.function.Supplier;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -37,7 +35,6 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
  * Tests for {@link MockServerRestTemplateCustomizer}.
  *
  * @author Phillip Webb
- * @author Moritz Halbritter
  */
 class MockServerRestTemplateCustomizerTests {
 
@@ -58,32 +55,14 @@ class MockServerRestTemplateCustomizerTests {
 
 	@Test
 	void createWhenExpectationManagerClassIsNullShouldThrowException() {
-		Class<? extends RequestExpectationManager> expectationManager = null;
-		assertThatIllegalArgumentException().isThrownBy(() -> new MockServerRestTemplateCustomizer(expectationManager))
+		assertThatIllegalArgumentException().isThrownBy(() -> new MockServerRestTemplateCustomizer(null))
 			.withMessageContaining("ExpectationManager must not be null");
-	}
-
-	@Test
-	void createWhenExpectationManagerSupplierIsNullShouldThrowException() {
-		Supplier<? extends RequestExpectationManager> expectationManagerSupplier = null;
-		assertThatIllegalArgumentException()
-			.isThrownBy(() -> new MockServerRestTemplateCustomizer(expectationManagerSupplier))
-			.withMessageContaining("ExpectationManagerSupplier must not be null");
 	}
 
 	@Test
 	void createShouldUseExpectationManagerClass() {
 		MockServerRestTemplateCustomizer customizer = new MockServerRestTemplateCustomizer(
 				UnorderedRequestExpectationManager.class);
-		customizer.customize(new RestTemplate());
-		assertThat(customizer.getServer()).extracting("expectationManager")
-			.isInstanceOf(UnorderedRequestExpectationManager.class);
-	}
-
-	@Test
-	void createShouldUseSupplier() {
-		MockServerRestTemplateCustomizer customizer = new MockServerRestTemplateCustomizer(
-				UnorderedRequestExpectationManager::new);
 		customizer.customize(new RestTemplate());
 		assertThat(customizer.getServer()).extracting("expectationManager")
 			.isInstanceOf(UnorderedRequestExpectationManager.class);

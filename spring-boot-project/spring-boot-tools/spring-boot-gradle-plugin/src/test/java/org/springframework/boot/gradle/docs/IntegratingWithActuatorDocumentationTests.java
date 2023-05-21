@@ -58,7 +58,6 @@ class IntegratingWithActuatorDocumentationTests {
 		assertThat(properties).containsEntry("build.version", "1.2.3");
 		assertThat(properties).containsEntry("build.group", "com.example");
 		assertThat(properties).containsEntry("build.name", "Example application");
-		assertThat(properties).containsKey("build.time");
 	}
 
 	@TestTemplate
@@ -70,16 +69,6 @@ class IntegratingWithActuatorDocumentationTests {
 		Properties properties = buildInfoProperties(file);
 		assertThat(properties).containsEntry("build.a", "alpha");
 		assertThat(properties).containsEntry("build.b", "bravo");
-	}
-
-	@TestTemplate
-	void buildInfoExcludeTime() {
-		this.gradleBuild.script("src/docs/gradle/integrating-with-actuator/build-info-exclude-time")
-			.build("bootBuildInfo");
-		File file = new File(this.gradleBuild.getProjectDir(), "build/resources/main/META-INF/build-info.properties");
-		assertThat(file).isFile();
-		Properties properties = buildInfoProperties(file);
-		assertThat(properties).doesNotContainKey("build.time");
 	}
 
 	private Properties buildInfoProperties(File file) {

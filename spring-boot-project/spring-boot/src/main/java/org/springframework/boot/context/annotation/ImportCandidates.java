@@ -37,7 +37,6 @@ import org.springframework.util.Assert;
  * candidates.
  *
  * @author Moritz Halbritter
- * @author Scott Frederick
  * @since 2.7.0
  */
 public final class ImportCandidates implements Iterable<String> {
@@ -56,14 +55,6 @@ public final class ImportCandidates implements Iterable<String> {
 	@Override
 	public Iterator<String> iterator() {
 		return this.candidates.iterator();
-	}
-
-	/**
-	 * Returns the list of loaded import candidates.
-	 * @return the list of import candidates
-	 */
-	public List<String> getCandidates() {
-		return this.candidates;
 	}
 
 	/**

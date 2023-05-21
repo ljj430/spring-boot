@@ -74,7 +74,7 @@ public class TomcatReactiveWebServerFactory extends AbstractReactiveWebServerFac
 
 	private List<LifecycleListener> contextLifecycleListeners = new ArrayList<>();
 
-	private final List<LifecycleListener> serverLifecycleListeners = getDefaultServerLifecycleListeners();
+	private List<LifecycleListener> serverLifecycleListeners = getDefaultServerLifecycleListeners();
 
 	private Set<TomcatContextCustomizer> tomcatContextCustomizers = new LinkedHashSet<>();
 
@@ -152,11 +152,10 @@ public class TomcatReactiveWebServerFactory extends AbstractReactiveWebServerFac
 		context.setPath("");
 		context.setDocBase(docBase.getAbsolutePath());
 		context.addLifecycleListener(new Tomcat.FixContextListener());
-		ClassLoader parentClassLoader = ClassUtils.getDefaultClassLoader();
-		context.setParentClassLoader(parentClassLoader);
+		context.setParentClassLoader(ClassUtils.getDefaultClassLoader());
 		skipAllTldScanning(context);
 		WebappLoader loader = new WebappLoader();
-		loader.setLoaderInstance(new TomcatEmbeddedWebappClassLoader(parentClassLoader));
+		loader.setLoaderClass(TomcatEmbeddedWebappClassLoader.class.getName());
 		loader.setDelegate(true);
 		context.setLoader(loader);
 		Tomcat.addServlet(context, "httpHandlerServlet", servlet).setAsyncSupported(true);
