@@ -50,8 +50,6 @@ class Lifecycle implements Closeable {
 
 	private static final String PLATFORM_API_VERSION_KEY = "CNB_PLATFORM_API";
 
-	private static final String SOURCE_DATE_EPOCH_KEY = "SOURCE_DATE_EPOCH";
-
 	private static final String DOMAIN_SOCKET_PATH = "/var/run/docker.sock";
 
 	private final BuildLog log;
@@ -75,8 +73,6 @@ class Lifecycle implements Closeable {
 	private final VolumeName buildCacheVolume;
 
 	private final VolumeName launchCacheVolume;
-
-	private final String applicationDirectory;
 
 	private boolean executed;
 
@@ -103,7 +99,6 @@ class Lifecycle implements Closeable {
 		this.applicationVolume = createRandomVolumeName("pack-app-");
 		this.buildCacheVolume = getBuildCacheVolumeName(request);
 		this.launchCacheVolume = getLaunchCacheVolumeName(request);
-		this.applicationDirectory = getApplicationDirectory(request);
 	}
 
 	protected VolumeName createRandomVolumeName(String prefix) {
@@ -129,10 +124,6 @@ class Lifecycle implements Closeable {
 			return VolumeName.of(cache.getVolume().getName());
 		}
 		return null;
-	}
-
-	private String getApplicationDirectory(BuildRequest request) {
-		return (request.getApplicationDirectory() != null) ? request.getApplicationDirectory() : Directory.APPLICATION;
 	}
 
 	private VolumeName createCacheVolumeName(BuildRequest request, String suffix) {
@@ -168,7 +159,7 @@ class Lifecycle implements Closeable {
 		phase.withDaemonAccess();
 		configureDaemonAccess(phase);
 		phase.withLogLevelArg();
-		phase.withArgs("-app", this.applicationDirectory);
+		phase.withArgs("-app", Directory.APPLICATION);
 		phase.withArgs("-platform", Directory.PLATFORM);
 		phase.withArgs("-run-image", this.request.getRunImage());
 		phase.withArgs("-layers", Directory.LAYERS);
@@ -183,7 +174,7 @@ class Lifecycle implements Closeable {
 		}
 		phase.withArgs(this.request.getName());
 		phase.withBinding(Binding.from(this.layersVolume, Directory.LAYERS));
-		phase.withBinding(Binding.from(this.applicationVolume, this.applicationDirectory));
+		phase.withBinding(Binding.from(this.applicationVolume, Directory.APPLICATION));
 		phase.withBinding(Binding.from(this.buildCacheVolume, Directory.CACHE));
 		phase.withBinding(Binding.from(this.launchCacheVolume, Directory.LAUNCH_CACHE));
 		if (this.request.getBindings() != null) {
@@ -192,9 +183,6 @@ class Lifecycle implements Closeable {
 		phase.withEnv(PLATFORM_API_VERSION_KEY, this.platformVersion.toString());
 		if (this.request.getNetwork() != null) {
 			phase.withNetworkMode(this.request.getNetwork());
-		}
-		if (this.request.getCreatedDate() != null) {
-			phase.withEnv(SOURCE_DATE_EPOCH_KEY, Long.toString(this.request.getCreatedDate().getEpochSecond()));
 		}
 		return phase;
 	}
@@ -252,7 +240,7 @@ class Lifecycle implements Closeable {
 		try {
 			TarArchive applicationContent = this.request.getApplicationContent(this.builder.getBuildOwner());
 			return this.docker.container()
-				.create(config, ContainerContent.of(applicationContent, this.applicationDirectory));
+				.create(config, ContainerContent.of(applicationContent, Directory.APPLICATION));
 		}
 		finally {
 			this.applicationVolumePopulated = true;

@@ -47,7 +47,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration.FlywayAutoConfigurationRuntimeHints;
 import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration.FlywayDataSourceCondition;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.JdbcConnectionDetails;
 import org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
 import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
@@ -87,7 +86,6 @@ import org.springframework.util.StringUtils;
  * @author Semyon Danilov
  * @author Chris Bono
  * @author Moritz Halbritter
- * @author Andy Wilkinson
  * @since 1.1.0
  */
 @AutoConfiguration(after = { DataSourceAutoConfiguration.class, JdbcTemplateAutoConfiguration.class,
@@ -127,7 +125,7 @@ public class FlywayAutoConfiguration {
 				ObjectProvider<FlywayConfigurationCustomizer> fluentConfigurationCustomizers,
 				ObjectProvider<JavaMigration> javaMigrations, ObjectProvider<Callback> callbacks) {
 			return flyway(properties, resourceLoader, dataSource, flywayDataSource, fluentConfigurationCustomizers,
-					javaMigrations, callbacks, new ResourceProviderCustomizer(), null);
+					javaMigrations, callbacks, new ResourceProviderCustomizer());
 		}
 
 		@Bean
@@ -135,15 +133,9 @@ public class FlywayAutoConfiguration {
 				@FlywayDataSource ObjectProvider<DataSource> flywayDataSource,
 				ObjectProvider<FlywayConfigurationCustomizer> fluentConfigurationCustomizers,
 				ObjectProvider<JavaMigration> javaMigrations, ObjectProvider<Callback> callbacks,
-				ResourceProviderCustomizer resourceProviderCustomizer,
-				ObjectProvider<JdbcConnectionDetails> connectionDetailsProvider) {
+				ResourceProviderCustomizer resourceProviderCustomizer) {
 			FluentConfiguration configuration = new FluentConfiguration(resourceLoader.getClassLoader());
-			JdbcConnectionDetails connectionDetails = (connectionDetailsProvider != null)
-					? connectionDetailsProvider.getIfAvailable() : null;
-			connectionDetails = (connectionDetails != null) ? connectionDetails
-					: new FlywayPropertiesJdbcConnectionDetails(properties);
-			configureDataSource(configuration, flywayDataSource.getIfAvailable(), dataSource.getIfUnique(),
-					connectionDetails);
+			configureDataSource(configuration, properties, flywayDataSource.getIfAvailable(), dataSource.getIfUnique());
 			configureProperties(configuration, properties);
 			configureCallbacks(configuration, callbacks.orderedStream().toList());
 			configureJavaMigrations(configuration, javaMigrations.orderedStream().toList());
@@ -152,41 +144,38 @@ public class FlywayAutoConfiguration {
 			return configuration.load();
 		}
 
-		private void configureDataSource(FluentConfiguration configuration, DataSource flywayDataSource,
-				DataSource dataSource, JdbcConnectionDetails connectionDetails) {
-			DataSource migrationDataSource = getMigrationDataSource(flywayDataSource, dataSource, connectionDetails);
+		private void configureDataSource(FluentConfiguration configuration, FlywayProperties properties,
+				DataSource flywayDataSource, DataSource dataSource) {
+			DataSource migrationDataSource = getMigrationDataSource(properties, flywayDataSource, dataSource);
 			configuration.dataSource(migrationDataSource);
 		}
 
-		private DataSource getMigrationDataSource(DataSource flywayDataSource, DataSource dataSource,
-				JdbcConnectionDetails connectionDetails) {
+		private DataSource getMigrationDataSource(FlywayProperties properties, DataSource flywayDataSource,
+				DataSource dataSource) {
 			if (flywayDataSource != null) {
 				return flywayDataSource;
 			}
-			String url = connectionDetails.getJdbcUrl();
-			if (url != null) {
+			if (properties.getUrl() != null) {
 				DataSourceBuilder<?> builder = DataSourceBuilder.create().type(SimpleDriverDataSource.class);
-				builder.url(url);
-				applyConnectionDetails(connectionDetails, builder);
+				builder.url(properties.getUrl());
+				applyCommonBuilderProperties(properties, builder);
 				return builder.build();
 			}
-			String user = connectionDetails.getUsername();
-			if (user != null && dataSource != null) {
+			if (properties.getUser() != null && dataSource != null) {
 				DataSourceBuilder<?> builder = DataSourceBuilder.derivedFrom(dataSource)
 					.type(SimpleDriverDataSource.class);
-				applyConnectionDetails(connectionDetails, builder);
+				applyCommonBuilderProperties(properties, builder);
 				return builder.build();
 			}
 			Assert.state(dataSource != null, "Flyway migration DataSource missing");
 			return dataSource;
 		}
 
-		private void applyConnectionDetails(JdbcConnectionDetails connectionDetails, DataSourceBuilder<?> builder) {
-			builder.username(connectionDetails.getUsername());
-			builder.password(connectionDetails.getPassword());
-			String driverClassName = connectionDetails.getDriverClassName();
-			if (StringUtils.hasText(driverClassName)) {
-				builder.driverClassName(driverClassName);
+		private void applyCommonBuilderProperties(FlywayProperties properties, DataSourceBuilder<?> builder) {
+			builder.username(properties.getUser());
+			builder.password(properties.getPassword());
+			if (StringUtils.hasText(properties.getDriverClassName())) {
+				builder.driverClassName(properties.getDriverClassName());
 			}
 		}
 
@@ -266,7 +255,6 @@ public class FlywayAutoConfiguration {
 				.as((patterns) -> patterns.toArray(new String[0]))
 				.to(configuration::ignoreMigrationPatterns);
 			map.from(properties.getDetectEncoding()).to(configuration::detectEncoding);
-			map.from(properties.isExecuteInTransaction()).to(configuration::executeInTransaction);
 		}
 
 		private void configureSqlServerKerberosLoginFile(FluentConfiguration configuration,
@@ -384,11 +372,6 @@ public class FlywayAutoConfiguration {
 
 		}
 
-		@ConditionalOnBean(JdbcConnectionDetails.class)
-		private static final class JdbcConnectionDetailsCondition {
-
-		}
-
 		@ConditionalOnProperty(prefix = "spring.flyway", name = "url")
 		private static final class FlywayUrlCondition {
 
@@ -401,39 +384,6 @@ public class FlywayAutoConfiguration {
 		@Override
 		public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
 			hints.resources().registerPattern("db/migration/*");
-		}
-
-	}
-
-	/**
-	 * Adapts {@link FlywayProperties} to {@link JdbcConnectionDetails}.
-	 */
-	private static final class FlywayPropertiesJdbcConnectionDetails implements JdbcConnectionDetails {
-
-		private final FlywayProperties properties;
-
-		private FlywayPropertiesJdbcConnectionDetails(FlywayProperties properties) {
-			this.properties = properties;
-		}
-
-		@Override
-		public String getUsername() {
-			return this.properties.getUser();
-		}
-
-		@Override
-		public String getPassword() {
-			return this.properties.getPassword();
-		}
-
-		@Override
-		public String getJdbcUrl() {
-			return this.properties.getUrl();
-		}
-
-		@Override
-		public String getDriverClassName() {
-			return this.properties.getDriverClassName();
 		}
 
 	}

@@ -26,6 +26,6 @@ import org.springframework.web.reactive.result.method.annotation.ResponseEntityE
  * @author Brian Clozel
  */
 @ControllerAdvice
-class ProblemDetailsExceptionHandler extends ResponseEntityExceptionHandler {
+final class ProblemDetailsExceptionHandler extends ResponseEntityExceptionHandler {
 
 }

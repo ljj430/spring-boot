@@ -34,7 +34,6 @@ import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
 import org.springframework.boot.context.properties.PropertyMapper;
 import org.springframework.boot.context.properties.source.MutuallyExclusiveConfigurationPropertiesException;
 import org.springframework.boot.convert.DurationUnit;
@@ -649,16 +648,6 @@ public class KafkaProperties {
 		private final Map<String, String> properties = new HashMap<>();
 
 		/**
-		 * The close timeout.
-		 */
-		private Duration closeTimeout;
-
-		/**
-		 * The operation timeout.
-		 */
-		private Duration operationTimeout;
-
-		/**
 		 * Whether to fail fast if the broker is not available on startup.
 		 */
 		private boolean failFast;
@@ -667,12 +656,6 @@ public class KafkaProperties {
 		 * Whether to enable modification of existing topic configuration.
 		 */
 		private boolean modifyTopicConfigs;
-
-		/**
-		 * Whether to automatically create topics during context initialization. When set
-		 * to false, disables automatic topic creation during context initialization.
-		 */
-		private boolean autoCreate = true;
 
 		public Ssl getSsl() {
 			return this.ssl;
@@ -690,22 +673,6 @@ public class KafkaProperties {
 			this.clientId = clientId;
 		}
 
-		public Duration getCloseTimeout() {
-			return this.closeTimeout;
-		}
-
-		public void setCloseTimeout(Duration closeTimeout) {
-			this.closeTimeout = closeTimeout;
-		}
-
-		public Duration getOperationTimeout() {
-			return this.operationTimeout;
-		}
-
-		public void setOperationTimeout(Duration operationTimeout) {
-			this.operationTimeout = operationTimeout;
-		}
-
 		public boolean isFailFast() {
 			return this.failFast;
 		}
@@ -720,14 +687,6 @@ public class KafkaProperties {
 
 		public void setModifyTopicConfigs(boolean modifyTopicConfigs) {
 			this.modifyTopicConfigs = modifyTopicConfigs;
-		}
-
-		public boolean isAutoCreate() {
-			return this.autoCreate;
-		}
-
-		public void setAutoCreate(boolean autoCreate) {
-			this.autoCreate = autoCreate;
 		}
 
 		public Map<String, String> getProperties() {
@@ -774,11 +733,6 @@ public class KafkaProperties {
 		 * Maximum memory size to be used for buffering across all threads.
 		 */
 		private DataSize cacheMaxSizeBuffering;
-
-		/**
-		 * Maximum size of the in-memory state store cache across all threads.
-		 */
-		private DataSize stateStoreCacheMaxSize;
 
 		/**
 		 * ID to pass to the server when making requests. Used for server-side logging.
@@ -837,23 +791,12 @@ public class KafkaProperties {
 			this.bootstrapServers = bootstrapServers;
 		}
 
-		@DeprecatedConfigurationProperty(replacement = "spring.kafka.streams.state-store-cache-max-size")
-		@Deprecated(since = "3.1.0", forRemoval = true)
 		public DataSize getCacheMaxSizeBuffering() {
 			return this.cacheMaxSizeBuffering;
 		}
 
-		@Deprecated(since = "3.1.0", forRemoval = true)
 		public void setCacheMaxSizeBuffering(DataSize cacheMaxSizeBuffering) {
 			this.cacheMaxSizeBuffering = cacheMaxSizeBuffering;
-		}
-
-		public DataSize getStateStoreCacheMaxSize() {
-			return this.stateStoreCacheMaxSize;
-		}
-
-		public void setStateStoreCacheMaxSize(DataSize stateStoreCacheMaxSize) {
-			this.stateStoreCacheMaxSize = stateStoreCacheMaxSize;
 		}
 
 		public String getClientId() {
@@ -892,9 +835,6 @@ public class KafkaProperties {
 			map.from(this::getCacheMaxSizeBuffering)
 				.asInt(DataSize::toBytes)
 				.to(properties.in("cache.max.bytes.buffering"));
-			map.from(this::getStateStoreCacheMaxSize)
-				.asInt(DataSize::toBytes)
-				.to(properties.in("statestore.cache.max.bytes"));
 			map.from(this::getClientId).to(properties.in(CommonClientConfigs.CLIENT_ID_CONFIG));
 			map.from(this::getReplicationFactor).to(properties.in("replication.factor"));
 			map.from(this::getStateDir).to(properties.in("state.dir"));
@@ -1038,11 +978,6 @@ public class KafkaProperties {
 		 */
 		private boolean immediateStop = false;
 
-		/**
-		 * Whether to auto start the container.
-		 */
-		private boolean autoStartup = true;
-
 		public Type getType() {
 			return this.type;
 		}
@@ -1169,14 +1104,6 @@ public class KafkaProperties {
 
 		public void setImmediateStop(boolean immediateStop) {
 			this.immediateStop = immediateStop;
-		}
-
-		public boolean isAutoStartup() {
-			return this.autoStartup;
-		}
-
-		public void setAutoStartup(boolean autoStartup) {
-			this.autoStartup = autoStartup;
 		}
 
 	}
