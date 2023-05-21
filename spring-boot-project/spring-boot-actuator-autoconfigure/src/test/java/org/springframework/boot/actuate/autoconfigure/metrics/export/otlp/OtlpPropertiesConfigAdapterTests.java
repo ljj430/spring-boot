@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package org.springframework.boot.actuate.autoconfigure.metrics.export.otlp;
 
 import java.util.Map;
 
-import io.micrometer.registry.otlp.AggregationTemporality;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,33 +37,11 @@ class OtlpPropertiesConfigAdapterTests {
 	}
 
 	@Test
-	void whenPropertiesAggregationTemporalityIsNotSetAdapterAggregationTemporalityReturnsCumulative() {
-		OtlpProperties properties = new OtlpProperties();
-		assertThat(new OtlpPropertiesConfigAdapter(properties).aggregationTemporality())
-			.isSameAs(AggregationTemporality.CUMULATIVE);
-	}
-
-	@Test
-	void whenPropertiesAggregationTemporalityIsSetAdapterAggregationTemporalityReturnsIt() {
-		OtlpProperties properties = new OtlpProperties();
-		properties.setAggregationTemporality(AggregationTemporality.DELTA);
-		assertThat(new OtlpPropertiesConfigAdapter(properties).aggregationTemporality())
-			.isSameAs(AggregationTemporality.DELTA);
-	}
-
-	@Test
 	void whenPropertiesResourceAttributesIsSetAdapterResourceAttributesReturnsIt() {
 		OtlpProperties properties = new OtlpProperties();
 		properties.setResourceAttributes(Map.of("service.name", "boot-service"));
 		assertThat(new OtlpPropertiesConfigAdapter(properties).resourceAttributes()).containsEntry("service.name",
 				"boot-service");
-	}
-
-	@Test
-	void whenPropertiesHeadersIsSetAdapterHeadersReturnsIt() {
-		OtlpProperties properties = new OtlpProperties();
-		properties.setHeaders(Map.of("header", "value"));
-		assertThat(new OtlpPropertiesConfigAdapter(properties).headers()).containsEntry("header", "value");
 	}
 
 }

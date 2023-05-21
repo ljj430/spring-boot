@@ -41,7 +41,6 @@ import static org.mockito.BDDMockito.then;
  * Tests for {@link FilterRegistrationBean}.
  *
  * @author Phillip Webb
- * @author Moritz Halbritter
  */
 class FilterRegistrationBeanTests extends AbstractFilterRegistrationBeanTests {
 
@@ -59,7 +58,6 @@ class FilterRegistrationBeanTests extends AbstractFilterRegistrationBeanTests {
 
 	@Test
 	void setFilter() throws Exception {
-		given(this.servletContext.addFilter(anyString(), any(Filter.class))).willReturn(this.registration);
 		FilterRegistrationBean<Filter> bean = new FilterRegistrationBean<>();
 		bean.setFilter(this.filter);
 		bean.onStartup(this.servletContext);

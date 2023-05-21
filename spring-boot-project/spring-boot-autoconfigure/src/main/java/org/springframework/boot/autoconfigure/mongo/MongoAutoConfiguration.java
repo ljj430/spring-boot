@@ -46,12 +46,6 @@ import org.springframework.context.annotation.Configuration;
 public class MongoAutoConfiguration {
 
 	@Bean
-	@ConditionalOnMissingBean(MongoConnectionDetails.class)
-	PropertiesMongoConnectionDetails mongoConnectionDetails(MongoProperties properties) {
-		return new PropertiesMongoConnectionDetails(properties);
-	}
-
-	@Bean
 	@ConditionalOnMissingBean(MongoClient.class)
 	public MongoClient mongo(ObjectProvider<MongoClientSettingsBuilderCustomizer> builderCustomizers,
 			MongoClientSettings settings) {
@@ -68,10 +62,8 @@ public class MongoAutoConfiguration {
 		}
 
 		@Bean
-		StandardMongoClientSettingsBuilderCustomizer standardMongoSettingsCustomizer(MongoProperties properties,
-				MongoConnectionDetails connectionDetails) {
-			return new StandardMongoClientSettingsBuilderCustomizer(connectionDetails.getConnectionString(),
-					properties.getUuidRepresentation());
+		MongoPropertiesClientSettingsBuilderCustomizer mongoPropertiesCustomizer(MongoProperties properties) {
+			return new MongoPropertiesClientSettingsBuilderCustomizer(properties);
 		}
 
 	}
