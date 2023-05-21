@@ -67,7 +67,7 @@ class Saml2RelyingPartyPropertiesTests {
 			.get("simplesamlphp")
 			.getAssertingparty()
 			.getSinglesignon()
-			.getSignRequest()).isEqualTo(false);
+			.isSignRequest()).isFalse();
 	}
 
 	@Test
@@ -90,6 +90,16 @@ class Saml2RelyingPartyPropertiesTests {
 				"https://idp.example.org/metadata");
 		assertThat(this.properties.getRegistration().get("simplesamlphp").getAssertingparty().getMetadataUri())
 			.isEqualTo("https://idp.example.org/metadata");
+	}
+
+	@Test
+	void customizeSsoSignRequestsIsTrueByDefault() {
+		this.properties.getRegistration().put("simplesamlphp", new Saml2RelyingPartyProperties.Registration());
+		assertThat(this.properties.getRegistration()
+			.get("simplesamlphp")
+			.getAssertingparty()
+			.getSinglesignon()
+			.isSignRequest()).isTrue();
 	}
 
 	private void bind(String name, String value) {

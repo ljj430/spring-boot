@@ -22,7 +22,6 @@ import java.util.Map;
 import org.assertj.core.util.Throwables;
 import org.junit.jupiter.api.Test;
 
-import org.springframework.boot.context.properties.IncompatibleConfigurationException;
 import org.springframework.boot.context.properties.bind.BindException;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
@@ -60,24 +59,6 @@ class WebMvcPropertiesTests {
 		assertThatExceptionOfType(BindException.class).isThrownBy(() -> bind("spring.mvc.servlet.path", "/*"))
 			.withRootCauseInstanceOf(IllegalArgumentException.class)
 			.satisfies((ex) -> assertThat(Throwables.getRootCause(ex)).hasMessage("Path must not contain wildcards"));
-	}
-
-	@Test
-	@SuppressWarnings("deprecation")
-	void incompatiblePathMatchSuffixConfig() {
-		this.properties.getPathmatch().setMatchingStrategy(WebMvcProperties.MatchingStrategy.PATH_PATTERN_PARSER);
-		this.properties.getPathmatch().setUseSuffixPattern(true);
-		assertThatExceptionOfType(IncompatibleConfigurationException.class)
-			.isThrownBy(this.properties::checkConfiguration);
-	}
-
-	@Test
-	@SuppressWarnings("deprecation")
-	void incompatiblePathMatchRegisteredSuffixConfig() {
-		this.properties.getPathmatch().setMatchingStrategy(WebMvcProperties.MatchingStrategy.PATH_PATTERN_PARSER);
-		this.properties.getPathmatch().setUseRegisteredSuffixPattern(true);
-		assertThatExceptionOfType(IncompatibleConfigurationException.class)
-			.isThrownBy(this.properties::checkConfiguration);
 	}
 
 	private void bind(String name, String value) {

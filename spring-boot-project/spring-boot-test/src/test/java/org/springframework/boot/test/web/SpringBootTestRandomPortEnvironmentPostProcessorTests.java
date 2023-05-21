@@ -39,7 +39,7 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
  */
 class SpringBootTestRandomPortEnvironmentPostProcessorTests {
 
-	private SpringBootTestRandomPortEnvironmentPostProcessor postProcessor = new SpringBootTestRandomPortEnvironmentPostProcessor();
+	private final SpringBootTestRandomPortEnvironmentPostProcessor postProcessor = new SpringBootTestRandomPortEnvironmentPostProcessor();
 
 	private MockEnvironment environment;
 
@@ -106,7 +106,7 @@ class SpringBootTestRandomPortEnvironmentPostProcessorTests {
 		this.propertySources.addLast(otherSource);
 		this.postProcessor.postProcessEnvironment(this.environment, null);
 		assertThat(this.environment.getProperty("server.port")).isEqualTo("0");
-		assertThat(this.environment.getProperty("management.server.port")).isEqualTo("");
+		assertThat(this.environment.getProperty("management.server.port")).isEmpty();
 	}
 
 	@Test
@@ -118,7 +118,7 @@ class SpringBootTestRandomPortEnvironmentPostProcessorTests {
 			.addLast(new MapPropertySource("other", Collections.singletonMap("management.server.port", "8080")));
 		this.postProcessor.postProcessEnvironment(this.environment, null);
 		assertThat(this.environment.getProperty("server.port")).isEqualTo("0");
-		assertThat(this.environment.getProperty("management.server.port")).isEqualTo("");
+		assertThat(this.environment.getProperty("management.server.port")).isEmpty();
 	}
 
 	@Test

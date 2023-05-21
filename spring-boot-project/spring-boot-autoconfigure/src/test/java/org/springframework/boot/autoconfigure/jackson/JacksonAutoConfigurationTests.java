@@ -23,6 +23,7 @@ import java.time.Duration;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonCreator.Mode;
@@ -38,6 +39,7 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies.SnakeCaseStrategy;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.SerializerProvider;
@@ -50,11 +52,18 @@ import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 
+import org.springframework.aot.hint.RuntimeHints;
+import org.springframework.aot.hint.predicate.ReflectionHintsPredicates;
+import org.springframework.aot.hint.predicate.RuntimeHintsPredicates;
+import org.springframework.beans.factory.BeanCurrentlyInCreationException;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.http.HttpMessageConvertersAutoConfiguration;
+import org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration.JacksonAutoConfigurationRuntimeHints;
 import org.springframework.boot.jackson.JsonComponent;
+import org.springframework.boot.jackson.JsonMixin;
 import org.springframework.boot.jackson.JsonMixinModule;
+import org.springframework.boot.jackson.JsonMixinModuleEntries;
 import org.springframework.boot.jackson.JsonObjectSerializer;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
@@ -65,6 +74,7 @@ import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.entry;
 import static org.mockito.Mockito.mock;
 
 /**
@@ -77,6 +87,7 @@ import static org.mockito.Mockito.mock;
  * @author Sebastien Deleuze
  * @author Johannes Edmeier
  * @author Grzegorz Poznachowski
+ * @author Ralf Ueberfuhr
  */
 class JacksonAutoConfigurationTests {
 
@@ -96,10 +107,10 @@ class JacksonAutoConfigurationTests {
 	@Test
 	void jsonMixinModuleShouldBeAutoConfiguredWithBasePackages() {
 		this.contextRunner.withUserConfiguration(MixinConfiguration.class).run((context) -> {
-			assertThat(context).hasSingleBean(JsonMixinModule.class);
-			JsonMixinModule module = context.getBean(JsonMixinModule.class);
-			assertThat(module).extracting("basePackages", InstanceOfAssertFactories.list(String.class))
-				.containsExactly(MixinConfiguration.class.getPackage().getName());
+			assertThat(context).hasSingleBean(JsonMixinModule.class).hasSingleBean(JsonMixinModuleEntries.class);
+			JsonMixinModuleEntries moduleEntries = context.getBean(JsonMixinModuleEntries.class);
+			assertThat(moduleEntries).extracting("entries", InstanceOfAssertFactories.MAP)
+				.contains(entry(Person.class, EmptyMixin.class));
 		});
 	}
 
@@ -442,6 +453,29 @@ class JacksonAutoConfigurationTests {
 		});
 	}
 
+	@Test
+	void jsonComponentThatInjectsObjectMapperCausesBeanCurrentlyInCreationException() {
+		this.contextRunner.withUserConfiguration(CircularDependencySerializerConfiguration.class).run((context) -> {
+			assertThat(context).hasFailed();
+			assertThat(context).getFailure().hasRootCauseInstanceOf(BeanCurrentlyInCreationException.class);
+		});
+	}
+
+	@Test
+	void shouldRegisterPropertyNamingStrategyHints() {
+		shouldRegisterPropertyNamingStrategyHints(PropertyNamingStrategies.class, "LOWER_CAMEL_CASE",
+				"UPPER_CAMEL_CASE", "SNAKE_CASE", "UPPER_SNAKE_CASE", "LOWER_CASE", "KEBAB_CASE", "LOWER_DOT_CASE");
+	}
+
+	private void shouldRegisterPropertyNamingStrategyHints(Class<?> type, String... fieldNames) {
+		RuntimeHints hints = new RuntimeHints();
+		new JacksonAutoConfigurationRuntimeHints().registerHints(hints, getClass().getClassLoader());
+		ReflectionHintsPredicates reflection = RuntimeHintsPredicates.reflection();
+		Stream.of(fieldNames)
+			.map((name) -> reflection.onField(type, name))
+			.forEach((predicate) -> assertThat(predicate).accepts(hints));
+	}
+
 	private void assertParameterNamesModuleCreatorBinding(Mode expectedMode, Class<?>... configClasses) {
 		this.contextRunner.withUserConfiguration(configClasses).run((context) -> {
 			DeserializationConfig deserializationConfig = context.getBean(ObjectMapper.class)
@@ -490,7 +524,7 @@ class JacksonAutoConfigurationTests {
 		@Bean
 		Module jacksonModule() {
 			SimpleModule module = new SimpleModule();
-			module.addSerializer(Foo.class, new JsonSerializer<Foo>() {
+			module.addSerializer(Foo.class, new JsonSerializer<>() {
 
 				@Override
 				public void serialize(Foo value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
@@ -603,7 +637,7 @@ class JacksonAutoConfigurationTests {
 
 	static class CustomModule extends SimpleModule {
 
-		private Set<ObjectCodec> owners = new HashSet<>();
+		private final Set<ObjectCodec> owners = new HashSet<>();
 
 		@Override
 		public void setupModule(SetupContext context) {
@@ -644,8 +678,33 @@ class JacksonAutoConfigurationTests {
 
 	}
 
+	@JsonMixin(type = Person.class)
+	static class EmptyMixin {
+
+	}
+
 	@AutoConfigurationPackage
 	static class MixinConfiguration {
+
+	}
+
+	@JsonComponent
+	static class CircularDependencySerializer extends JsonSerializer<String> {
+
+		CircularDependencySerializer(ObjectMapper objectMapper) {
+
+		}
+
+		@Override
+		public void serialize(String value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+
+		}
+
+	}
+
+	@Import(CircularDependencySerializer.class)
+	@Configuration(proxyBeanMethods = false)
+	static class CircularDependencySerializerConfiguration {
 
 	}
 
