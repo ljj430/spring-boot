@@ -16,11 +16,9 @@
 
 package org.springframework.boot.actuate.autoconfigure.web.server;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.BeanFactoryUtils;
 import org.springframework.beans.factory.ListableBeanFactory;
@@ -77,21 +75,15 @@ public abstract class ManagementWebServerFactoryCustomizer<T extends Configurabl
 	}
 
 	private void customizeSameAsParentContext(T factory) {
-		List<WebServerFactoryCustomizer<?>> customizers = Arrays.stream(this.customizerClasses)
-			.map(this::getCustomizer)
-			.filter(Objects::nonNull)
-			.collect(Collectors.toList());
+		List<WebServerFactoryCustomizer<?>> customizers = new ArrayList<>();
+		for (Class<? extends WebServerFactoryCustomizer<?>> customizerClass : this.customizerClasses) {
+			try {
+				customizers.add(BeanFactoryUtils.beanOfTypeIncludingAncestors(this.beanFactory, customizerClass));
+			}
+			catch (NoSuchBeanDefinitionException ex) {
+			}
+		}
 		invokeCustomizers(factory, customizers);
-	}
-
-	private WebServerFactoryCustomizer<?> getCustomizer(
-			Class<? extends WebServerFactoryCustomizer<?>> customizerClass) {
-		try {
-			return BeanFactoryUtils.beanOfTypeIncludingAncestors(this.beanFactory, customizerClass);
-		}
-		catch (NoSuchBeanDefinitionException ex) {
-			return null;
-		}
 	}
 
 	@SuppressWarnings("unchecked")

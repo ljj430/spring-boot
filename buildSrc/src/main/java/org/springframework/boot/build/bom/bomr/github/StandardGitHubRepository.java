@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.HttpClientErrorException.Forbidden;
@@ -62,8 +61,8 @@ final class StandardGitHubRepository implements GitHubRepository {
 			return (Integer) response.getBody().get("number");
 		}
 		catch (RestClientException ex) {
-			if (ex instanceof Forbidden) {
-				System.out.println("Received 403 response with headers " + ((Forbidden) ex).getResponseHeaders());
+			if (ex instanceof Forbidden forbidden) {
+				System.out.println("Received 403 response with headers " + forbidden.getResponseHeaders());
 			}
 			throw ex;
 		}
@@ -92,8 +91,7 @@ final class StandardGitHubRepository implements GitHubRepository {
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private <T> List<T> get(String name, Function<Map<String, Object>, T> mapper) {
 		ResponseEntity<List> response = this.rest.getForEntity(name, List.class);
-		List<Map<String, Object>> body = response.getBody();
-		return body.stream().map(mapper).collect(Collectors.toList());
+		return ((List<Map<String, Object>>) response.getBody()).stream().map(mapper).toList();
 	}
 
 	private static void sleep(Duration duration) {

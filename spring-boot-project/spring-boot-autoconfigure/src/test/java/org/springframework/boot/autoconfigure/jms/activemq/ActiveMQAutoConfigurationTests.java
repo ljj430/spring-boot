@@ -16,8 +16,7 @@
 
 package org.springframework.boot.autoconfigure.jms.activemq;
 
-import javax.jms.ConnectionFactory;
-
+import jakarta.jms.ConnectionFactory;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.junit.jupiter.api.Test;
 import org.messaginghub.pooled.jms.JmsPoolConnectionFactory;
@@ -48,14 +47,14 @@ class ActiveMQAutoConfigurationTests {
 		.withConfiguration(AutoConfigurations.of(ActiveMQAutoConfiguration.class, JmsAutoConfiguration.class));
 
 	@Test
-	void brokerIsEmbeddedByDefault() {
+	void brokerIsLocalhostByDefault() {
 		this.contextRunner.withUserConfiguration(EmptyConfiguration.class).run((context) -> {
 			assertThat(context).hasSingleBean(CachingConnectionFactory.class).hasBean("jmsConnectionFactory");
 			CachingConnectionFactory connectionFactory = context.getBean(CachingConnectionFactory.class);
 			assertThat(context.getBean("jmsConnectionFactory")).isSameAs(connectionFactory);
 			assertThat(connectionFactory.getTargetConnectionFactory()).isInstanceOf(ActiveMQConnectionFactory.class);
 			assertThat(((ActiveMQConnectionFactory) connectionFactory.getTargetConnectionFactory()).getBrokerURL())
-				.isEqualTo("vm://localhost?broker.persistent=false");
+				.isEqualTo("tcp://localhost:61616");
 		});
 	}
 

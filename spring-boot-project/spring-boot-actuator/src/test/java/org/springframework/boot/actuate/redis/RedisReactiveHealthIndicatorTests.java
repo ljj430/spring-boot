@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import org.springframework.boot.actuate.data.redis.RedisReactiveHealthIndicator;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.Status;
 import org.springframework.data.redis.RedisConnectionFailureException;
@@ -61,7 +62,7 @@ class RedisReactiveHealthIndicatorTests {
 		StepVerifier.create(health).consumeNextWith((h) -> {
 			assertThat(h.getStatus()).isEqualTo(Status.UP);
 			assertThat(h.getDetails()).containsOnlyKeys("version");
-			assertThat(h.getDetails().get("version")).isEqualTo("2.8.9");
+			assertThat(h.getDetails()).containsEntry("version", "2.8.9");
 		}).verifyComplete();
 		then(redisConnection).should().closeLater();
 	}
@@ -73,9 +74,9 @@ class RedisReactiveHealthIndicatorTests {
 		Mono<Health> health = healthIndicator.health();
 		StepVerifier.create(health).consumeNextWith((h) -> {
 			assertThat(h.getStatus()).isEqualTo(Status.UP);
-			assertThat(h.getDetails().get("cluster_size")).isEqualTo(4L);
-			assertThat(h.getDetails().get("slots_up")).isEqualTo(4L);
-			assertThat(h.getDetails().get("slots_fail")).isEqualTo(0L);
+			assertThat(h.getDetails()).containsEntry("cluster_size", 4L);
+			assertThat(h.getDetails()).containsEntry("slots_up", 4L);
+			assertThat(h.getDetails()).containsEntry("slots_fail", 0L);
 		}).verifyComplete();
 		then(redisConnectionFactory.getReactiveConnection()).should().closeLater();
 	}
@@ -87,9 +88,9 @@ class RedisReactiveHealthIndicatorTests {
 		Mono<Health> health = healthIndicator.health();
 		StepVerifier.create(health).consumeNextWith((h) -> {
 			assertThat(h.getStatus()).isEqualTo(Status.UP);
-			assertThat(h.getDetails().get("cluster_size")).isEqualTo(4L);
-			assertThat(h.getDetails().get("slots_up")).isEqualTo(4L);
-			assertThat(h.getDetails().get("slots_fail")).isEqualTo(0L);
+			assertThat(h.getDetails()).containsEntry("cluster_size", 4L);
+			assertThat(h.getDetails()).containsEntry("slots_up", 4L);
+			assertThat(h.getDetails()).containsEntry("slots_fail", 0L);
 		}).verifyComplete();
 	}
 
@@ -100,8 +101,8 @@ class RedisReactiveHealthIndicatorTests {
 		Mono<Health> health = healthIndicator.health();
 		StepVerifier.create(health).consumeNextWith((h) -> {
 			assertThat(h.getStatus()).isEqualTo(Status.DOWN);
-			assertThat(h.getDetails().get("slots_up")).isEqualTo(3L);
-			assertThat(h.getDetails().get("slots_fail")).isEqualTo(1L);
+			assertThat(h.getDetails()).containsEntry("slots_up", 3L);
+			assertThat(h.getDetails()).containsEntry("slots_fail", 1L);
 		}).verifyComplete();
 	}
 

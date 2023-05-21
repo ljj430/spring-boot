@@ -25,6 +25,7 @@ import io.micrometer.core.instrument.Tag;
 import org.springframework.boot.actuate.metrics.http.Outcome;
 import org.springframework.http.HttpRequest;
 import org.springframework.http.client.ClientHttpResponse;
+import org.springframework.http.client.observation.DefaultClientRequestObservationConvention;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 
@@ -37,7 +38,10 @@ import org.springframework.web.client.RestTemplate;
  * @author Nishant Raut
  * @author Brian Clozel
  * @since 2.0.0
+ * @deprecated since 3.0.0 for removal in 3.2.0 in favor of
+ * {@link DefaultClientRequestObservationConvention}
  */
+@Deprecated(since = "3.0.0", forRemoval = true)
 public final class RestTemplateExchangeTags {
 
 	private static final Pattern STRIP_URI_PATTERN = Pattern.compile("^https?://[^/]+/");
@@ -84,7 +88,7 @@ public final class RestTemplateExchangeTags {
 
 	/**
 	 * Creates a {@code status} {@code Tag} derived from the
-	 * {@link ClientHttpResponse#getRawStatusCode() status} of the given {@code response}.
+	 * {@link ClientHttpResponse#getStatusCode() status} of the given {@code response}.
 	 * @param response the response
 	 * @return the status tag
 	 */
@@ -97,7 +101,7 @@ public final class RestTemplateExchangeTags {
 			if (response == null) {
 				return "CLIENT_ERROR";
 			}
-			return String.valueOf(response.getRawStatusCode());
+			return String.valueOf(response.getStatusCode().value());
 		}
 		catch (IOException ex) {
 			return "IO_ERROR";
@@ -120,7 +124,7 @@ public final class RestTemplateExchangeTags {
 
 	/**
 	 * Creates an {@code outcome} {@code Tag} derived from the
-	 * {@link ClientHttpResponse#getRawStatusCode() status} of the given {@code response}.
+	 * {@link ClientHttpResponse#getStatusCode() status} of the given {@code response}.
 	 * @param response the response
 	 * @return the outcome tag
 	 * @since 2.2.0
@@ -128,7 +132,7 @@ public final class RestTemplateExchangeTags {
 	public static Tag outcome(ClientHttpResponse response) {
 		try {
 			if (response != null) {
-				return Outcome.forStatus(response.getRawStatusCode()).asTag();
+				return Outcome.forStatus(response.getStatusCode().value()).asTag();
 			}
 		}
 		catch (IOException ex) {

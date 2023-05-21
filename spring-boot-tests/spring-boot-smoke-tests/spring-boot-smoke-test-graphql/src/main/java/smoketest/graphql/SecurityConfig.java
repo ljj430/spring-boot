@@ -18,7 +18,7 @@ package smoketest.graphql;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.userdetails.User;
@@ -30,7 +30,7 @@ import static org.springframework.security.config.Customizer.withDefaults;
 
 @Configuration(proxyBeanMethods = false)
 @EnableWebSecurity
-@EnableGlobalMethodSecurity(prePostEnabled = true)
+@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
 	@Bean
@@ -38,7 +38,7 @@ public class SecurityConfig {
 		return http.csrf((csrf) -> csrf.disable())
 			// Demonstrate that method security works
 			// Best practice to use both for defense in depth
-			.authorizeRequests((requests) -> requests.anyRequest().permitAll())
+			.authorizeHttpRequests((requests) -> requests.anyRequest().permitAll())
 			.httpBasic(withDefaults())
 			.build();
 	}
