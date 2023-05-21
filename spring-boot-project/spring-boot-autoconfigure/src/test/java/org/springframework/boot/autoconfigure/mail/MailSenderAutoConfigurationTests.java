@@ -18,9 +18,9 @@ package org.springframework.boot.autoconfigure.mail;
 
 import java.util.Properties;
 
+import javax.mail.Session;
 import javax.naming.Context;
 
-import jakarta.mail.Session;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -114,7 +114,7 @@ class MailSenderAutoConfigurationTests {
 			.run((context) -> {
 				assertThat(context).hasSingleBean(JavaMailSenderImpl.class);
 				JavaMailSenderImpl mailSender = context.getBean(JavaMailSenderImpl.class);
-				assertThat(mailSender.getJavaMailProperties()).containsEntry("mail.smtp.auth", "true");
+				assertThat(mailSender.getJavaMailProperties().get("mail.smtp.auth")).isEqualTo("true");
 			});
 	}
 

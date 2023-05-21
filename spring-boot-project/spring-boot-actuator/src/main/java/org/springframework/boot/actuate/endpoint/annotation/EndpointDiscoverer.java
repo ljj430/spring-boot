@@ -100,7 +100,7 @@ public abstract class EndpointDiscoverer<E extends ExposableEndpoint<O>, O exten
 
 	private DiscoveredOperationsFactory<O> getOperationsFactory(ParameterValueMapper parameterValueMapper,
 			Collection<OperationInvokerAdvisor> invokerAdvisors) {
-		return new DiscoveredOperationsFactory<>(parameterValueMapper, invokerAdvisors) {
+		return new DiscoveredOperationsFactory<O>(parameterValueMapper, invokerAdvisors) {
 
 			@Override
 			protected O createOperation(EndpointId endpointId, DiscoveredOperationMethod operationMethod,
@@ -201,7 +201,11 @@ public abstract class EndpointDiscoverer<E extends ExposableEndpoint<O>, O exten
 			addOperations(indexed, id, extensionBean.getBean(), true);
 		}
 		assertNoDuplicateOperations(endpointBean, indexed);
-		List<O> operations = indexed.values().stream().map(this::getLast).filter(Objects::nonNull).toList();
+		List<O> operations = indexed.values()
+			.stream()
+			.map(this::getLast)
+			.filter(Objects::nonNull)
+			.collect(Collectors.collectingAndThen(Collectors.toList(), Collections::unmodifiableList));
 		return createEndpoint(endpointBean.getBean(), id, endpointBean.isEnabledByDefault(), operations);
 	}
 
@@ -228,7 +232,7 @@ public abstract class EndpointDiscoverer<E extends ExposableEndpoint<O>, O exten
 			.stream()
 			.filter((entry) -> entry.getValue().size() > 1)
 			.map(Map.Entry::getKey)
-			.toList();
+			.collect(Collectors.toList());
 		if (!duplicates.isEmpty()) {
 			Set<ExtensionBean> extensions = endpointBean.getExtensions();
 			String extensionBeanNames = extensions.stream()
@@ -409,11 +413,11 @@ public abstract class EndpointDiscoverer<E extends ExposableEndpoint<O>, O exten
 
 		private final EndpointId id;
 
-		private final boolean enabledByDefault;
+		private boolean enabledByDefault;
 
 		private final Class<?> filter;
 
-		private final Set<ExtensionBean> extensions = new LinkedHashSet<>();
+		private Set<ExtensionBean> extensions = new LinkedHashSet<>();
 
 		EndpointBean(Environment environment, String beanName, Class<?> beanType, Supplier<Object> beanSupplier) {
 			MergedAnnotation<Endpoint> annotation = MergedAnnotations.from(beanType, SearchStrategy.TYPE_HIERARCHY)

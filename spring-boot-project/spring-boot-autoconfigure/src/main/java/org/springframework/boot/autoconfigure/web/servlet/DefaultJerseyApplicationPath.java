@@ -16,7 +16,8 @@
 
 package org.springframework.boot.autoconfigure.web.servlet;
 
-import jakarta.ws.rs.ApplicationPath;
+import javax.ws.rs.ApplicationPath;
+
 import org.glassfish.jersey.server.ResourceConfig;
 
 import org.springframework.boot.autoconfigure.jersey.JerseyProperties;

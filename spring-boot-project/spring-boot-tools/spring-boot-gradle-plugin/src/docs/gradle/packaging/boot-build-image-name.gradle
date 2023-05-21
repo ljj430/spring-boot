@@ -11,6 +11,6 @@ tasks.named("bootBuildImage") {
 
 tasks.register("bootBuildImageName") {
 	doFirst {
-		println(tasks.bootBuildImage.imageName.get())
+		println(tasks.bootBuildImage.imageName)
 	}
 }

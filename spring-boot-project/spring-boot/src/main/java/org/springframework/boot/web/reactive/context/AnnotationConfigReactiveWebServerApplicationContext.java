@@ -23,6 +23,9 @@ import java.util.Set;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.support.BeanNameGenerator;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.boot.ApplicationContextFactory;
+import org.springframework.boot.WebApplicationType;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.AnnotatedBeanDefinitionReader;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigRegistry;
@@ -207,6 +210,30 @@ public class AnnotationConfigReactiveWebServerApplicationContext extends Reactiv
 		if (!this.annotatedClasses.isEmpty()) {
 			this.reader.register(ClassUtils.toClassArray(this.annotatedClasses));
 		}
+	}
+
+	/**
+	 * {@link ApplicationContextFactory} registered in {@code spring.factories} to support
+	 * {@link AnnotationConfigReactiveWebServerApplicationContext}.
+	 */
+	static class Factory implements ApplicationContextFactory {
+
+		@Override
+		public Class<? extends ConfigurableEnvironment> getEnvironmentType(WebApplicationType webApplicationType) {
+			return (webApplicationType != WebApplicationType.REACTIVE) ? null : ApplicationReactiveWebEnvironment.class;
+		}
+
+		@Override
+		public ConfigurableEnvironment createEnvironment(WebApplicationType webApplicationType) {
+			return (webApplicationType != WebApplicationType.REACTIVE) ? null : new ApplicationReactiveWebEnvironment();
+		}
+
+		@Override
+		public ConfigurableApplicationContext create(WebApplicationType webApplicationType) {
+			return (webApplicationType != WebApplicationType.REACTIVE) ? null
+					: new AnnotationConfigReactiveWebServerApplicationContext();
+		}
+
 	}
 
 }

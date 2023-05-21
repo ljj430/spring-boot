@@ -457,11 +457,11 @@ class DockerApiTests {
 			given(http().post(eq(createUri), eq("application/json"), any()))
 				.willReturn(responseOf("create-container-response.json"));
 			ContainerReference containerReference = this.api.create(config);
-			assertThat(containerReference).hasToString("e90e34656806");
+			assertThat(containerReference.toString()).isEqualTo("e90e34656806");
 			then(http()).should().post(any(), any(), this.writer.capture());
 			ByteArrayOutputStream out = new ByteArrayOutputStream();
 			this.writer.getValue().accept(out);
-			assertThat(out.toByteArray()).hasSize(config.toString().length());
+			assertThat(out.toByteArray().length).isEqualTo(config.toString().length());
 		}
 
 		@Test
@@ -479,11 +479,11 @@ class DockerApiTests {
 			URI uploadUri = new URI(CONTAINERS_URL + "/e90e34656806/archive?path=%2F");
 			given(http().put(eq(uploadUri), eq("application/x-tar"), any())).willReturn(emptyResponse());
 			ContainerReference containerReference = this.api.create(config, content);
-			assertThat(containerReference).hasToString("e90e34656806");
+			assertThat(containerReference.toString()).isEqualTo("e90e34656806");
 			then(http()).should().post(any(), any(), this.writer.capture());
 			ByteArrayOutputStream out = new ByteArrayOutputStream();
 			this.writer.getValue().accept(out);
-			assertThat(out.toByteArray()).hasSize(config.toString().length());
+			assertThat(out.toByteArray().length).isEqualTo(config.toString().length());
 			then(http()).should().put(any(), any(), this.writer.capture());
 			this.writer.getValue().accept(out);
 			assertThat(out.toByteArray()).hasSizeGreaterThan(2000);
@@ -541,7 +541,7 @@ class DockerApiTests {
 			URI waitUri = new URI(CONTAINERS_URL + "/e90e34656806/wait");
 			given(http().post(waitUri)).willReturn(responseOf("container-wait-response.json"));
 			ContainerStatus status = this.api.wait(reference);
-			assertThat(status.getStatusCode()).isOne();
+			assertThat(status.getStatusCode()).isEqualTo(1);
 		}
 
 		@Test

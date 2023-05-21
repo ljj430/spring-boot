@@ -1,4 +1,4 @@
-# ApplicationContext Initializers
+# Application Initializers
 org.springframework.context.ApplicationContextInitializer=\
 org.springframework.boot.devtools.restart.RestartScopeInitializer
 

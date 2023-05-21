@@ -16,6 +16,8 @@
 
 package org.springframework.boot.autoconfigure.data.mongo;
 
+import java.util.Set;
+
 import com.mongodb.reactivestreams.client.MongoClient;
 import org.junit.jupiter.api.Test;
 
@@ -31,7 +33,6 @@ import org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration;
 import org.springframework.boot.autoconfigure.mongo.MongoReactiveAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.domain.ManagedTypes;
 import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
 import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
 import org.springframework.data.mongodb.repository.config.EnableReactiveMongoRepositories;
@@ -58,8 +59,10 @@ class MongoReactiveRepositoriesAutoConfigurationTests {
 			assertThat(context).hasSingleBean(ReactiveCityRepository.class);
 			assertThat(context).hasSingleBean(MongoClient.class);
 			MongoMappingContext mappingContext = context.getBean(MongoMappingContext.class);
-			ManagedTypes managedTypes = (ManagedTypes) ReflectionTestUtils.getField(mappingContext, "managedTypes");
-			assertThat(managedTypes.toList()).hasSize(1);
+			@SuppressWarnings("unchecked")
+			Set<? extends Class<?>> entities = (Set<? extends Class<?>>) ReflectionTestUtils.getField(mappingContext,
+					"initialEntitySet");
+			assertThat(entities).hasSize(1);
 		});
 	}
 

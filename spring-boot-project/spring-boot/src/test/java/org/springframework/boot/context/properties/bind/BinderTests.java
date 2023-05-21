@@ -24,7 +24,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import jakarta.validation.Validation;
+import javax.validation.Validation;
+
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.mockito.invocation.InvocationOnMock;
@@ -260,7 +261,7 @@ class BinderTests {
 		DateTimeFormat annotation = AnnotationUtils.synthesizeAnnotation(
 				Collections.singletonMap("iso", DateTimeFormat.ISO.DATE_TIME), DateTimeFormat.class, null);
 		LocalDate result = this.binder.bind("foo", Bindable.of(LocalDate.class).withAnnotations(annotation)).get();
-		assertThat(result).hasToString("2014-04-01");
+		assertThat(result.toString()).isEqualTo("2014-04-01");
 	}
 
 	@Test
@@ -374,7 +375,7 @@ class BinderTests {
 
 		private String value;
 
-		private final List<String> items = Collections.emptyList();
+		private List<String> items = Collections.emptyList();
 
 		String getValue() {
 			return this.value;
@@ -408,7 +409,7 @@ class BinderTests {
 
 		private String value = "hello";
 
-		private final List<String> items = Collections.emptyList();
+		private List<String> items = Collections.emptyList();
 
 		String getValue() {
 			return this.value;

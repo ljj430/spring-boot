@@ -16,12 +16,11 @@
 
 package org.springframework.boot.build.testing;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 
-import org.gradle.api.DefaultTask;
 import org.gradle.api.services.BuildService;
 import org.gradle.api.services.BuildServiceParameters;
 import org.gradle.api.tasks.testing.Test;
@@ -37,12 +36,16 @@ import org.gradle.tooling.events.OperationCompletionListener;
 public abstract class TestResultsOverview
 		implements BuildService<BuildServiceParameters.None>, OperationCompletionListener, AutoCloseable {
 
-	private final Map<Test, List<TestFailure>> testFailures = new TreeMap<>(Comparator.comparing(DefaultTask::getPath));
+	private final Map<Test, List<TestFailure>> testFailures = new TreeMap<>(
+			(one, two) -> one.getPath().compareTo(two.getPath()));
 
 	private final Object monitor = new Object();
 
 	void addFailures(Test test, List<TestDescriptor> failureDescriptors) {
-		List<TestFailure> testFailures = failureDescriptors.stream().map(TestFailure::new).sorted().toList();
+		List<TestFailure> testFailures = failureDescriptors.stream()
+			.map(TestFailure::new)
+			.sorted()
+			.collect(Collectors.toList());
 		synchronized (this.monitor) {
 			this.testFailures.put(test, testFailures);
 		}
