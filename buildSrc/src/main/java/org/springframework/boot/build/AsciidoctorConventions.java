@@ -134,7 +134,7 @@ class AsciidoctorConventions {
 
 	private String determineGitHubTag(Project project) {
 		String version = "v" + project.getVersion();
-		return (version.endsWith("-SNAPSHOT")) ? "3.0.x" : version;
+		return (version.endsWith("-SNAPSHOT")) ? "main" : version;
 	}
 
 	private void configureOptions(AbstractAsciidoctorTask asciidoctorTask) {
