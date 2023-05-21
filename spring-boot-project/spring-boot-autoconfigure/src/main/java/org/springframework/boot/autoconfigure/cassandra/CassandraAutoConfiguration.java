@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import javax.net.ssl.SSLContext;
 
@@ -63,13 +64,10 @@ import org.springframework.core.io.Resource;
  * @author Stephane Nicoll
  * @author Steffen F. Qvistgaard
  * @author Ittay Stern
- * @author Moritz Halbritter
- * @author Andy Wilkinson
- * @author Phillip Webb
  * @since 1.3.0
  */
 @AutoConfiguration
-@ConditionalOnClass(CqlSession.class)
+@ConditionalOnClass({ CqlSession.class })
 @EnableConfigurationProperties(CassandraProperties.class)
 public class CassandraAutoConfiguration {
 
@@ -82,17 +80,6 @@ public class CassandraAutoConfiguration {
 		SPRING_BOOT_DEFAULTS = options.build();
 	}
 
-	private final CassandraProperties properties;
-
-	private final CassandraConnectionDetails connectionDetails;
-
-	CassandraAutoConfiguration(CassandraProperties properties,
-			ObjectProvider<CassandraConnectionDetails> connectionDetails) {
-		this.properties = properties;
-		this.connectionDetails = connectionDetails
-			.getIfAvailable(() -> new PropertiesCassandraConnectionDetails(properties));
-	}
-
 	@Bean
 	@ConditionalOnMissingBean
 	@Lazy
@@ -103,25 +90,24 @@ public class CassandraAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@Scope("prototype")
-	public CqlSessionBuilder cassandraSessionBuilder(DriverConfigLoader driverConfigLoader,
-			ObjectProvider<CqlSessionBuilderCustomizer> builderCustomizers) {
+	public CqlSessionBuilder cassandraSessionBuilder(CassandraProperties properties,
+			DriverConfigLoader driverConfigLoader, ObjectProvider<CqlSessionBuilderCustomizer> builderCustomizers) {
 		CqlSessionBuilder builder = CqlSession.builder().withConfigLoader(driverConfigLoader);
-		configureAuthentication(builder);
-		configureSsl(builder);
-		builder.withKeyspace(this.properties.getKeyspaceName());
+		configureAuthentication(properties, builder);
+		configureSsl(properties, builder);
+		builder.withKeyspace(properties.getKeyspaceName());
 		builderCustomizers.orderedStream().forEach((customizer) -> customizer.customize(builder));
 		return builder;
 	}
 
-	private void configureAuthentication(CqlSessionBuilder builder) {
-		String username = this.connectionDetails.getUsername();
-		if (username != null) {
-			builder.withAuthCredentials(username, this.connectionDetails.getPassword());
+	private void configureAuthentication(CassandraProperties properties, CqlSessionBuilder builder) {
+		if (properties.getUsername() != null) {
+			builder.withAuthCredentials(properties.getUsername(), properties.getPassword());
 		}
 	}
 
-	private void configureSsl(CqlSessionBuilder builder) {
-		if (this.connectionDetails instanceof PropertiesCassandraConnectionDetails && this.properties.isSsl()) {
+	private void configureSsl(CassandraProperties properties, CqlSessionBuilder builder) {
+		if (properties.isSsl()) {
 			try {
 				builder.withSslContext(SSLContext.getDefault());
 			}
@@ -133,20 +119,20 @@ public class CassandraAutoConfiguration {
 
 	@Bean(destroyMethod = "")
 	@ConditionalOnMissingBean
-	public DriverConfigLoader cassandraDriverConfigLoader(
+	public DriverConfigLoader cassandraDriverConfigLoader(CassandraProperties properties,
 			ObjectProvider<DriverConfigLoaderBuilderCustomizer> builderCustomizers) {
 		ProgrammaticDriverConfigLoaderBuilder builder = new DefaultProgrammaticDriverConfigLoaderBuilder(
-				() -> cassandraConfiguration(), DefaultDriverConfigLoader.DEFAULT_ROOT_PATH);
+				() -> cassandraConfiguration(properties), DefaultDriverConfigLoader.DEFAULT_ROOT_PATH);
 		builderCustomizers.orderedStream().forEach((customizer) -> customizer.customize(builder));
 		return builder.build();
 	}
 
-	private Config cassandraConfiguration() {
+	private Config cassandraConfiguration(CassandraProperties properties) {
 		ConfigFactory.invalidateCaches();
 		Config config = ConfigFactory.defaultOverrides();
-		config = config.withFallback(mapConfig());
-		if (this.properties.getConfig() != null) {
-			config = config.withFallback(loadConfig(this.properties.getConfig()));
+		config = config.withFallback(mapConfig(properties));
+		if (properties.getConfig() != null) {
+			config = config.withFallback(loadConfig(properties.getConfig()));
 		}
 		config = config.withFallback(SPRING_BOOT_DEFAULTS);
 		config = config.withFallback(ConfigFactory.defaultReferenceUnresolved());
@@ -162,32 +148,32 @@ public class CassandraAutoConfiguration {
 		}
 	}
 
-	private Config mapConfig() {
+	private Config mapConfig(CassandraProperties properties) {
 		CassandraDriverOptions options = new CassandraDriverOptions();
 		PropertyMapper map = PropertyMapper.get().alwaysApplyingWhenNonNull();
-		map.from(this.properties.getSessionName())
+		map.from(properties.getSessionName())
 			.whenHasText()
 			.to((sessionName) -> options.add(DefaultDriverOption.SESSION_NAME, sessionName));
-		map.from(this.connectionDetails.getUsername())
-			.to((value) -> options.add(DefaultDriverOption.AUTH_PROVIDER_USER_NAME, value)
-				.add(DefaultDriverOption.AUTH_PROVIDER_PASSWORD, this.connectionDetails.getPassword()));
-		map.from(this.properties::getCompression)
+		map.from(properties::getUsername)
+			.to((username) -> options.add(DefaultDriverOption.AUTH_PROVIDER_USER_NAME, username)
+				.add(DefaultDriverOption.AUTH_PROVIDER_PASSWORD, properties.getPassword()));
+		map.from(properties::getCompression)
 			.to((compression) -> options.add(DefaultDriverOption.PROTOCOL_COMPRESSION, compression));
-		mapConnectionOptions(options);
-		mapPoolingOptions(options);
-		mapRequestOptions(options);
-		mapControlConnectionOptions(options);
-		map.from(mapContactPoints())
+		mapConnectionOptions(properties, options);
+		mapPoolingOptions(properties, options);
+		mapRequestOptions(properties, options);
+		mapControlConnectionOptions(properties, options);
+		map.from(mapContactPoints(properties))
 			.to((contactPoints) -> options.add(DefaultDriverOption.CONTACT_POINTS, contactPoints));
-		map.from(this.connectionDetails.getLocalDatacenter())
+		map.from(properties.getLocalDatacenter())
 			.whenHasText()
 			.to((localDatacenter) -> options.add(DefaultDriverOption.LOAD_BALANCING_LOCAL_DATACENTER, localDatacenter));
 		return options.build();
 	}
 
-	private void mapConnectionOptions(CassandraDriverOptions options) {
+	private void mapConnectionOptions(CassandraProperties properties, CassandraDriverOptions options) {
 		PropertyMapper map = PropertyMapper.get().alwaysApplyingWhenNonNull();
-		Connection connectionProperties = this.properties.getConnection();
+		Connection connectionProperties = properties.getConnection();
 		map.from(connectionProperties::getConnectTimeout)
 			.asInt(Duration::toMillis)
 			.to((connectTimeout) -> options.add(DefaultDriverOption.CONNECTION_CONNECT_TIMEOUT, connectTimeout));
@@ -196,9 +182,9 @@ public class CassandraAutoConfiguration {
 			.to((initQueryTimeout) -> options.add(DefaultDriverOption.CONNECTION_INIT_QUERY_TIMEOUT, initQueryTimeout));
 	}
 
-	private void mapPoolingOptions(CassandraDriverOptions options) {
+	private void mapPoolingOptions(CassandraProperties properties, CassandraDriverOptions options) {
 		PropertyMapper map = PropertyMapper.get().alwaysApplyingWhenNonNull();
-		CassandraProperties.Pool poolProperties = this.properties.getPool();
+		CassandraProperties.Pool poolProperties = properties.getPool();
 		map.from(poolProperties::getIdleTimeout)
 			.asInt(Duration::toMillis)
 			.to((idleTimeout) -> options.add(DefaultDriverOption.HEARTBEAT_TIMEOUT, idleTimeout));
@@ -207,9 +193,9 @@ public class CassandraAutoConfiguration {
 			.to((heartBeatInterval) -> options.add(DefaultDriverOption.HEARTBEAT_INTERVAL, heartBeatInterval));
 	}
 
-	private void mapRequestOptions(CassandraDriverOptions options) {
+	private void mapRequestOptions(CassandraProperties properties, CassandraDriverOptions options) {
 		PropertyMapper map = PropertyMapper.get().alwaysApplyingWhenNonNull();
-		Request requestProperties = this.properties.getRequest();
+		Request requestProperties = properties.getRequest();
 		map.from(requestProperties::getTimeout)
 			.asInt(Duration::toMillis)
 			.to(((timeout) -> options.add(DefaultDriverOption.REQUEST_TIMEOUT, timeout)));
@@ -236,19 +222,40 @@ public class CassandraAutoConfiguration {
 			.to((drainInterval) -> options.add(DefaultDriverOption.REQUEST_THROTTLER_DRAIN_INTERVAL, drainInterval));
 	}
 
-	private void mapControlConnectionOptions(CassandraDriverOptions options) {
+	private void mapControlConnectionOptions(CassandraProperties properties, CassandraDriverOptions options) {
 		PropertyMapper map = PropertyMapper.get().alwaysApplyingWhenNonNull();
-		Controlconnection controlProperties = this.properties.getControlconnection();
+		Controlconnection controlProperties = properties.getControlconnection();
 		map.from(controlProperties::getTimeout)
 			.asInt(Duration::toMillis)
 			.to((timeout) -> options.add(DefaultDriverOption.CONTROL_CONNECTION_TIMEOUT, timeout));
 	}
 
-	private List<String> mapContactPoints() {
-		return this.connectionDetails.getContactPoints()
-			.stream()
-			.map((node) -> node.host() + ":" + node.port())
-			.toList();
+	private List<String> mapContactPoints(CassandraProperties properties) {
+		if (properties.getContactPoints() != null) {
+			return properties.getContactPoints()
+				.stream()
+				.map((candidate) -> formatContactPoint(candidate, properties.getPort()))
+				.toList();
+		}
+		return null;
+	}
+
+	private String formatContactPoint(String candidate, int port) {
+		int i = candidate.lastIndexOf(':');
+		if (i == -1 || !isPort(() -> candidate.substring(i + 1))) {
+			return String.format("%s:%s", candidate, port);
+		}
+		return candidate;
+	}
+
+	private boolean isPort(Supplier<String> value) {
+		try {
+			int i = Integer.parseInt(value.get());
+			return i > 0 && i < 65535;
+		}
+		catch (Exception ex) {
+			return false;
+		}
 	}
 
 	private static class CassandraDriverOptions {
@@ -282,63 +289,6 @@ public class CassandraAutoConfiguration {
 
 		private static String createKeyFor(DriverOption option) {
 			return String.format("%s.%s", DefaultDriverConfigLoader.DEFAULT_ROOT_PATH, option.getPath());
-		}
-
-	}
-
-	/**
-	 * Adapts {@link CassandraProperties} to {@link CassandraConnectionDetails}.
-	 */
-	private static final class PropertiesCassandraConnectionDetails implements CassandraConnectionDetails {
-
-		private final CassandraProperties properties;
-
-		private PropertiesCassandraConnectionDetails(CassandraProperties properties) {
-			this.properties = properties;
-		}
-
-		@Override
-		public List<Node> getContactPoints() {
-			List<String> contactPoints = this.properties.getContactPoints();
-			return (contactPoints != null) ? contactPoints.stream().map(this::asNode).toList()
-					: Collections.emptyList();
-		}
-
-		@Override
-		public String getUsername() {
-			return this.properties.getUsername();
-		}
-
-		@Override
-		public String getPassword() {
-			return this.properties.getPassword();
-		}
-
-		@Override
-		public String getLocalDatacenter() {
-			return this.properties.getLocalDatacenter();
-		}
-
-		private Node asNode(String contactPoint) {
-			int i = contactPoint.lastIndexOf(':');
-			if (i >= 0) {
-				String portCandidate = contactPoint.substring(i + 1);
-				Integer port = asPort(portCandidate);
-				if (port != null) {
-					return new Node(contactPoint.substring(0, i), port);
-				}
-			}
-			return new Node(contactPoint, this.properties.getPort());
-		}
-
-		private Integer asPort(String value) {
-			try {
-				int i = Integer.parseInt(value);
-				return (i > 0 && i < 65535) ? i : null;
-			}
-			catch (Exception ex) {
-				return null;
-			}
 		}
 
 	}

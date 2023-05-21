@@ -201,6 +201,13 @@ bom {
 			]
 		}
 	}
+	library("Testcontainers", "1.17.3") {
+		group("org.testcontainers") {
+			imports = [
+				"testcontainers-bom"
+			]
+		}
+	}
 }
 
 dependencies {

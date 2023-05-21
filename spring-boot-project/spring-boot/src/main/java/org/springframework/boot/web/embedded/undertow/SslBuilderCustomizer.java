@@ -16,8 +16,10 @@
 
 package org.springframework.boot.web.embedded.undertow;
 
+import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.URL;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
@@ -41,6 +43,8 @@ import org.xnio.SslClientAuthMode;
 import org.springframework.boot.web.server.Ssl;
 import org.springframework.boot.web.server.SslConfigurationValidator;
 import org.springframework.boot.web.server.SslStoreProvider;
+import org.springframework.boot.web.server.WebServerException;
+import org.springframework.util.ResourceUtils;
 
 /**
  * {@link UndertowBuilderCustomizer} that configures SSL on the given builder instance.
@@ -48,7 +52,6 @@ import org.springframework.boot.web.server.SslStoreProvider;
  * @author Brian Clozel
  * @author Raheela Aslam
  * @author Cyril Dangerville
- * @author Scott Frederick
  */
 class SslBuilderCustomizer implements UndertowBuilderCustomizer {
 
@@ -71,8 +74,8 @@ class SslBuilderCustomizer implements UndertowBuilderCustomizer {
 	public void customize(Undertow.Builder builder) {
 		try {
 			SSLContext sslContext = SSLContext.getInstance(this.ssl.getProtocol());
-			sslContext.init(getKeyManagers(this.ssl, this.sslStoreProvider), getTrustManagers(this.sslStoreProvider),
-					null);
+			sslContext.init(getKeyManagers(this.ssl, this.sslStoreProvider),
+					getTrustManagers(this.ssl, this.sslStoreProvider), null);
 			builder.addHttpsListener(this.port, getListenAddress(), sslContext);
 			builder.setSocketOption(Options.SSL_CLIENT_AUTH_MODE, getSslClientAuthMode(this.ssl));
 			if (this.ssl.getEnabledProtocols() != null) {
@@ -104,13 +107,13 @@ class SslBuilderCustomizer implements UndertowBuilderCustomizer {
 		return SslClientAuthMode.NOT_REQUESTED;
 	}
 
-	KeyManager[] getKeyManagers(Ssl ssl, SslStoreProvider sslStoreProvider) {
+	private KeyManager[] getKeyManagers(Ssl ssl, SslStoreProvider sslStoreProvider) {
 		try {
-			KeyStore keyStore = sslStoreProvider.getKeyStore();
+			KeyStore keyStore = getKeyStore(ssl, sslStoreProvider);
 			SslConfigurationValidator.validateKeyAlias(keyStore, ssl.getKeyAlias());
 			KeyManagerFactory keyManagerFactory = KeyManagerFactory
 				.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-			String keyPassword = sslStoreProvider.getKeyPassword();
+			String keyPassword = (sslStoreProvider != null) ? sslStoreProvider.getKeyPassword() : null;
 			if (keyPassword == null) {
 				keyPassword = (ssl.getKeyPassword() != null) ? ssl.getKeyPassword() : ssl.getKeyStorePassword();
 			}
@@ -121,7 +124,7 @@ class SslBuilderCustomizer implements UndertowBuilderCustomizer {
 			return keyManagerFactory.getKeyManagers();
 		}
 		catch (Exception ex) {
-			throw new IllegalStateException("Could not load key managers: " + ex.getMessage(), ex);
+			throw new IllegalStateException(ex);
 		}
 	}
 
@@ -135,17 +138,69 @@ class SslBuilderCustomizer implements UndertowBuilderCustomizer {
 		return keyManagers;
 	}
 
-	TrustManager[] getTrustManagers(SslStoreProvider sslStoreProvider) {
+	private KeyStore getKeyStore(Ssl ssl, SslStoreProvider sslStoreProvider) throws Exception {
+		if (sslStoreProvider != null) {
+			return sslStoreProvider.getKeyStore();
+		}
+		return loadKeyStore(ssl.getKeyStoreType(), ssl.getKeyStoreProvider(), ssl.getKeyStore(),
+				ssl.getKeyStorePassword());
+	}
+
+	private TrustManager[] getTrustManagers(Ssl ssl, SslStoreProvider sslStoreProvider) {
 		try {
-			KeyStore store = sslStoreProvider.getTrustStore();
+			KeyStore store = getTrustStore(ssl, sslStoreProvider);
 			TrustManagerFactory trustManagerFactory = TrustManagerFactory
 				.getInstance(TrustManagerFactory.getDefaultAlgorithm());
 			trustManagerFactory.init(store);
 			return trustManagerFactory.getTrustManagers();
 		}
 		catch (Exception ex) {
-			throw new IllegalStateException("Could not load trust managers: " + ex.getMessage(), ex);
+			throw new IllegalStateException(ex);
 		}
+	}
+
+	private KeyStore getTrustStore(Ssl ssl, SslStoreProvider sslStoreProvider) throws Exception {
+		if (sslStoreProvider != null) {
+			return sslStoreProvider.getTrustStore();
+		}
+		return loadTrustStore(ssl.getTrustStoreType(), ssl.getTrustStoreProvider(), ssl.getTrustStore(),
+				ssl.getTrustStorePassword());
+	}
+
+	private KeyStore loadKeyStore(String type, String provider, String resource, String password) throws Exception {
+		return loadStore(type, provider, resource, password);
+	}
+
+	private KeyStore loadTrustStore(String type, String provider, String resource, String password) throws Exception {
+		if (resource == null) {
+			return null;
+		}
+		return loadStore(type, provider, resource, password);
+	}
+
+	private KeyStore loadStore(String type, String provider, String resource, String password) throws Exception {
+		type = (type != null) ? type : "JKS";
+		KeyStore store = (provider != null) ? KeyStore.getInstance(type, provider) : KeyStore.getInstance(type);
+		if (type.equalsIgnoreCase("PKCS11")) {
+			if (resource != null && !resource.isEmpty()) {
+				throw new IllegalArgumentException("Input keystore location is not valid for keystore type 'PKCS11': '"
+						+ resource + "'. Must be undefined / null.");
+			}
+			store.load(null, (password != null) ? password.toCharArray() : null);
+		}
+		else {
+			try {
+				URL url = ResourceUtils.getURL(resource);
+				try (InputStream stream = url.openStream()) {
+					store.load(stream, (password != null) ? password.toCharArray() : null);
+				}
+			}
+			catch (Exception ex) {
+				throw new WebServerException("Could not load key store '" + resource + "'", ex);
+			}
+		}
+
+		return store;
 	}
 
 	/**
