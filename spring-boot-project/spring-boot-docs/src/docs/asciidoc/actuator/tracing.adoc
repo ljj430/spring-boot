@@ -10,7 +10,7 @@ TIP: To learn more about Micrometer Tracing capabilities, see its https://microm
 === Supported Tracers
 Spring Boot ships auto-configuration for the following tracers:
 
-* https://opentelemetry.io/[OpenTelemetry] with https://zipkin.io/[Zipkin] or https://docs.wavefront.com/[Wavefront]
+* https://opentelemetry.io/[OpenTelemetry] with https://zipkin.io/[Zipkin],  https://docs.wavefront.com/[Wavefront], or https://opentelemetry.io/docs/reference/specification/protocol/[OTLP]
 * https://github.com/openzipkin/brave[OpenZipkin Brave] with https://zipkin.io/[Zipkin] or https://docs.wavefront.com/[Wavefront]
 
 
@@ -30,8 +30,8 @@ NOTE: There's an added logger statement in the `home()` method, which will be im
 Now we have to add the following dependencies:
 
 * `org.springframework.boot:spring-boot-starter-actuator`
-* `io.micrometer:micrometer-tracing-bridge-otel` - which is needed to bridge the Micrometer Observation API to OpenTelemetry.
-* `io.opentelemetry:opentelemetry-exporter-zipkin` - which is needed to report https://micrometer.io/docs/tracing#_glossary[traces] to Zipkin.
+* `io.micrometer:micrometer-tracing-bridge-otel` - bridges the Micrometer Observation API to OpenTelemetry.
+* `io.opentelemetry:opentelemetry-exporter-zipkin` - reports https://micrometer.io/docs/tracing#_glossary[traces] to Zipkin.
 
 Add the following application properties:
 
@@ -96,6 +96,17 @@ Use the `management.wavefront.*` configuration properties to configure reporting
 
 
 
+[[actuator.micrometer-tracing.tracer-implementations.otel-otlp]]
+==== OpenTelemetry With OTLP
+Tracing with OpenTelemetry and reporting using OTLP requires the following dependencies:
+
+* `io.micrometer:micrometer-tracing-bridge-otel` - bridges the Micrometer Observation API to OpenTelemetry.
+* `io.opentelemetry:opentelemetry-exporter-otlp` - reports traces to a collector that can accept OTLP.
+
+Use the `management.otlp.tracing.*` configuration properties to configure reporting using OTLP.
+
+
+
 [[actuator.micrometer-tracing.tracer-implementations.brave-zipkin]]
 ==== OpenZipkin Brave With Zipkin
 Tracing with OpenZipkin Brave and reporting to Zipkin requires the following dependencies:
@@ -113,8 +124,8 @@ Use the `management.zipkin.tracing.*` configuration properties to configure repo
 ==== OpenZipkin Brave With Wavefront
 Tracing with OpenZipkin Brave and reporting to Wavefront requires the following dependencies:
 
-* `io.micrometer:micrometer-tracing-bridge-brave` - which is needed to bridge the Micrometer Observation API to Brave.
-* `io.micrometer:micrometer-tracing-reporter-wavefront` - which is needed to report traces to Wavefront.
+* `io.micrometer:micrometer-tracing-bridge-brave` - bridges the Micrometer Observation API to Brave.
+* `io.micrometer:micrometer-tracing-reporter-wavefront` - reports traces to Wavefront.
 
 Use the `management.wavefront.*` configuration properties to configure reporting to Wavefront.
 

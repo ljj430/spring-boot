@@ -88,6 +88,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
+import org.springframework.util.function.ThrowingConsumer;
 import org.springframework.util.function.ThrowingSupplier;
 
 /**
@@ -1358,6 +1359,22 @@ public class SpringApplication {
 	}
 
 	/**
+	 * Create an application from an existing {@code main} method that can run with
+	 * additional {@code @Configuration} or bean classes. This method can be helpful when
+	 * writing a test harness that needs to start an application with additional
+	 * configuration.
+	 * @param main the main method entry point that runs the {@link SpringApplication}
+	 * @return a {@link SpringApplication.Augmented} instance that can be used to add
+	 * configuration and run the application
+	 * @since 3.1.0
+	 * @see #withHook(SpringApplicationHook, Runnable)
+	 */
+	public static SpringApplication.Augmented from(ThrowingConsumer<String[]> main) {
+		Assert.notNull(main, "Main must not be null");
+		return new Augmented(main, Collections.emptySet());
+	}
+
+	/**
 	 * Perform the given action with the given {@link SpringApplicationHook} attached if
 	 * the action triggers an {@link SpringApplication#run(String...) application run}.
 	 * @param hook the hook to apply
@@ -1402,6 +1419,71 @@ public class SpringApplication {
 		List<E> list = new ArrayList<>(elements);
 		list.sort(AnnotationAwareOrderComparator.INSTANCE);
 		return new LinkedHashSet<>(list);
+	}
+
+	/**
+	 * Used to configure and run an augmented {@link SpringApplication} where additional
+	 * configuration should be applied.
+	 *
+	 * @since 3.1.0
+	 */
+	public static class Augmented {
+
+		private final ThrowingConsumer<String[]> main;
+
+		private final Set<Class<?>> sources;
+
+		Augmented(ThrowingConsumer<String[]> main, Set<Class<?>> sources) {
+			this.main = main;
+			this.sources = Set.copyOf(sources);
+		}
+
+		/**
+		 * Return a new {@link SpringApplication.Augmented} instance with additional
+		 * sources that should be applied when the application runs.
+		 * @param sources the sources that should be applied
+		 * @return a new {@link SpringApplication.Augmented} instance
+		 */
+		public Augmented with(Class<?>... sources) {
+			LinkedHashSet<Class<?>> merged = new LinkedHashSet<>(this.sources);
+			merged.addAll(Arrays.asList(sources));
+			return new Augmented(this.main, merged);
+		}
+
+		/**
+		 * Run the application using the given args.
+		 * @param args the main method args
+		 * @return the running {@link ApplicationContext}
+		 */
+		public ConfigurableApplicationContext run(String... args) {
+			ContextLoaderHook hook = new ContextLoaderHook(this.sources);
+			withHook(hook, () -> this.main.accept(args));
+			return hook.applicationContext;
+		}
+
+		private static class ContextLoaderHook implements SpringApplicationHook {
+
+			private final Set<Class<?>> sources;
+
+			private ConfigurableApplicationContext applicationContext;
+
+			ContextLoaderHook(Set<Class<?>> sources) {
+				this.sources = sources;
+			}
+
+			@Override
+			public SpringApplicationRunListener getRunListener(SpringApplication springApplication) {
+				springApplication.addPrimarySources(this.sources);
+				return new SpringApplicationRunListener() {
+					@Override
+					public void contextPrepared(ConfigurableApplicationContext context) {
+						ContextLoaderHook.this.applicationContext = context;
+					}
+				};
+			}
+
+		}
+
 	}
 
 	/**

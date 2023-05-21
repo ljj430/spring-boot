@@ -28,6 +28,7 @@ import java.util.function.Consumer;
 
 import javax.sql.DataSource;
 
+import com.zaxxer.hikari.HikariDataSource;
 import liquibase.integration.spring.SpringLiquibase;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,6 +40,7 @@ import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.jdbc.EmbeddedDataSourceConfiguration;
+import org.springframework.boot.autoconfigure.jdbc.JdbcConnectionDetails;
 import org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration;
 import org.springframework.boot.autoconfigure.jooq.JooqAutoConfiguration;
 import org.springframework.boot.autoconfigure.liquibase.LiquibaseAutoConfiguration.LiquibaseAutoConfigurationRuntimeHints;
@@ -75,6 +77,8 @@ import static org.assertj.core.api.Assertions.contentOf;
  * @author Andrii Hrytsiuk
  * @author Ferenc Gratzer
  * @author Evgeniy Cheban
+ * @author Moritz Halbritter
+ * @author Phillip Webb
  */
 @ExtendWith(OutputCaptureExtension.class)
 class LiquibaseAutoConfigurationTests {
@@ -113,6 +117,71 @@ class LiquibaseAutoConfigurationTests {
 				assertThat(liquibase.getDefaultSchema()).isNull();
 				assertThat(liquibase.isDropFirst()).isFalse();
 				assertThat(liquibase.isClearCheckSums()).isFalse();
+			}));
+	}
+
+	@Test
+	void shouldUseMainDataSourceWhenThereIsNoLiquibaseSpecificConfiguration() {
+		this.contextRunner.withSystemProperties("shouldRun=false")
+			.withUserConfiguration(EmbeddedDataSourceConfiguration.class, JdbcConnectionDetailsConfiguration.class)
+			.run((context) -> {
+				SpringLiquibase liquibase = context.getBean(SpringLiquibase.class);
+				assertThat(liquibase.getDataSource()).isSameAs(context.getBean(DataSource.class));
+			});
+	}
+
+	@Test
+	void liquibaseDataSourceIsUsedOverJdbcConnectionDetails() {
+		this.contextRunner
+			.withUserConfiguration(LiquibaseDataSourceConfiguration.class, JdbcConnectionDetailsConfiguration.class)
+			.run(assertLiquibase((liquibase) -> {
+				HikariDataSource dataSource = (HikariDataSource) liquibase.getDataSource();
+				assertThat(dataSource.getJdbcUrl()).startsWith("jdbc:hsqldb:mem:liquibasetest");
+				assertThat(dataSource.getUsername()).isEqualTo("sa");
+				assertThat(dataSource.getPassword()).isNull();
+			}));
+	}
+
+	@Test
+	void liquibaseDataSourceIsUsedOverLiquibaseConnectionDetails() {
+		this.contextRunner
+			.withUserConfiguration(LiquibaseDataSourceConfiguration.class,
+					LiquibaseConnectionDetailsConfiguration.class)
+			.run(assertLiquibase((liquibase) -> {
+				HikariDataSource dataSource = (HikariDataSource) liquibase.getDataSource();
+				assertThat(dataSource.getJdbcUrl()).startsWith("jdbc:hsqldb:mem:liquibasetest");
+				assertThat(dataSource.getUsername()).isEqualTo("sa");
+				assertThat(dataSource.getPassword()).isNull();
+			}));
+	}
+
+	@Test
+	void liquibasePropertiesAreUsedOverJdbcConnectionDetails() {
+		this.contextRunner
+			.withPropertyValues("spring.liquibase.url=jdbc:hsqldb:mem:liquibasetest", "spring.liquibase.user=some-user",
+					"spring.liquibase.password=some-password",
+					"spring.liquibase.driver-class-name=org.hsqldb.jdbc.JDBCDriver")
+			.withUserConfiguration(JdbcConnectionDetailsConfiguration.class)
+			.run(assertLiquibase((liquibase) -> {
+				SimpleDriverDataSource dataSource = (SimpleDriverDataSource) liquibase.getDataSource();
+				assertThat(dataSource.getUrl()).startsWith("jdbc:hsqldb:mem:liquibasetest");
+				assertThat(dataSource.getUsername()).isEqualTo("some-user");
+				assertThat(dataSource.getPassword()).isEqualTo("some-password");
+			}));
+	}
+
+	@Test
+	void liquibaseConnectionDetailsAreUsedOverLiquibaseProperties() {
+		this.contextRunner.withSystemProperties("shouldRun=false")
+			.withPropertyValues("spring.liquibase.url=jdbc:hsqldb:mem:liquibasetest", "spring.liquibase.user=some-user",
+					"spring.liquibase.password=some-password",
+					"spring.liquibase.driver-class-name=org.hsqldb.jdbc.JDBCDriver")
+			.withUserConfiguration(LiquibaseConnectionDetailsConfiguration.class)
+			.run(assertLiquibase((liquibase) -> {
+				SimpleDriverDataSource dataSource = (SimpleDriverDataSource) liquibase.getDataSource();
+				assertThat(dataSource.getUrl()).isEqualTo("jdbc:postgresql://database.example.com:12345/database-1");
+				assertThat(dataSource.getUsername()).isEqualTo("user-1");
+				assertThat(dataSource.getPassword()).isEqualTo("secret-1");
 			}));
 	}
 
@@ -507,6 +576,60 @@ class LiquibaseAutoConfigurationTests {
 			dataSource.setUsername("sa");
 			dataSource.setPassword("");
 			return dataSource;
+		}
+
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	static class JdbcConnectionDetailsConfiguration {
+
+		@Bean
+		JdbcConnectionDetails jdbcConnectionDetails() {
+			return new JdbcConnectionDetails() {
+
+				@Override
+				public String getJdbcUrl() {
+					return "jdbc:postgresql://database.example.com:12345/database-1";
+				}
+
+				@Override
+				public String getUsername() {
+					return "user-1";
+				}
+
+				@Override
+				public String getPassword() {
+					return "secret-1";
+				}
+
+			};
+		}
+
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	static class LiquibaseConnectionDetailsConfiguration {
+
+		@Bean
+		LiquibaseConnectionDetails liquibaseConnectionDetails() {
+			return new LiquibaseConnectionDetails() {
+
+				@Override
+				public String getJdbcUrl() {
+					return "jdbc:postgresql://database.example.com:12345/database-1";
+				}
+
+				@Override
+				public String getUsername() {
+					return "user-1";
+				}
+
+				@Override
+				public String getPassword() {
+					return "secret-1";
+				}
+
+			};
 		}
 
 	}
