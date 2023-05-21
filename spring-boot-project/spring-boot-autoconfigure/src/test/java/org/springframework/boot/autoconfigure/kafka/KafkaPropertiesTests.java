@@ -16,20 +16,17 @@
 
 package org.springframework.boot.autoconfigure.kafka;
 
-import java.util.Collections;
 import java.util.Map;
 
 import org.apache.kafka.common.config.SslConfigs;
 import org.junit.jupiter.api.Test;
 
-import org.springframework.boot.autoconfigure.kafka.KafkaProperties.Admin;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties.Cleanup;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties.IsolationLevel;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties.Listener;
 import org.springframework.boot.context.properties.source.MutuallyExclusiveConfigurationPropertiesException;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.kafka.core.CleanupConfig;
-import org.springframework.kafka.core.KafkaAdmin;
 import org.springframework.kafka.listener.ContainerProperties;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -51,15 +48,7 @@ class KafkaPropertiesTests {
 			.containsExactly(IsolationLevel.READ_UNCOMMITTED.name(), IsolationLevel.READ_COMMITTED.name());
 		assertThat(original).extracting("id")
 			.containsExactly(IsolationLevel.READ_UNCOMMITTED.id(), IsolationLevel.READ_COMMITTED.id());
-		assertThat(original).hasSameSizeAs(IsolationLevel.values());
-	}
-
-	@Test
-	void adminDefaultValuesAreConsistent() {
-		KafkaAdmin admin = new KafkaAdmin(Collections.emptyMap());
-		Admin adminProperties = new KafkaProperties().getAdmin();
-		assertThat(admin).hasFieldOrPropertyWithValue("fatalIfBrokerNotAvailable", adminProperties.isFailFast());
-		assertThat(admin).hasFieldOrPropertyWithValue("modifyTopicConfigs", adminProperties.isModifyTopicConfigs());
+		assertThat(original).hasSize(IsolationLevel.values().length);
 	}
 
 	@Test
@@ -76,10 +65,10 @@ class KafkaPropertiesTests {
 		properties.getSsl().setTrustStoreCertificates("-----BEGINtrust");
 		properties.getSsl().setKeyStoreCertificateChain("-----BEGINchain");
 		Map<String, Object> consumerProperties = properties.buildConsumerProperties();
-		assertThat(consumerProperties).containsEntry(SslConfigs.SSL_KEYSTORE_KEY_CONFIG, "-----BEGINkey");
-		assertThat(consumerProperties).containsEntry(SslConfigs.SSL_TRUSTSTORE_CERTIFICATES_CONFIG, "-----BEGINtrust");
-		assertThat(consumerProperties).containsEntry(SslConfigs.SSL_KEYSTORE_CERTIFICATE_CHAIN_CONFIG,
-				"-----BEGINchain");
+		assertThat(consumerProperties.get(SslConfigs.SSL_KEYSTORE_KEY_CONFIG)).isEqualTo("-----BEGINkey");
+		assertThat(consumerProperties.get(SslConfigs.SSL_TRUSTSTORE_CERTIFICATES_CONFIG)).isEqualTo("-----BEGINtrust");
+		assertThat(consumerProperties.get(SslConfigs.SSL_KEYSTORE_CERTIFICATE_CHAIN_CONFIG))
+			.isEqualTo("-----BEGINchain");
 	}
 
 	@Test

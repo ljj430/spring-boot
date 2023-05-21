@@ -56,54 +56,67 @@ class ReactiveSessionAutoConfigurationRedisTests extends AbstractSessionAutoConf
 		.withStartupTimeout(Duration.ofMinutes(10));
 
 	protected final ReactiveWebApplicationContextRunner contextRunner = new ReactiveWebApplicationContextRunner()
-		.withClassLoader(new FilteredClassLoader(ReactiveMongoSessionRepository.class))
 		.withConfiguration(
-				AutoConfigurations.of(SessionAutoConfiguration.class, WebSessionIdResolverAutoConfiguration.class,
-						RedisAutoConfiguration.class, RedisReactiveAutoConfiguration.class));
+				AutoConfigurations.of(SessionAutoConfiguration.class, WebSessionIdResolverAutoConfiguration.class));
 
 	@Test
 	void defaultConfig() {
-		this.contextRunner.run(validateSpringSessionUsesRedis("spring:session:", SaveMode.ON_SET_ATTRIBUTE));
+		this.contextRunner.withPropertyValues("spring.session.store-type=redis")
+			.withConfiguration(
+					AutoConfigurations.of(RedisAutoConfiguration.class, RedisReactiveAutoConfiguration.class))
+			.run(validateSpringSessionUsesRedis("spring:session:", SaveMode.ON_SET_ATTRIBUTE));
 	}
 
 	@Test
-	void redisTakesPrecedenceMultipleImplementations() {
-		ReactiveWebApplicationContextRunner contextRunner = new ReactiveWebApplicationContextRunner().withConfiguration(
-				AutoConfigurations.of(SessionAutoConfiguration.class, WebSessionIdResolverAutoConfiguration.class,
-						RedisAutoConfiguration.class, RedisReactiveAutoConfiguration.class));
-		contextRunner.run(validateSpringSessionUsesRedis("spring:session:", SaveMode.ON_SET_ATTRIBUTE));
+	void defaultConfigWithUniqueStoreImplementation() {
+		this.contextRunner.withClassLoader(new FilteredClassLoader(ReactiveMongoSessionRepository.class))
+			.withConfiguration(
+					AutoConfigurations.of(RedisAutoConfiguration.class, RedisReactiveAutoConfiguration.class))
+			.run(validateSpringSessionUsesRedis("spring:session:", SaveMode.ON_SET_ATTRIBUTE));
 	}
 
 	@Test
 	void defaultConfigWithCustomTimeout() {
-		this.contextRunner.withPropertyValues("spring.session.timeout=1m").run((context) -> {
-			ReactiveRedisSessionRepository repository = validateSessionRepository(context,
-					ReactiveRedisSessionRepository.class);
-			assertThat(repository).hasFieldOrPropertyWithValue("defaultMaxInactiveInterval", Duration.ofMinutes(1));
-		});
+		this.contextRunner.withPropertyValues("spring.session.store-type=redis", "spring.session.timeout=1m")
+			.withConfiguration(
+					AutoConfigurations.of(RedisAutoConfiguration.class, RedisReactiveAutoConfiguration.class))
+			.run((context) -> {
+				ReactiveRedisSessionRepository repository = validateSessionRepository(context,
+						ReactiveRedisSessionRepository.class);
+				assertThat(repository).hasFieldOrPropertyWithValue("defaultMaxInactiveInterval", 60);
+			});
 	}
 
 	@Test
 	void defaultConfigWithCustomWebFluxTimeout() {
-		this.contextRunner.withPropertyValues("server.reactive.session.timeout=1m").run((context) -> {
-			ReactiveRedisSessionRepository repository = validateSessionRepository(context,
-					ReactiveRedisSessionRepository.class);
-			assertThat(repository).hasFieldOrPropertyWithValue("defaultMaxInactiveInterval", Duration.ofMinutes(1));
-		});
+		this.contextRunner.withPropertyValues("spring.session.store-type=redis", "server.reactive.session.timeout=1m")
+			.withConfiguration(
+					AutoConfigurations.of(RedisAutoConfiguration.class, RedisReactiveAutoConfiguration.class))
+			.run((context) -> {
+				ReactiveRedisSessionRepository repository = validateSessionRepository(context,
+						ReactiveRedisSessionRepository.class);
+				assertThat(repository).hasFieldOrPropertyWithValue("defaultMaxInactiveInterval", 60);
+			});
 	}
 
 	@Test
 	void redisSessionStoreWithCustomizations() {
 		this.contextRunner
-			.withPropertyValues("spring.session.redis.namespace=foo", "spring.session.redis.save-mode=on-get-attribute")
+			.withConfiguration(
+					AutoConfigurations.of(RedisAutoConfiguration.class, RedisReactiveAutoConfiguration.class))
+			.withPropertyValues("spring.session.store-type=redis", "spring.session.redis.namespace=foo",
+					"spring.session.redis.save-mode=on-get-attribute")
 			.run(validateSpringSessionUsesRedis("foo:", SaveMode.ON_GET_ATTRIBUTE));
 	}
 
 	@Test
 	void sessionCookieConfigurationIsAppliedToAutoConfiguredWebSessionIdResolver() {
-		this.contextRunner.withUserConfiguration(Config.class)
-			.withPropertyValues("spring.data.redis.host=" + redis.getHost(),
-					"spring.data.redis.port=" + redis.getFirstMappedPort(),
+		this.contextRunner
+			.withConfiguration(
+					AutoConfigurations.of(RedisAutoConfiguration.class, RedisReactiveAutoConfiguration.class))
+			.withUserConfiguration(Config.class)
+			.withPropertyValues("spring.session.store-type=redis", "spring.redis.host=" + redis.getHost(),
+					"spring.redis.port=" + redis.getFirstMappedPort(), "spring.session.store-type=redis",
 					"server.reactive.session.cookie.name:JSESSIONID",
 					"server.reactive.session.cookie.domain:.example.com",
 					"server.reactive.session.cookie.path:/example", "server.reactive.session.cookie.max-age:60",
@@ -127,7 +140,7 @@ class ReactiveSessionAutoConfigurationRedisTests extends AbstractSessionAutoConf
 			ReactiveRedisSessionRepository repository = validateSessionRepository(context,
 					ReactiveRedisSessionRepository.class);
 			assertThat(repository).hasFieldOrPropertyWithValue("defaultMaxInactiveInterval",
-					MapSession.DEFAULT_MAX_INACTIVE_INTERVAL);
+					MapSession.DEFAULT_MAX_INACTIVE_INTERVAL_SECONDS);
 			assertThat(repository).hasFieldOrPropertyWithValue("namespace", namespace);
 			assertThat(repository).hasFieldOrPropertyWithValue("saveMode", saveMode);
 		};

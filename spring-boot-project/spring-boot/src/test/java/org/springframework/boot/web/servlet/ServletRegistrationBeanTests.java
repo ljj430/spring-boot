@@ -22,9 +22,11 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 
-import jakarta.servlet.Servlet;
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.ServletRegistration;
+import javax.servlet.FilterRegistration;
+import javax.servlet.Servlet;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletRegistration;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -33,7 +35,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.web.servlet.mock.MockServlet;
 
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
@@ -56,6 +57,9 @@ class ServletRegistrationBeanTests {
 	@Mock
 	private ServletRegistration.Dynamic registration;
 
+	@Mock
+	private FilterRegistration.Dynamic filterRegistration;
+
 	@Test
 	void startupWithDefaults() throws Exception {
 		given(this.servletContext.addServlet(anyString(), any(Servlet.class))).willReturn(this.registration);
@@ -67,15 +71,12 @@ class ServletRegistrationBeanTests {
 	}
 
 	@Test
-	void failsWithDoubleRegistration() {
-		assertThatThrownBy(() -> {
-			ServletRegistrationBean<MockServlet> bean = new ServletRegistrationBean<>(this.servlet);
-			bean.setName("double-registration");
-			given(this.servletContext.addServlet(anyString(), any(Servlet.class))).willReturn(null);
-			bean.onStartup(this.servletContext);
-		}).isInstanceOf(IllegalStateException.class)
-			.hasMessage(
-					"Failed to register 'servlet double-registration' on the servlet context. Possibly already registered?");
+	void startupWithDoubleRegistration() throws Exception {
+		ServletRegistrationBean<MockServlet> bean = new ServletRegistrationBean<>(this.servlet);
+		given(this.servletContext.addServlet(anyString(), any(Servlet.class))).willReturn(null);
+		bean.onStartup(this.servletContext);
+		then(this.servletContext).should().addServlet("mockServlet", this.servlet);
+		then(this.registration).should(never()).setAsyncSupported(true);
 	}
 
 	@Test
@@ -103,7 +104,6 @@ class ServletRegistrationBeanTests {
 
 	@Test
 	void specificName() throws Exception {
-		given(this.servletContext.addServlet(anyString(), any(Servlet.class))).willReturn(this.registration);
 		ServletRegistrationBean<MockServlet> bean = new ServletRegistrationBean<>();
 		bean.setName("specificName");
 		bean.setServlet(this.servlet);
@@ -113,7 +113,6 @@ class ServletRegistrationBeanTests {
 
 	@Test
 	void deducedName() throws Exception {
-		given(this.servletContext.addServlet(anyString(), any(Servlet.class))).willReturn(this.registration);
 		ServletRegistrationBean<MockServlet> bean = new ServletRegistrationBean<>();
 		bean.setServlet(this.servlet);
 		bean.onStartup(this.servletContext);
@@ -184,7 +183,6 @@ class ServletRegistrationBeanTests {
 
 	@Test
 	void withoutDefaultMappings() throws Exception {
-		given(this.servletContext.addServlet(anyString(), any(Servlet.class))).willReturn(this.registration);
 		ServletRegistrationBean<MockServlet> bean = new ServletRegistrationBean<>(this.servlet, false);
 		bean.onStartup(this.servletContext);
 		then(this.registration).should(never()).addMapping(any(String[].class));

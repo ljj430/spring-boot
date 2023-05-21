@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,8 @@
 
 package org.springframework.boot.web.servlet;
 
-import jakarta.servlet.MultipartConfigElement;
+import javax.servlet.MultipartConfigElement;
+
 import org.junit.jupiter.api.Test;
 
 import org.springframework.util.unit.DataSize;
@@ -35,10 +36,10 @@ class MultipartConfigFactoryTests {
 	void sensibleDefaults() {
 		MultipartConfigFactory factory = new MultipartConfigFactory();
 		MultipartConfigElement config = factory.createMultipartConfig();
-		assertThat(config.getLocation()).isEmpty();
+		assertThat(config.getLocation()).isEqualTo("");
 		assertThat(config.getMaxFileSize()).isEqualTo(-1L);
 		assertThat(config.getMaxRequestSize()).isEqualTo(-1L);
-		assertThat(config.getFileSizeThreshold()).isZero();
+		assertThat(config.getFileSizeThreshold()).isEqualTo(0);
 	}
 
 	@Test
@@ -48,7 +49,7 @@ class MultipartConfigFactoryTests {
 		factory.setMaxRequestSize(DataSize.ofKilobytes(2));
 		factory.setFileSizeThreshold(DataSize.ofMegabytes(3));
 		MultipartConfigElement config = factory.createMultipartConfig();
-		assertThat(config.getMaxFileSize()).isOne();
+		assertThat(config.getMaxFileSize()).isEqualTo(1L);
 		assertThat(config.getMaxRequestSize()).isEqualTo(2 * 1024L);
 		assertThat(config.getFileSizeThreshold()).isEqualTo(3 * 1024 * 1024);
 	}
@@ -62,7 +63,7 @@ class MultipartConfigFactoryTests {
 		MultipartConfigElement config = factory.createMultipartConfig();
 		assertThat(config.getMaxFileSize()).isEqualTo(-1L);
 		assertThat(config.getMaxRequestSize()).isEqualTo(-1);
-		assertThat(config.getFileSizeThreshold()).isZero();
+		assertThat(config.getFileSizeThreshold()).isEqualTo(0);
 	}
 
 }

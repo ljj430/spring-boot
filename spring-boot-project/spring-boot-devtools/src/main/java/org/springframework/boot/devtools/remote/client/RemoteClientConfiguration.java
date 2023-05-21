@@ -139,7 +139,7 @@ public class RemoteClientConfiguration implements InitializingBean {
 
 		private final String remoteUrl;
 
-		private final ExecutorService executor = Executors.newSingleThreadExecutor();
+		private ExecutorService executor = Executors.newSingleThreadExecutor();
 
 		LiveReloadConfiguration(DevToolsProperties properties, ClientHttpRequestFactory clientHttpRequestFactory,
 				@Value("${remoteUrl}") String remoteUrl) {

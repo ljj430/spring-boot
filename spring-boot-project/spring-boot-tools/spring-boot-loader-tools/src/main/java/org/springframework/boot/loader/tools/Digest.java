@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.HexFormat;
 
 /**
  * Utility class used to calculate digests.
@@ -42,13 +41,24 @@ final class Digest {
 		try {
 			try (DigestInputStream inputStream = new DigestInputStream(supplier.openStream(),
 					MessageDigest.getInstance("SHA-1"))) {
-				inputStream.readAllBytes();
-				return HexFormat.of().formatHex(inputStream.getMessageDigest().digest());
+				byte[] buffer = new byte[4098];
+				while (inputStream.read(buffer) != -1) {
+					// Read the entire stream
+				}
+				return bytesToHex(inputStream.getMessageDigest().digest());
 			}
 		}
 		catch (NoSuchAlgorithmException ex) {
 			throw new IllegalStateException(ex);
 		}
+	}
+
+	private static String bytesToHex(byte[] bytes) {
+		StringBuilder hex = new StringBuilder();
+		for (byte b : bytes) {
+			hex.append(String.format("%02x", b));
+		}
+		return hex.toString();
 	}
 
 }

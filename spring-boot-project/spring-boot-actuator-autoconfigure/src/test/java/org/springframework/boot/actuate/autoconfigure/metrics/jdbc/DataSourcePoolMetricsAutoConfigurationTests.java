@@ -120,6 +120,18 @@ class DataSourcePoolMetricsAutoConfigurationTests {
 	}
 
 	@Test
+	@Deprecated
+	void autoConfiguredHikariDataSourceIsInstrumentedWhenUsingDeprecatedDataSourceInitialization() {
+		this.contextRunner.withPropertyValues("spring.datasource.schema:db/create-custom-schema.sql")
+			.withConfiguration(AutoConfigurations.of(DataSourceAutoConfiguration.class))
+			.run((context) -> {
+				context.getBean(DataSource.class).getConnection();
+				MeterRegistry registry = context.getBean(MeterRegistry.class);
+				registry.get("hikaricp.connections").meter();
+			});
+	}
+
+	@Test
 	void autoConfiguredHikariDataSourceIsInstrumentedWhenUsingDataSourceInitialization() {
 		this.contextRunner.withPropertyValues("spring.sql.init.schema:db/create-custom-schema.sql")
 			.withConfiguration(
@@ -343,9 +355,9 @@ class DataSourcePoolMetricsAutoConfigurationTests {
 
 			@Override
 			public Object postProcessAfterInitialization(Object bean, String beanName) {
-				if (bean instanceof HikariDataSource dataSource) {
+				if (bean instanceof HikariDataSource) {
 					try {
-						dataSource.getConnection().close();
+						((HikariDataSource) bean).getConnection().close();
 					}
 					catch (SQLException ex) {
 						throw new IllegalStateException(ex);

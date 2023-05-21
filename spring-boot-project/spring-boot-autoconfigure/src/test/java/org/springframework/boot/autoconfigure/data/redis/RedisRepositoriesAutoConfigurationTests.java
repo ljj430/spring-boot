@@ -50,12 +50,11 @@ class RedisRepositoriesAutoConfigurationTests {
 	public static RedisContainer redis = new RedisContainer().withStartupAttempts(5)
 		.withStartupTimeout(Duration.ofMinutes(10));
 
-	private final AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+	private AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
 
 	@BeforeEach
 	void setUp() {
-		TestPropertyValues
-			.of("spring.data.redis.host=" + redis.getHost(), "spring.data.redis.port=" + redis.getFirstMappedPort())
+		TestPropertyValues.of("spring.redis.host=" + redis.getHost(), "spring.redis.port=" + redis.getFirstMappedPort())
 			.applyTo(this.context.getEnvironment());
 	}
 

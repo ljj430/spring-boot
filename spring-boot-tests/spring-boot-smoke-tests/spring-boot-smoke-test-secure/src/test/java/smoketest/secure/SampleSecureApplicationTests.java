@@ -26,7 +26,6 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -63,16 +62,14 @@ class SampleSecureApplicationTests {
 
 	@Test
 	void authenticated() {
-		SecurityContextHolder.getContext()
-			.setAuthentication(new UsernamePasswordAuthenticationToken("user", "N/A",
-					AuthorityUtils.commaSeparatedStringToAuthorityList("ROLE_USER")));
-		assertThat(this.service.secure()).isEqualTo("Hello Security");
+		SecurityContextHolder.getContext().setAuthentication(this.authentication);
+		assertThat("Hello Security").isEqualTo(this.service.secure());
 	}
 
 	@Test
 	void preauth() {
 		SecurityContextHolder.getContext().setAuthentication(this.authentication);
-		assertThat(this.service.authorized()).isEqualTo("Hello World");
+		assertThat("Hello World").isEqualTo(this.service.authorized());
 	}
 
 	@Test

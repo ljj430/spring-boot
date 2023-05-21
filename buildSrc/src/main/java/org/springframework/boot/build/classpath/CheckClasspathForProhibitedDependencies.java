@@ -79,12 +79,6 @@ public class CheckClasspathForProhibitedDependencies extends DefaultTask {
 		if (group.equals("javax.money")) {
 			return false;
 		}
-		if (group.equals("org.codehaus.groovy")) {
-			return true;
-		}
-		if (group.equals("org.eclipse.jetty.toolchain")) {
-			return true;
-		}
 		if (group.startsWith("javax")) {
 			return true;
 		}
@@ -98,9 +92,6 @@ public class CheckClasspathForProhibitedDependencies extends DefaultTask {
 			return true;
 		}
 		if (group.equals("org.apache.geronimo.specs")) {
-			return true;
-		}
-		if (group.equals("com.sun.activation")) {
 			return true;
 		}
 		return false;

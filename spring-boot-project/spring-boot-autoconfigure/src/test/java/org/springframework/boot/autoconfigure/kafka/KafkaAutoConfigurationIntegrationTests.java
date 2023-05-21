@@ -91,7 +91,7 @@ class KafkaAutoConfigurationIntegrationTests {
 
 		DefaultKafkaProducerFactory producerFactory = this.context.getBean(DefaultKafkaProducerFactory.class);
 		Producer producer = producerFactory.createProducer();
-		assertThat(producer.partitionsFor(ADMIN_CREATED_TOPIC)).hasSize(10);
+		assertThat(producer.partitionsFor(ADMIN_CREATED_TOPIC).size()).isEqualTo(10);
 		producer.close();
 	}
 
@@ -105,7 +105,7 @@ class KafkaAutoConfigurationIntegrationTests {
 				"spring.kafka.consumer.auto-offset-reset=earliest");
 		RetryTopicConfiguration configuration = this.context.getBean(RetryTopicConfiguration.class);
 		assertThat(configuration.getDestinationTopicProperties()).extracting(DestinationTopic.Properties::delay)
-			.containsExactly(0L, 100L, 200L, 300L, 0L);
+			.containsExactly(0L, 100L, 200L, 300L, 300L, 0L);
 		KafkaTemplate<String, String> template = this.context.getBean(KafkaTemplate.class);
 		template.send(TEST_RETRY_TOPIC, "foo", "bar");
 		RetryListener listener = this.context.getBean(RetryListener.class);
@@ -116,7 +116,7 @@ class KafkaAutoConfigurationIntegrationTests {
 			.asList()
 			.hasSize(5)
 			.containsSequence("testRetryTopic", "testRetryTopic-retry-0", "testRetryTopic-retry-1",
-					"testRetryTopic-retry-2");
+					"testRetryTopic-retry-2", "testRetryTopic-retry-3");
 	}
 
 	@Test
@@ -184,7 +184,7 @@ class KafkaAutoConfigurationIntegrationTests {
 		private volatile String key;
 
 		@KafkaListener(topics = TEST_TOPIC)
-		void listen(String foo, @Header(KafkaHeaders.RECEIVED_KEY) String key) {
+		void listen(String foo, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key) {
 			this.received = foo;
 			this.key = key;
 			this.latch.countDown();
@@ -203,7 +203,7 @@ class KafkaAutoConfigurationIntegrationTests {
 		private volatile String key;
 
 		@KafkaListener(topics = TEST_RETRY_TOPIC)
-		void listen(String foo, @Header(KafkaHeaders.RECEIVED_KEY) String key,
+		void listen(String foo, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
 				@Header(KafkaHeaders.RECEIVED_TOPIC) String topic) {
 			this.received = foo;
 			this.key = key;

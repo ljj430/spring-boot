@@ -61,9 +61,9 @@ class PrometheusPushGatewayManagerTests {
 	@Mock
 	private TaskScheduler scheduler;
 
-	private final Duration pushRate = Duration.ofSeconds(1);
+	private Duration pushRate = Duration.ofSeconds(1);
 
-	private final Map<String, String> groupingKey = Collections.singletonMap("foo", "bar");
+	private Map<String, String> groupingKey = Collections.singletonMap("foo", "bar");
 
 	@Captor
 	private ArgumentCaptor<Runnable> task;
@@ -141,35 +141,13 @@ class PrometheusPushGatewayManagerTests {
 	}
 
 	@Test
-	@SuppressWarnings("removal")
-	@Deprecated(since = "3.0.0", forRemoval = true)
-	void shutdownWhenShutdownOperationIsPushPerformsPushAddOnShutdown() throws Exception {
+	void shutdownWhenShutdownOperationIsPushPerformsPushOnShutdown() throws Exception {
 		givenScheduleAtFixedRateWithReturnFuture();
 		PrometheusPushGatewayManager manager = new PrometheusPushGatewayManager(this.pushGateway, this.registry,
 				this.scheduler, this.pushRate, "job", this.groupingKey, ShutdownOperation.PUSH);
 		manager.shutdown();
 		then(this.future).should().cancel(false);
 		then(this.pushGateway).should().pushAdd(this.registry, "job", this.groupingKey);
-	}
-
-	@Test
-	void shutdownWhenShutdownOperationIsPostPerformsPushAddOnShutdown() throws Exception {
-		givenScheduleAtFixedRateWithReturnFuture();
-		PrometheusPushGatewayManager manager = new PrometheusPushGatewayManager(this.pushGateway, this.registry,
-				this.scheduler, this.pushRate, "job", this.groupingKey, ShutdownOperation.POST);
-		manager.shutdown();
-		then(this.future).should().cancel(false);
-		then(this.pushGateway).should().pushAdd(this.registry, "job", this.groupingKey);
-	}
-
-	@Test
-	void shutdownWhenShutdownOperationIsPutPerformsPushOnShutdown() throws Exception {
-		givenScheduleAtFixedRateWithReturnFuture();
-		PrometheusPushGatewayManager manager = new PrometheusPushGatewayManager(this.pushGateway, this.registry,
-				this.scheduler, this.pushRate, "job", this.groupingKey, ShutdownOperation.PUT);
-		manager.shutdown();
-		then(this.future).should().cancel(false);
-		then(this.pushGateway).should().push(this.registry, "job", this.groupingKey);
 	}
 
 	@Test

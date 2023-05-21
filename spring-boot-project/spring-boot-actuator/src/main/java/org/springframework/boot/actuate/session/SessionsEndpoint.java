@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-import org.springframework.boot.actuate.endpoint.OperationResponseBody;
 import org.springframework.boot.actuate.endpoint.annotation.DeleteOperation;
 import org.springframework.boot.actuate.endpoint.annotation.Endpoint;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
@@ -49,9 +49,9 @@ public class SessionsEndpoint {
 	}
 
 	@ReadOperation
-	public SessionsDescriptor sessionsForUsername(String username) {
+	public SessionsReport sessionsForUsername(String username) {
 		Map<String, ? extends Session> sessions = this.sessionRepository.findByPrincipalName(username);
-		return new SessionsDescriptor(sessions);
+		return new SessionsReport(sessions);
 	}
 
 	@ReadOperation
@@ -69,14 +69,15 @@ public class SessionsEndpoint {
 	}
 
 	/**
-	 * Description of user's {@link Session sessions}.
+	 * A report of user's {@link Session sessions}. Primarily intended for serialization
+	 * to JSON.
 	 */
-	public static final class SessionsDescriptor implements OperationResponseBody {
+	public static final class SessionsReport {
 
 		private final List<SessionDescriptor> sessions;
 
-		public SessionsDescriptor(Map<String, ? extends Session> sessions) {
-			this.sessions = sessions.values().stream().map(SessionDescriptor::new).toList();
+		public SessionsReport(Map<String, ? extends Session> sessions) {
+			this.sessions = sessions.values().stream().map(SessionDescriptor::new).collect(Collectors.toList());
 		}
 
 		public List<SessionDescriptor> getSessions() {
@@ -86,9 +87,10 @@ public class SessionsEndpoint {
 	}
 
 	/**
-	 * Description of user's {@link Session session}.
+	 * A description of user's {@link Session session}. Primarily intended for
+	 * serialization to JSON.
 	 */
-	public static final class SessionDescriptor implements OperationResponseBody {
+	public static final class SessionDescriptor {
 
 		private final String id;
 

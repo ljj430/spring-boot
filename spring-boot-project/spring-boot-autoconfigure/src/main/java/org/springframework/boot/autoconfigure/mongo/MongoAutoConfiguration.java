@@ -16,6 +16,8 @@
 
 package org.springframework.boot.autoconfigure.mongo;
 
+import java.util.stream.Collectors;
+
 import com.mongodb.MongoClientSettings;
 import com.mongodb.client.MongoClient;
 
@@ -27,6 +29,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 
 /**
  * {@link EnableAutoConfiguration Auto-configuration} for Mongo.
@@ -46,16 +49,11 @@ import org.springframework.context.annotation.Configuration;
 public class MongoAutoConfiguration {
 
 	@Bean
-	@ConditionalOnMissingBean(MongoConnectionDetails.class)
-	PropertiesMongoConnectionDetails mongoConnectionDetails(MongoProperties properties) {
-		return new PropertiesMongoConnectionDetails(properties);
-	}
-
-	@Bean
 	@ConditionalOnMissingBean(MongoClient.class)
 	public MongoClient mongo(ObjectProvider<MongoClientSettingsBuilderCustomizer> builderCustomizers,
 			MongoClientSettings settings) {
-		return new MongoClientFactory(builderCustomizers.orderedStream().toList()).createMongoClient(settings);
+		return new MongoClientFactory(builderCustomizers.orderedStream().collect(Collectors.toList()))
+			.createMongoClient(settings);
 	}
 
 	@Configuration(proxyBeanMethods = false)
@@ -68,10 +66,9 @@ public class MongoAutoConfiguration {
 		}
 
 		@Bean
-		StandardMongoClientSettingsBuilderCustomizer standardMongoSettingsCustomizer(MongoProperties properties,
-				MongoConnectionDetails connectionDetails) {
-			return new StandardMongoClientSettingsBuilderCustomizer(connectionDetails.getConnectionString(),
-					properties.getUuidRepresentation());
+		MongoPropertiesClientSettingsBuilderCustomizer mongoPropertiesCustomizer(MongoProperties properties,
+				Environment environment) {
+			return new MongoPropertiesClientSettingsBuilderCustomizer(properties, environment);
 		}
 
 	}
