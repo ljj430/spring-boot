@@ -24,6 +24,7 @@ import java.io.PrintWriter;
 import java.io.StringReader;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner;
@@ -185,7 +186,7 @@ class TestFailuresPluginIntegrationTests {
 
 	private List<String> readLines(String output) {
 		try (BufferedReader reader = new BufferedReader(new StringReader(output))) {
-			return reader.lines().toList();
+			return reader.lines().collect(Collectors.toList());
 		}
 		catch (IOException ex) {
 			throw new RuntimeException(ex);

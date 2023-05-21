@@ -7,10 +7,10 @@ plugins {
 springBoot {
 	buildInfo {
 		properties {
-			additional.set(mapOf(
+			additional = mapOf(
 				"a" to "alpha",
 				"b" to "bravo"
-			))
+			)
 		}
 	}
 }

@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
 
@@ -32,7 +33,6 @@ import liquibase.database.DatabaseFactory;
 import liquibase.database.jvm.JdbcConnection;
 import liquibase.integration.spring.SpringLiquibase;
 
-import org.springframework.boot.actuate.endpoint.OperationResponseBody;
 import org.springframework.boot.actuate.endpoint.annotation.Endpoint;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
 import org.springframework.context.ApplicationContext;
@@ -56,23 +56,23 @@ public class LiquibaseEndpoint {
 	}
 
 	@ReadOperation
-	public LiquibaseBeansDescriptor liquibaseBeans() {
+	public ApplicationLiquibaseBeans liquibaseBeans() {
 		ApplicationContext target = this.context;
-		Map<String, ContextLiquibaseBeansDescriptor> contextBeans = new HashMap<>();
+		Map<String, ContextLiquibaseBeans> contextBeans = new HashMap<>();
 		while (target != null) {
-			Map<String, LiquibaseBeanDescriptor> liquibaseBeans = new HashMap<>();
+			Map<String, LiquibaseBean> liquibaseBeans = new HashMap<>();
 			DatabaseFactory factory = DatabaseFactory.getInstance();
 			target.getBeansOfType(SpringLiquibase.class)
 				.forEach((name, liquibase) -> liquibaseBeans.put(name, createReport(liquibase, factory)));
 			ApplicationContext parent = target.getParent();
 			contextBeans.put(target.getId(),
-					new ContextLiquibaseBeansDescriptor(liquibaseBeans, (parent != null) ? parent.getId() : null));
+					new ContextLiquibaseBeans(liquibaseBeans, (parent != null) ? parent.getId() : null));
 			target = parent;
 		}
-		return new LiquibaseBeansDescriptor(contextBeans);
+		return new ApplicationLiquibaseBeans(contextBeans);
 	}
 
-	private LiquibaseBeanDescriptor createReport(SpringLiquibase liquibase, DatabaseFactory factory) {
+	private LiquibaseBean createReport(SpringLiquibase liquibase, DatabaseFactory factory) {
 		try {
 			DataSource dataSource = liquibase.getDataSource();
 			JdbcConnection connection = new JdbcConnection(dataSource.getConnection());
@@ -87,8 +87,8 @@ public class LiquibaseEndpoint {
 				database.setDatabaseChangeLogLockTableName(liquibase.getDatabaseChangeLogLockTable());
 				StandardChangeLogHistoryService service = new StandardChangeLogHistoryService();
 				service.setDatabase(database);
-				return new LiquibaseBeanDescriptor(
-						service.getRanChangeSets().stream().map(ChangeSetDescriptor::new).toList());
+				return new LiquibaseBean(
+						service.getRanChangeSets().stream().map(ChangeSet::new).collect(Collectors.toList()));
 			}
 			finally {
 				if (database != null) {
@@ -105,37 +105,39 @@ public class LiquibaseEndpoint {
 	}
 
 	/**
-	 * Description of an application's {@link SpringLiquibase} beans.
+	 * Description of an application's {@link SpringLiquibase} beans, primarily intended
+	 * for serialization to JSON.
 	 */
-	public static final class LiquibaseBeansDescriptor implements OperationResponseBody {
+	public static final class ApplicationLiquibaseBeans {
 
-		private final Map<String, ContextLiquibaseBeansDescriptor> contexts;
+		private final Map<String, ContextLiquibaseBeans> contexts;
 
-		private LiquibaseBeansDescriptor(Map<String, ContextLiquibaseBeansDescriptor> contexts) {
+		private ApplicationLiquibaseBeans(Map<String, ContextLiquibaseBeans> contexts) {
 			this.contexts = contexts;
 		}
 
-		public Map<String, ContextLiquibaseBeansDescriptor> getContexts() {
+		public Map<String, ContextLiquibaseBeans> getContexts() {
 			return this.contexts;
 		}
 
 	}
 
 	/**
-	 * Description of an application context's {@link SpringLiquibase} beans.
+	 * Description of an application context's {@link SpringLiquibase} beans, primarily
+	 * intended for serialization to JSON.
 	 */
-	public static final class ContextLiquibaseBeansDescriptor {
+	public static final class ContextLiquibaseBeans {
 
-		private final Map<String, LiquibaseBeanDescriptor> liquibaseBeans;
+		private final Map<String, LiquibaseBean> liquibaseBeans;
 
 		private final String parentId;
 
-		private ContextLiquibaseBeansDescriptor(Map<String, LiquibaseBeanDescriptor> liquibaseBeans, String parentId) {
+		private ContextLiquibaseBeans(Map<String, LiquibaseBean> liquibaseBeans, String parentId) {
 			this.liquibaseBeans = liquibaseBeans;
 			this.parentId = parentId;
 		}
 
-		public Map<String, LiquibaseBeanDescriptor> getLiquibaseBeans() {
+		public Map<String, LiquibaseBean> getLiquibaseBeans() {
 			return this.liquibaseBeans;
 		}
 
@@ -146,26 +148,27 @@ public class LiquibaseEndpoint {
 	}
 
 	/**
-	 * Description of a {@link SpringLiquibase} bean.
+	 * Description of a {@link SpringLiquibase} bean, primarily intended for serialization
+	 * to JSON.
 	 */
-	public static final class LiquibaseBeanDescriptor {
+	public static final class LiquibaseBean {
 
-		private final List<ChangeSetDescriptor> changeSets;
+		private final List<ChangeSet> changeSets;
 
-		public LiquibaseBeanDescriptor(List<ChangeSetDescriptor> changeSets) {
+		public LiquibaseBean(List<ChangeSet> changeSets) {
 			this.changeSets = changeSets;
 		}
 
-		public List<ChangeSetDescriptor> getChangeSets() {
+		public List<ChangeSet> getChangeSets() {
 			return this.changeSets;
 		}
 
 	}
 
 	/**
-	 * Description of a Liquibase change set.
+	 * A Liquibase change set.
 	 */
-	public static class ChangeSetDescriptor {
+	public static class ChangeSet {
 
 		private final String author;
 
@@ -193,7 +196,7 @@ public class LiquibaseEndpoint {
 
 		private final String tag;
 
-		public ChangeSetDescriptor(RanChangeSet ranChangeSet) {
+		public ChangeSet(RanChangeSet ranChangeSet) {
 			this.author = ranChangeSet.getAuthor();
 			this.changeLog = ranChangeSet.getChangeLog();
 			this.comments = ranChangeSet.getComments();
@@ -265,13 +268,13 @@ public class LiquibaseEndpoint {
 	}
 
 	/**
-	 * Description of a context expression in a {@link ChangeSetDescriptor}.
+	 * A context expression in a {@link ChangeSet}.
 	 */
-	public static class ContextExpressionDescriptor {
+	public static class ContextExpression {
 
 		private final Set<String> contexts;
 
-		public ContextExpressionDescriptor(Set<String> contexts) {
+		public ContextExpression(Set<String> contexts) {
 			this.contexts = contexts;
 		}
 

@@ -27,10 +27,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -338,7 +339,7 @@ class BasicErrorControllerIntegrationTests {
 
 	private void assertErrorAttributes(Map<?, ?> content, String status, String error, Class<?> exception,
 			String message, String path) {
-		assertThat(content.get("status")).as("Wrong status").hasToString(status);
+		assertThat(content.get("status").toString()).as("Wrong status").isEqualTo(status);
 		assertThat(content.get("error")).as("Wrong error").isEqualTo(error);
 		if (exception != null) {
 			assertThat(content.get("exception")).as("Wrong exception").isEqualTo(exception.getName());

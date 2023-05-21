@@ -125,7 +125,7 @@ class ImportAutoConfigurationImportSelectorTests {
 		Set<Object> set2 = this.importSelector
 			.determineImports(getAnnotationMetadata(ImportMetaAutoConfigurationWithUnrelatedTwo.class));
 		assertThat(set1).isEqualTo(set2);
-		assertThat(set1).hasSameHashCodeAs(set2);
+		assertThat(set1.hashCode()).isEqualTo(set2.hashCode());
 	}
 
 	@Test
@@ -153,7 +153,7 @@ class ImportAutoConfigurationImportSelectorTests {
 		Set<Object> set2 = this.importSelector
 			.determineImports(getAnnotationMetadata(ImportMetaAutoConfigurationExcludeWithUnrelatedTwo.class));
 		assertThat(set1).isEqualTo(set2);
-		assertThat(set1).hasSameHashCodeAs(set2);
+		assertThat(set1.hashCode()).isEqualTo(set2.hashCode());
 	}
 
 	@Test

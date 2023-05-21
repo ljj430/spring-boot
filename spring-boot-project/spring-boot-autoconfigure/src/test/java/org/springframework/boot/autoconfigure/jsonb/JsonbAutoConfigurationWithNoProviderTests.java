@@ -16,7 +16,8 @@
 
 package org.springframework.boot.autoconfigure.jsonb;
 
-import jakarta.json.bind.Jsonb;
+import javax.json.bind.Jsonb;
+
 import org.junit.jupiter.api.Test;
 
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -30,7 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Andy Wilkinson
  */
-@ClassPathExclusions("yasson-*.jar")
+@ClassPathExclusions("johnzon-jsonb-*.jar")
 class JsonbAutoConfigurationWithNoProviderTests {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()

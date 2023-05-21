@@ -26,9 +26,6 @@ import java.util.function.Function;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.aot.hint.MemberCategory;
-import org.springframework.aot.hint.RuntimeHints;
-import org.springframework.aot.hint.predicate.RuntimeHintsPredicates;
 import org.springframework.boot.actuate.endpoint.EndpointId;
 import org.springframework.boot.actuate.endpoint.annotation.DeleteOperation;
 import org.springframework.boot.actuate.endpoint.annotation.Endpoint;
@@ -40,7 +37,6 @@ import org.springframework.boot.actuate.endpoint.invoker.cache.CachingOperationI
 import org.springframework.boot.actuate.endpoint.jmx.ExposableJmxEndpoint;
 import org.springframework.boot.actuate.endpoint.jmx.JmxOperation;
 import org.springframework.boot.actuate.endpoint.jmx.JmxOperationParameter;
-import org.springframework.boot.actuate.endpoint.jmx.annotation.JmxEndpointDiscoverer.JmxEndpointDiscovererRuntimeHints;
 import org.springframework.boot.actuate.endpoint.web.annotation.WebEndpoint;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -59,7 +55,6 @@ import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
  *
  * @author Stephane Nicoll
  * @author Phillip Webb
- * @author Moritz Halbritter
  */
 class JmxEndpointDiscovererTests {
 
@@ -209,15 +204,6 @@ class JmxEndpointDiscovererTests {
 			.isThrownBy(discoverer::getEndpoints)
 			.withMessageContaining(
 					"Endpoint bean 'nonJmxEndpoint' cannot support the extension bean 'nonJmxJmxEndpointExtension'"));
-	}
-
-	@Test
-	void shouldRegisterHints() {
-		RuntimeHints runtimeHints = new RuntimeHints();
-		new JmxEndpointDiscovererRuntimeHints().registerHints(runtimeHints, getClass().getClassLoader());
-		assertThat(RuntimeHintsPredicates.reflection()
-			.onType(JmxEndpointFilter.class)
-			.withMemberCategories(MemberCategory.INVOKE_DECLARED_CONSTRUCTORS)).accepts(runtimeHints);
 	}
 
 	private Object getInvoker(JmxOperation operation) {

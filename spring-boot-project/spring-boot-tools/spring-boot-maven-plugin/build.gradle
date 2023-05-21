@@ -24,7 +24,6 @@ dependencies {
 		exclude(group: "javax.inject", module: "javax.inject")
 	}
 
-	implementation("org.springframework:spring-context")
 	implementation(project(":spring-boot-project:spring-boot-tools:spring-boot-buildpack-platform"))
 	implementation(project(":spring-boot-project:spring-boot-tools:spring-boot-loader-tools"))
 
@@ -43,9 +42,6 @@ dependencies {
 		exclude(group: "javax.enterprise", module: "cdi-api")
 		exclude(group: "javax.inject", module: "javax.inject")
 	}
-
-	mavenRepository(project(path: ":spring-boot-project:spring-boot", configuration: "mavenRepository"))
-	mavenRepository(project(path: ":spring-boot-project:spring-boot-test", configuration: "mavenRepository"))
 
 	runtimeOnly("org.sonatype.plexus:plexus-build-api")
 
@@ -137,7 +133,7 @@ task xsdResources(type: Sync) {
 }
 
 prepareMavenBinaries {
-	versions "3.9.0", "3.8.5", "3.6.3"
+	versions "3.9.0", "3.8.5", "3.6.3", "3.5.4"
 }
 
 artifacts {

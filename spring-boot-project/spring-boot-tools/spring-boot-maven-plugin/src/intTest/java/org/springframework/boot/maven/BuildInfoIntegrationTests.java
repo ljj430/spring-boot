@@ -133,10 +133,10 @@ class BuildInfoIntegrationTests {
 	}
 
 	private AssertProvider<BuildInfoAssert> buildInfo(File project, String buildInfo) {
-		return new AssertProvider<>() {
+		return new AssertProvider<BuildInfoAssert>() {
 
 			@Override
-			@Deprecated(since = "2.3.0", forRemoval = false)
+			@Deprecated
 			public BuildInfoAssert assertThat() {
 				return new BuildInfoAssert(new File(project, buildInfo));
 			}

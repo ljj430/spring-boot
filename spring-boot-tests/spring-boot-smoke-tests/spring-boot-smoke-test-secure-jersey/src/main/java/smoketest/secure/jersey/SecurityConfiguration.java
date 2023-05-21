@@ -20,7 +20,6 @@ import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointR
 import org.springframework.boot.actuate.web.mappings.MappingsEndpoint;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
@@ -29,8 +28,8 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 public class SecurityConfiguration {
 
-	@Bean
 	@SuppressWarnings("deprecation")
+	@Bean
 	public InMemoryUserDetailsManager inMemoryUserDetailsManager() {
 		return new InMemoryUserDetailsManager(
 				User.withDefaultPasswordEncoder()
@@ -47,14 +46,15 @@ public class SecurityConfiguration {
 
 	@Bean
 	SecurityFilterChain configure(HttpSecurity http) throws Exception {
-		http.authorizeHttpRequests((requests) -> {
-			requests.requestMatchers(EndpointRequest.to("health")).permitAll();
-			requests.requestMatchers(EndpointRequest.toAnyEndpoint().excluding(MappingsEndpoint.class))
-				.hasRole("ACTUATOR");
-			requests.requestMatchers("/**").hasRole("USER");
-		});
-		http.httpBasic(Customizer.withDefaults());
+		// @formatter:off
+		http.authorizeRequests()
+				.requestMatchers(EndpointRequest.to("health")).permitAll()
+				.requestMatchers(EndpointRequest.toAnyEndpoint().excluding(MappingsEndpoint.class)).hasRole("ACTUATOR")
+				.antMatchers("/**").hasRole("USER")
+				.and()
+			.httpBasic();
 		return http.build();
+		// @formatter:on
 	}
 
 }

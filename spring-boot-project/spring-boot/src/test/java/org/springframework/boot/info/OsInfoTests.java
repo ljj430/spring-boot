@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Jonatan Ivanov
  */
-class OsInfoTests {
+public class OsInfoTests {
 
 	@Test
 	void osInfoIsAvailable() {

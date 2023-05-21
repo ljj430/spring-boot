@@ -59,22 +59,19 @@ class JavaCompilerPluginConfigurationTests {
 		JavaCompilerPluginConfiguration configuration = new JavaCompilerPluginConfiguration(this.project);
 		assertThat(configuration.getSourceMajorVersion()).isNull();
 		assertThat(configuration.getTargetMajorVersion()).isNull();
-		assertThat(configuration.getReleaseVersion()).isNull();
 	}
 
 	@Test
 	void versionsAreReturnedFromConfiguration() throws IOException, XmlPullParserException {
-		Xpp3Dom dom = buildConfigurationDom("<source>1.9</source>", "<target>11</target>", "<release>12</release>");
+		Xpp3Dom dom = buildConfigurationDom("<source>1.9</source>", "<target>11</target>");
 		given(this.plugin.getConfiguration()).willReturn(dom);
 		Properties properties = new Properties();
 		properties.setProperty("maven.compiler.source", "1.8");
 		properties.setProperty("maven.compiler.target", "10");
-		properties.setProperty("maven.compiler.release", "11");
 		given(this.project.getProperties()).willReturn(properties);
 		JavaCompilerPluginConfiguration configuration = new JavaCompilerPluginConfiguration(this.project);
 		assertThat(configuration.getSourceMajorVersion()).isEqualTo("9");
 		assertThat(configuration.getTargetMajorVersion()).isEqualTo("11");
-		assertThat(configuration.getReleaseVersion()).isEqualTo("12");
 	}
 
 	@Test
@@ -83,12 +80,10 @@ class JavaCompilerPluginConfigurationTests {
 		Properties properties = new Properties();
 		properties.setProperty("maven.compiler.source", "1.8");
 		properties.setProperty("maven.compiler.target", "11");
-		properties.setProperty("maven.compiler.release", "12");
 		given(this.project.getProperties()).willReturn(properties);
 		JavaCompilerPluginConfiguration configuration = new JavaCompilerPluginConfiguration(this.project);
 		assertThat(configuration.getSourceMajorVersion()).isEqualTo("8");
 		assertThat(configuration.getTargetMajorVersion()).isEqualTo("11");
-		assertThat(configuration.getReleaseVersion()).isEqualTo("12");
 	}
 
 	private Xpp3Dom buildConfigurationDom(String... properties) throws IOException, XmlPullParserException {
