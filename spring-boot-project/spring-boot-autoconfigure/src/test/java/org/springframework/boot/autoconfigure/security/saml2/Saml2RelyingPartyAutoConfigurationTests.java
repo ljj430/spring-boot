@@ -19,8 +19,7 @@ package org.springframework.boot.autoconfigure.security.saml2;
 import java.io.InputStream;
 import java.util.List;
 
-import javax.servlet.Filter;
-
+import jakarta.servlet.Filter;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okio.Buffer;
@@ -28,6 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.boot.autoconfigure.web.servlet.WebMvcAutoConfiguration;
 import org.springframework.boot.test.context.FilteredClassLoader;
 import org.springframework.boot.test.context.assertj.AssertableWebApplicationContext;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -42,7 +42,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistration;
 import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistrationRepository;
 import org.springframework.security.saml2.provider.service.registration.Saml2MessageBinding;
-import org.springframework.security.saml2.provider.service.servlet.filter.Saml2WebSsoAuthenticationFilter;
+import org.springframework.security.saml2.provider.service.web.authentication.Saml2WebSsoAuthenticationFilter;
 import org.springframework.security.saml2.provider.service.web.authentication.logout.Saml2LogoutRequestFilter;
 import org.springframework.security.web.FilterChainProxy;
 import org.springframework.security.web.SecurityFilterChain;
@@ -65,16 +65,7 @@ class Saml2RelyingPartyAutoConfigurationTests {
 
 	@Test
 	void autoConfigurationShouldBeConditionalOnRelyingPartyRegistrationRepositoryClass() {
-		this.contextRunner.withPropertyValues(getPropertyValues(false))
-			.withClassLoader(new FilteredClassLoader(
-					"org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistrationRepository"))
-			.run((context) -> assertThat(context).doesNotHaveBean(RelyingPartyRegistrationRepository.class));
-	}
-
-	@Test
-	@Deprecated
-	void autoConfigurationShouldBeConditionalOnRelyingPartyRegistrationRepositoryClassDeprecated() {
-		this.contextRunner.withPropertyValues(getPropertyValues(true))
+		this.contextRunner.withPropertyValues(getPropertyValues())
 			.withClassLoader(new FilteredClassLoader(
 					"org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistrationRepository"))
 			.run((context) -> assertThat(context).doesNotHaveBean(RelyingPartyRegistrationRepository.class));
@@ -84,16 +75,7 @@ class Saml2RelyingPartyAutoConfigurationTests {
 	void autoConfigurationShouldBeConditionalOnServletWebApplication() {
 		new ApplicationContextRunner()
 			.withConfiguration(AutoConfigurations.of(Saml2RelyingPartyAutoConfiguration.class))
-			.withPropertyValues(getPropertyValues(false))
-			.run((context) -> assertThat(context).doesNotHaveBean(RelyingPartyRegistrationRepository.class));
-	}
-
-	@Test
-	@Deprecated
-	void autoConfigurationShouldBeConditionalOnServletWebApplicationDeprecated() {
-		new ApplicationContextRunner()
-			.withConfiguration(AutoConfigurations.of(Saml2RelyingPartyAutoConfiguration.class))
-			.withPropertyValues(getPropertyValues(true))
+			.withPropertyValues(getPropertyValues())
 			.run((context) -> assertThat(context).doesNotHaveBean(RelyingPartyRegistrationRepository.class));
 	}
 
@@ -105,7 +87,7 @@ class Saml2RelyingPartyAutoConfigurationTests {
 
 	@Test
 	void relyingPartyRegistrationRepositoryBeanShouldBeCreatedWhenPropertiesPresent() {
-		this.contextRunner.withPropertyValues(getPropertyValues(false)).run((context) -> {
+		this.contextRunner.withPropertyValues(getPropertyValues()).run((context) -> {
 			RelyingPartyRegistrationRepository repository = context.getBean(RelyingPartyRegistrationRepository.class);
 			RelyingPartyRegistration registration = repository.findByRegistrationId("foo");
 
@@ -118,34 +100,10 @@ class Saml2RelyingPartyAutoConfigurationTests {
 			assertThat(registration.getAssertionConsumerServiceBinding()).isEqualTo(Saml2MessageBinding.REDIRECT);
 			assertThat(registration.getAssertingPartyDetails().getSingleSignOnServiceBinding())
 				.isEqualTo(Saml2MessageBinding.POST);
-			assertThat(registration.getAssertingPartyDetails().getWantAuthnRequestsSigned()).isEqualTo(false);
+			assertThat(registration.getAssertingPartyDetails().getWantAuthnRequestsSigned()).isFalse();
 			assertThat(registration.getSigningX509Credentials()).hasSize(1);
 			assertThat(registration.getDecryptionX509Credentials()).hasSize(1);
 			assertThat(registration.getAssertingPartyDetails().getVerificationX509Credentials()).isNotNull();
-			assertThat(registration.getEntityId()).isEqualTo("{baseUrl}/saml2/foo-entity-id");
-		});
-	}
-
-	@Test
-	@Deprecated
-	void relyingPartyRegistrationRepositoryBeanShouldBeCreatedWhenPropertiesPresentDeprecated() {
-		this.contextRunner.withPropertyValues(getPropertyValues(true)).run((context) -> {
-			RelyingPartyRegistrationRepository repository = context.getBean(RelyingPartyRegistrationRepository.class);
-			RelyingPartyRegistration registration = repository.findByRegistrationId("foo");
-
-			assertThat(registration.getAssertingPartyDetails().getSingleSignOnServiceLocation())
-				.isEqualTo("https://simplesaml-for-spring-saml.cfapps.io/saml2/idp/SSOService.php");
-			assertThat(registration.getAssertingPartyDetails().getEntityId())
-				.isEqualTo("https://simplesaml-for-spring-saml.cfapps.io/saml2/idp/metadata.php");
-			assertThat(registration.getAssertionConsumerServiceLocation())
-				.isEqualTo("{baseUrl}/login/saml2/foo-entity-id");
-			assertThat(registration.getAssertionConsumerServiceBinding()).isEqualTo(Saml2MessageBinding.REDIRECT);
-			assertThat(registration.getAssertingPartyDetails().getSingleSignOnServiceBinding())
-				.isEqualTo(Saml2MessageBinding.POST);
-			assertThat(registration.getAssertingPartyDetails().getWantAuthnRequestsSigned()).isEqualTo(false);
-			assertThat(registration.getSigningX509Credentials()).hasSize(1);
-			assertThat(registration.getDecryptionX509Credentials()).hasSize(1);
-			assertThat(registration.getAssertingPartyDetails().getVerificationX509Credentials()).hasSize(1);
 			assertThat(registration.getEntityId()).isEqualTo("{baseUrl}/saml2/foo-entity-id");
 			assertThat(registration.getSingleLogoutServiceLocation())
 				.isEqualTo("https://simplesaml-for-spring-saml.cfapps.io/saml2/idp/SLOService.php");
@@ -163,18 +121,7 @@ class Saml2RelyingPartyAutoConfigurationTests {
 
 	@Test
 	void autoConfigurationWhenSignRequestsTrueAndNoSigningCredentialsShouldThrowException() {
-		this.contextRunner.withPropertyValues(getPropertyValuesWithoutSigningCredentials(true, false))
-			.run((context) -> {
-				assertThat(context).hasFailed();
-				assertThat(context.getStartupFailure()).hasMessageContaining(
-						"Signing credentials must not be empty when authentication requests require signing.");
-			});
-	}
-
-	@Test
-	@Deprecated
-	void autoConfigurationWhenSignRequestsTrueAndNoSigningCredentialsShouldThrowExceptionDeprecated() {
-		this.contextRunner.withPropertyValues(getPropertyValuesWithoutSigningCredentials(true, true)).run((context) -> {
+		this.contextRunner.withPropertyValues(getPropertyValuesWithoutSigningCredentials(true)).run((context) -> {
 			assertThat(context).hasFailed();
 			assertThat(context.getStartupFailure()).hasMessageContaining(
 					"Signing credentials must not be empty when authentication requests require signing.");
@@ -183,14 +130,7 @@ class Saml2RelyingPartyAutoConfigurationTests {
 
 	@Test
 	void autoConfigurationWhenSignRequestsFalseAndNoSigningCredentialsShouldNotThrowException() {
-		this.contextRunner.withPropertyValues(getPropertyValuesWithoutSigningCredentials(false, false))
-			.run((context) -> assertThat(context).hasSingleBean(RelyingPartyRegistrationRepository.class));
-	}
-
-	@Test
-	@Deprecated
-	void autoConfigurationWhenSignRequestsFalseAndNoSigningCredentialsShouldNotThrowExceptionDeprecated() {
-		this.contextRunner.withPropertyValues(getPropertyValuesWithoutSigningCredentials(false, true))
+		this.contextRunner.withPropertyValues(getPropertyValuesWithoutSigningCredentials(false))
 			.run((context) -> assertThat(context).hasSingleBean(RelyingPartyRegistrationRepository.class));
 	}
 
@@ -203,22 +143,7 @@ class Saml2RelyingPartyAutoConfigurationTests {
 			this.contextRunner.withPropertyValues(PREFIX + ".foo.assertingparty.metadata-uri=" + metadataUrl)
 				.run((context) -> {
 					assertThat(context).hasSingleBean(RelyingPartyRegistrationRepository.class);
-					assertThat(server.getRequestCount()).isEqualTo(1);
-				});
-		}
-	}
-
-	@Test
-	@Deprecated
-	void autoconfigurationShouldQueryAssertingPartyMetadataWhenMetadataUrlIsPresentDeprecated() throws Exception {
-		try (MockWebServer server = new MockWebServer()) {
-			server.start();
-			String metadataUrl = server.url("").toString();
-			setupMockResponse(server, new ClassPathResource("saml/idp-metadata"));
-			this.contextRunner.withPropertyValues(PREFIX + ".foo.identityprovider.metadata-uri=" + metadataUrl)
-				.run((context) -> {
-					assertThat(context).hasSingleBean(RelyingPartyRegistrationRepository.class);
-					assertThat(server.getRequestCount()).isEqualTo(1);
+					assertThat(server.getRequestCount()).isOne();
 				});
 		}
 	}
@@ -230,24 +155,6 @@ class Saml2RelyingPartyAutoConfigurationTests {
 			String metadataUrl = server.url("").toString();
 			setupMockResponse(server, new ClassPathResource("saml/idp-metadata"));
 			this.contextRunner.withPropertyValues(PREFIX + ".foo.assertingparty.metadata-uri=" + metadataUrl)
-				.run((context) -> {
-					RelyingPartyRegistrationRepository repository = context
-						.getBean(RelyingPartyRegistrationRepository.class);
-					RelyingPartyRegistration registration = repository.findByRegistrationId("foo");
-					assertThat(registration.getAssertingPartyDetails().getSingleSignOnServiceBinding())
-						.isEqualTo(Saml2MessageBinding.POST);
-				});
-		}
-	}
-
-	@Test
-	@Deprecated
-	void autoconfigurationShouldUseBindingFromMetadataUrlIfPresentDeprecated() throws Exception {
-		try (MockWebServer server = new MockWebServer()) {
-			server.start();
-			String metadataUrl = server.url("").toString();
-			setupMockResponse(server, new ClassPathResource("saml/idp-metadata"));
-			this.contextRunner.withPropertyValues(PREFIX + ".foo.identityprovider.metadata-uri=" + metadataUrl)
 				.run((context) -> {
 					RelyingPartyRegistrationRepository repository = context
 						.getBean(RelyingPartyRegistrationRepository.class);
@@ -278,39 +185,8 @@ class Saml2RelyingPartyAutoConfigurationTests {
 	}
 
 	@Test
-	@Deprecated
-	void autoconfigurationWhenMetadataUrlAndPropertyPresentShouldUseBindingFromPropertyDeprecated() throws Exception {
-		try (MockWebServer server = new MockWebServer()) {
-			server.start();
-			String metadataUrl = server.url("").toString();
-			setupMockResponse(server, new ClassPathResource("saml/idp-metadata"));
-			this.contextRunner
-				.withPropertyValues(PREFIX + ".foo.identityprovider.metadata-uri=" + metadataUrl,
-						PREFIX + ".foo.identityprovider.singlesignon.binding=redirect")
-				.run((context) -> {
-					RelyingPartyRegistrationRepository repository = context
-						.getBean(RelyingPartyRegistrationRepository.class);
-					RelyingPartyRegistration registration = repository.findByRegistrationId("foo");
-					assertThat(registration.getAssertingPartyDetails().getSingleSignOnServiceBinding())
-						.isEqualTo(Saml2MessageBinding.REDIRECT);
-				});
-		}
-	}
-
-	@Test
 	void autoconfigurationWhenNoMetadataUrlOrPropertyPresentShouldUseRedirectBinding() {
-		this.contextRunner.withPropertyValues(getPropertyValuesWithoutSsoBinding(false)).run((context) -> {
-			RelyingPartyRegistrationRepository repository = context.getBean(RelyingPartyRegistrationRepository.class);
-			RelyingPartyRegistration registration = repository.findByRegistrationId("foo");
-			assertThat(registration.getAssertingPartyDetails().getSingleSignOnServiceBinding())
-				.isEqualTo(Saml2MessageBinding.REDIRECT);
-		});
-	}
-
-	@Test
-	@Deprecated
-	void autoconfigurationWhenNoMetadataUrlOrPropertyPresentShouldUseRedirectBindingDeprecated() {
-		this.contextRunner.withPropertyValues(getPropertyValuesWithoutSsoBinding(true)).run((context) -> {
+		this.contextRunner.withPropertyValues(getPropertyValuesWithoutSsoBinding()).run((context) -> {
 			RelyingPartyRegistrationRepository repository = context.getBean(RelyingPartyRegistrationRepository.class);
 			RelyingPartyRegistration registration = repository.findByRegistrationId("foo");
 			assertThat(registration.getAssertingPartyDetails().getSingleSignOnServiceBinding())
@@ -320,18 +196,7 @@ class Saml2RelyingPartyAutoConfigurationTests {
 
 	@Test
 	void relyingPartyRegistrationRepositoryShouldBeConditionalOnMissingBean() {
-		this.contextRunner.withPropertyValues(getPropertyValues(false))
-			.withUserConfiguration(RegistrationRepositoryConfiguration.class)
-			.run((context) -> {
-				assertThat(context).hasSingleBean(RelyingPartyRegistrationRepository.class);
-				assertThat(context).hasBean("testRegistrationRepository");
-			});
-	}
-
-	@Test
-	@Deprecated
-	void relyingPartyRegistrationRepositoryShouldBeConditionalOnMissingBeanDeprecated() {
-		this.contextRunner.withPropertyValues(getPropertyValues(true))
+		this.contextRunner.withPropertyValues(getPropertyValues())
 			.withUserConfiguration(RegistrationRepositoryConfiguration.class)
 			.run((context) -> {
 				assertThat(context).hasSingleBean(RelyingPartyRegistrationRepository.class);
@@ -341,95 +206,49 @@ class Saml2RelyingPartyAutoConfigurationTests {
 
 	@Test
 	void samlLoginShouldBeConfigured() {
-		this.contextRunner.withPropertyValues(getPropertyValues(false))
+		this.contextRunner.withPropertyValues(getPropertyValues())
 			.run((context) -> assertThat(hasFilter(context, Saml2WebSsoAuthenticationFilter.class)).isTrue());
-	}
-
-	@Test
-	@Deprecated
-	void samlLoginShouldBeConfiguredDeprecated() {
-		this.contextRunner.withPropertyValues(getPropertyValues(true))
-			.run((context) -> assertThat(hasFilter(context, Saml2WebSsoAuthenticationFilter.class)).isTrue());
-	}
-
-	@Test
-	void samlLoginShouldBackOffWhenAWebSecurityConfigurerAdapterIsDefined() {
-		this.contextRunner.withUserConfiguration(WebSecurityConfigurerAdapterConfiguration.class)
-			.withPropertyValues(getPropertyValues(false))
-			.run((context) -> assertThat(hasFilter(context, Saml2WebSsoAuthenticationFilter.class)).isFalse());
-	}
-
-	@Test
-	@Deprecated
-	void samlLoginShouldBackOffWhenAWebSecurityConfigurerAdapterIsDefinedDeprecated() {
-		this.contextRunner.withUserConfiguration(WebSecurityConfigurerAdapterConfiguration.class)
-			.withPropertyValues(getPropertyValues(true))
-			.run((context) -> assertThat(hasFilter(context, Saml2WebSsoAuthenticationFilter.class)).isFalse());
 	}
 
 	@Test
 	void samlLoginShouldBackOffWhenASecurityFilterChainBeanIsPresent() {
-		this.contextRunner.withUserConfiguration(TestSecurityFilterChainConfig.class)
-			.withPropertyValues(getPropertyValues(false))
-			.run((context) -> assertThat(hasFilter(context, Saml2WebSsoAuthenticationFilter.class)).isFalse());
-	}
-
-	@Test
-	@Deprecated
-	void samlLoginShouldBackOffWhenASecurityFilterChainBeanIsPresentDeprecated() {
-		this.contextRunner.withUserConfiguration(TestSecurityFilterChainConfig.class)
-			.withPropertyValues(getPropertyValues(true))
+		this.contextRunner.withConfiguration(AutoConfigurations.of(WebMvcAutoConfiguration.class))
+			.withUserConfiguration(TestSecurityFilterChainConfig.class)
+			.withPropertyValues(getPropertyValues())
 			.run((context) -> assertThat(hasFilter(context, Saml2WebSsoAuthenticationFilter.class)).isFalse());
 	}
 
 	@Test
 	void samlLoginShouldShouldBeConditionalOnSecurityWebFilterClass() {
 		this.contextRunner.withClassLoader(new FilteredClassLoader(SecurityFilterChain.class))
-			.withPropertyValues(getPropertyValues(false))
-			.run((context) -> assertThat(context).doesNotHaveBean(SecurityFilterChain.class));
-	}
-
-	@Test
-	@Deprecated
-	void samlLoginShouldShouldBeConditionalOnSecurityWebFilterClassDeprecated() {
-		this.contextRunner.withClassLoader(new FilteredClassLoader(SecurityFilterChain.class))
-			.withPropertyValues(getPropertyValues(true))
+			.withPropertyValues(getPropertyValues())
 			.run((context) -> assertThat(context).doesNotHaveBean(SecurityFilterChain.class));
 	}
 
 	@Test
 	void samlLogoutShouldBeConfigured() {
-		this.contextRunner.withPropertyValues(getPropertyValues(false))
+		this.contextRunner.withPropertyValues(getPropertyValues())
 			.run((context) -> assertThat(hasFilter(context, Saml2LogoutRequestFilter.class)).isTrue());
 	}
 
-	private String[] getPropertyValuesWithoutSigningCredentials(boolean signRequests, boolean useDeprecated) {
-		String assertingParty = useDeprecated ? "identityprovider" : "assertingparty";
-		return new String[] {
-				PREFIX + ".foo." + assertingParty
-						+ ".singlesignon.url=https://simplesaml-for-spring-saml.cfapps.io/saml2/idp/SSOService.php",
-				PREFIX + ".foo." + assertingParty + ".singlesignon.binding=post",
-				PREFIX + ".foo." + assertingParty + ".singlesignon.sign-request=" + signRequests,
-				PREFIX + ".foo." + assertingParty
-						+ ".entity-id=https://simplesaml-for-spring-saml.cfapps.io/saml2/idp/metadata.php",
-				PREFIX + ".foo." + assertingParty
-						+ ".verification.credentials[0].certificate-location=classpath:saml/certificate-location" };
+	private String[] getPropertyValuesWithoutSigningCredentials(boolean signRequests) {
+		return new String[] { PREFIX
+				+ ".foo.assertingparty.singlesignon.url=https://simplesaml-for-spring-saml.cfapps.io/saml2/idp/SSOService.php",
+				PREFIX + ".foo.assertingparty.singlesignon.binding=post",
+				PREFIX + ".foo.assertingparty.singlesignon.sign-request=" + signRequests,
+				PREFIX + ".foo.assertingparty.entity-id=https://simplesaml-for-spring-saml.cfapps.io/saml2/idp/metadata.php",
+				PREFIX + ".foo.assertingparty.verification.credentials[0].certificate-location=classpath:saml/certificate-location" };
 	}
 
-	private String[] getPropertyValuesWithoutSsoBinding(boolean useDeprecated) {
-		String assertingParty = useDeprecated ? "identityprovider" : "assertingparty";
-		return new String[] {
-				PREFIX + ".foo." + assertingParty
-						+ ".singlesignon.url=https://simplesaml-for-spring-saml.cfapps.io/saml2/idp/SSOService.php",
-				PREFIX + ".foo." + assertingParty + ".singlesignon.sign-request=false",
-				PREFIX + ".foo." + assertingParty
-						+ ".entity-id=https://simplesaml-for-spring-saml.cfapps.io/saml2/idp/metadata.php",
-				PREFIX + ".foo." + assertingParty
-						+ ".verification.credentials[0].certificate-location=classpath:saml/certificate-location" };
+	private String[] getPropertyValuesWithoutSsoBinding() {
+		return new String[] { PREFIX
+				+ ".foo.assertingparty.singlesignon.url=https://simplesaml-for-spring-saml.cfapps.io/saml2/idp/SSOService.php",
+				PREFIX + ".foo.assertingparty.singlesignon.sign-request=false",
+				PREFIX + ".foo.assertingparty.entity-id=https://simplesaml-for-spring-saml.cfapps.io/saml2/idp/metadata.php",
+				PREFIX + ".foo.assertingparty.verification.credentials[0].certificate-location=classpath:saml/certificate-location" };
 	}
 
-	private String[] getPropertyValues(boolean useDeprecated) {
-		String assertingParty = useDeprecated ? "identityprovider" : "assertingparty";
+	private String[] getPropertyValues() {
 		return new String[] {
 				PREFIX + ".foo.signing.credentials[0].private-key-location=classpath:saml/private-key-location",
 				PREFIX + ".foo.signing.credentials[0].certificate-location=classpath:saml/certificate-location",
@@ -438,14 +257,11 @@ class Saml2RelyingPartyAutoConfigurationTests {
 				PREFIX + ".foo.singlelogout.url=https://simplesaml-for-spring-saml.cfapps.io/saml2/idp/SLOService.php",
 				PREFIX + ".foo.singlelogout.response-url=https://simplesaml-for-spring-saml.cfapps.io/",
 				PREFIX + ".foo.singlelogout.binding=post",
-				PREFIX + ".foo." + assertingParty
-						+ ".singlesignon.url=https://simplesaml-for-spring-saml.cfapps.io/saml2/idp/SSOService.php",
-				PREFIX + ".foo." + assertingParty + ".singlesignon.binding=post",
-				PREFIX + ".foo." + assertingParty + ".singlesignon.sign-request=false",
-				PREFIX + ".foo." + assertingParty
-						+ ".entity-id=https://simplesaml-for-spring-saml.cfapps.io/saml2/idp/metadata.php",
-				PREFIX + ".foo." + assertingParty
-						+ ".verification.credentials[0].certificate-location=classpath:saml/certificate-location",
+				PREFIX + ".foo.assertingparty.singlesignon.url=https://simplesaml-for-spring-saml.cfapps.io/saml2/idp/SSOService.php",
+				PREFIX + ".foo.assertingparty.singlesignon.binding=post",
+				PREFIX + ".foo.assertingparty.singlesignon.sign-request=false",
+				PREFIX + ".foo.assertingparty.entity-id=https://simplesaml-for-spring-saml.cfapps.io/saml2/idp/metadata.php",
+				PREFIX + ".foo.assertingparty.verification.credentials[0].certificate-location=classpath:saml/certificate-location",
 				PREFIX + ".foo.asserting-party.singlelogout.url=https://simplesaml-for-spring-saml.cfapps.io/saml2/idp/SLOService.php",
 				PREFIX + ".foo.asserting-party.singlelogout.response-url=https://simplesaml-for-spring-saml.cfapps.io/",
 				PREFIX + ".foo.asserting-party.singlelogout.binding=post",
@@ -487,25 +303,12 @@ class Saml2RelyingPartyAutoConfigurationTests {
 	}
 
 	@Configuration(proxyBeanMethods = false)
-	static class WebSecurityConfigurerAdapterConfiguration {
-
-		@Bean
-		@SuppressWarnings("deprecation")
-		org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter webSecurityConfigurerAdapter() {
-			return new org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter() {
-
-			};
-		}
-
-	}
-
-	@Configuration(proxyBeanMethods = false)
 	static class TestSecurityFilterChainConfig {
 
 		@Bean
 		SecurityFilterChain testSecurityFilterChain(HttpSecurity http) throws Exception {
-			return http.antMatcher("/**")
-				.authorizeRequests((authorize) -> authorize.anyRequest().authenticated())
+			return http.securityMatcher("/**")
+				.authorizeHttpRequests((authorize) -> authorize.anyRequest().authenticated())
 				.build();
 		}
 

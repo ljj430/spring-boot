@@ -20,7 +20,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Properties;
 
@@ -49,14 +48,14 @@ class UpgradeApplicatorTests {
 	void whenUpgradeIsAppliedToLibraryWithVersionThenBomIsUpdated() throws IOException {
 		File bom = new File(this.temp, "bom.gradle");
 		FileCopyUtils.copy(new File("src/test/resources/bom.gradle"), bom);
-		String originalContents = new String(Files.readAllBytes(bom.toPath()), StandardCharsets.UTF_8);
+		String originalContents = Files.readString(bom.toPath());
 		File gradleProperties = new File(this.temp, "gradle.properties");
 		FileCopyUtils.copy(new File("src/test/resources/gradle.properties"), gradleProperties);
 		new UpgradeApplicator(bom.toPath(), gradleProperties.toPath()).apply(
 				new Upgrade(new Library("ActiveMQ", new LibraryVersion(DependencyVersion.parse("5.15.11")), null, null),
 						DependencyVersion.parse("5.16")));
-		String bomContents = new String(Files.readAllBytes(bom.toPath()), StandardCharsets.UTF_8);
-		assertThat(bomContents.length()).isEqualTo(originalContents.length() - 3);
+		String bomContents = Files.readString(bom.toPath());
+		assertThat(bomContents).hasSize(originalContents.length() - 3);
 	}
 
 	@Test

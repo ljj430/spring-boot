@@ -60,8 +60,8 @@ To use it, add the following declaration for the https://github.com/git-commit-i
 	<build>
 		<plugins>
 			<plugin>
-				<groupId>pl.project13.maven</groupId>
-				<artifactId>git-commit-id-plugin</artifactId>
+				<groupId>io.github.git-commit-id</groupId>
+				<artifactId>git-commit-id-maven-plugin</artifactId>
 			</plugin>
 		</plugins>
 	</build>
@@ -118,7 +118,7 @@ If you use the `spring-boot-starter-parent` POM, you can declare the plugin and 
 If you do not use the parent POM, you can still use the plugin.
 However, you must additionally add an `<executions>` section, as follows:
 
-[source,xml,indent=0,subs="verbatim"]
+[source,xml,indent=0,subs="verbatim,attributes"]
 ----
 	<build>
 		<plugins>

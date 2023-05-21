@@ -16,9 +16,12 @@
 
 package org.springframework.boot.actuate.context.properties;
 
+import java.util.Collections;
+
 import org.junit.jupiter.api.Test;
 
-import org.springframework.boot.actuate.context.properties.ConfigurationPropertiesReportEndpoint.ApplicationConfigurationProperties;
+import org.springframework.boot.actuate.context.properties.ConfigurationPropertiesReportEndpoint.ConfigurationPropertiesDescriptor;
+import org.springframework.boot.actuate.endpoint.Show;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -44,7 +47,7 @@ class ConfigurationPropertiesReportEndpointParentTests {
 				.run((child) -> {
 					ConfigurationPropertiesReportEndpoint endpoint = child
 						.getBean(ConfigurationPropertiesReportEndpoint.class);
-					ApplicationConfigurationProperties applicationProperties = endpoint.configurationProperties();
+					ConfigurationPropertiesDescriptor applicationProperties = endpoint.configurationProperties();
 					assertThat(applicationProperties.getContexts()).containsOnlyKeys(child.getId(), parent.getId());
 					assertThat(applicationProperties.getContexts().get(child.getId()).getBeans().keySet())
 						.containsExactly("someProperties");
@@ -62,7 +65,7 @@ class ConfigurationPropertiesReportEndpointParentTests {
 				.run((child) -> {
 					ConfigurationPropertiesReportEndpoint endpoint = child
 						.getBean(ConfigurationPropertiesReportEndpoint.class);
-					ApplicationConfigurationProperties applicationProperties = endpoint.configurationProperties();
+					ConfigurationPropertiesDescriptor applicationProperties = endpoint.configurationProperties();
 					assertThat(applicationProperties.getContexts().get(child.getId()).getBeans().keySet())
 						.containsExactlyInAnyOrder("otherProperties");
 					assertThat((applicationProperties.getContexts().get(parent.getId()).getBeans().keySet()))
@@ -88,7 +91,7 @@ class ConfigurationPropertiesReportEndpointParentTests {
 
 		@Bean
 		ConfigurationPropertiesReportEndpoint endpoint() {
-			return new ConfigurationPropertiesReportEndpoint();
+			return new ConfigurationPropertiesReportEndpoint(Collections.emptyList(), Show.ALWAYS);
 		}
 
 		@Bean
@@ -104,7 +107,7 @@ class ConfigurationPropertiesReportEndpointParentTests {
 
 		@Bean
 		ConfigurationPropertiesReportEndpoint endpoint() {
-			return new ConfigurationPropertiesReportEndpoint();
+			return new ConfigurationPropertiesReportEndpoint(Collections.emptyList(), Show.ALWAYS);
 		}
 
 		@Bean

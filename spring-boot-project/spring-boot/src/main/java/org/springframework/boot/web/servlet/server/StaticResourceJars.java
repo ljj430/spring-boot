@@ -42,8 +42,8 @@ class StaticResourceJars {
 
 	List<URL> getUrls() {
 		ClassLoader classLoader = getClass().getClassLoader();
-		if (classLoader instanceof URLClassLoader) {
-			return getUrlsFrom(((URLClassLoader) classLoader).getURLs());
+		if (classLoader instanceof URLClassLoader urlClassLoader) {
+			return getUrlsFrom(urlClassLoader.getURLs());
 		}
 		else {
 			return getUrlsFrom(Stream.of(ManagementFactory.getRuntimeMXBean().getClassPath().split(File.pathSeparator))
@@ -108,7 +108,7 @@ class StaticResourceJars {
 	}
 
 	private void addUrlConnection(List<URL> urls, URL url, URLConnection connection) {
-		if (connection instanceof JarURLConnection && isResourcesJar((JarURLConnection) connection)) {
+		if (connection instanceof JarURLConnection jarURLConnection && isResourcesJar(jarURLConnection)) {
 			urls.add(url);
 		}
 	}
@@ -132,11 +132,8 @@ class StaticResourceJars {
 	}
 
 	private boolean isResourcesJar(JarFile jar) throws IOException {
-		try {
+		try (jar) {
 			return jar.getName().endsWith(".jar") && (jar.getJarEntry("META-INF/resources") != null);
-		}
-		finally {
-			jar.close();
 		}
 	}
 

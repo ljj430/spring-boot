@@ -33,8 +33,6 @@ import org.flywaydb.core.api.callback.Context;
 import org.flywaydb.core.api.callback.Event;
 import org.flywaydb.core.api.migration.JavaMigration;
 import org.flywaydb.core.internal.license.FlywayTeamsUpgradeRequiredException;
-import org.flywaydb.core.internal.plugin.PluginRegister;
-import org.flywaydb.database.sqlserver.SQLServerConfigurationExtension;
 import org.hibernate.engine.transaction.jta.platform.internal.NoJtaPlatform;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
@@ -43,9 +41,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
 
+import org.springframework.aot.hint.RuntimeHints;
+import org.springframework.aot.hint.predicate.RuntimeHintsPredicates;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration.FlywayAutoConfigurationRuntimeHints;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
 import org.springframework.boot.autoconfigure.jdbc.EmbeddedDataSourceConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -96,6 +97,7 @@ import static org.mockito.Mockito.mock;
  * @author András Deák
  * @author Takaaki Shimbo
  * @author Chris Bono
+ * @author Moritz Halbritter
  */
 @ExtendWith(OutputCaptureExtension.class)
 class FlywayAutoConfigurationTests {
@@ -273,7 +275,7 @@ class FlywayAutoConfigurationTests {
 			.run((context) -> {
 				assertThat(context).hasSingleBean(Flyway.class);
 				Flyway flyway = context.getBean(Flyway.class);
-				assertThat(Arrays.asList(flyway.getConfiguration().getSchemas()).toString()).isEqualTo("[public]");
+				assertThat(Arrays.asList(flyway.getConfiguration().getSchemas())).hasToString("[public]");
 			});
 	}
 
@@ -474,6 +476,18 @@ class FlywayAutoConfigurationTests {
 	}
 
 	@Test
+	void callbackAndMigrationBeansAreAppliedToConfigurationBeforeCustomizersAreCalled() {
+		this.contextRunner
+			.withUserConfiguration(EmbeddedDataSourceConfiguration.class, FlywayJavaMigrationsConfiguration.class,
+					CallbackConfiguration.class)
+			.withBean(FlywayConfigurationCustomizer.class, () -> (configuration) -> {
+				assertThat(configuration.getCallbacks()).isNotEmpty();
+				assertThat(configuration.getJavaMigrations()).isNotEmpty();
+			})
+			.run((context) -> assertThat(context).hasNotFailed());
+	}
+
+	@Test
 	void batchIsCorrectlyMapped() {
 		this.contextRunner.withUserConfiguration(EmbeddedDataSourceConfiguration.class)
 			.withPropertyValues("spring.flyway.batch=true")
@@ -498,8 +512,8 @@ class FlywayAutoConfigurationTests {
 	void licenseKeyIsCorrectlyMapped(CapturedOutput output) {
 		this.contextRunner.withUserConfiguration(EmbeddedDataSourceConfiguration.class)
 			.withPropertyValues("spring.flyway.license-key=<<secret>>")
-			.run((context) -> assertThat(output).contains(
-					"Flyway Teams Edition upgrade required: licenseKey is not supported by Flyway Community Edition."));
+			.run((context) -> assertThat(output).contains("License key detected - in order to use Teams or "
+					+ "Enterprise features, download Flyway Teams Edition & Flyway Enterprise Edition"));
 	}
 
 	@Test
@@ -584,14 +598,6 @@ class FlywayAutoConfigurationTests {
 	}
 
 	@Test
-	@Deprecated
-	void oracleKerberosConfigFileIsCorrectlyMappedToReplacementProperty() {
-		this.contextRunner.withUserConfiguration(EmbeddedDataSourceConfiguration.class)
-			.withPropertyValues("spring.flyway.oracle-kerberos-config-file=/tmp/config")
-			.run(validateFlywayTeamsPropertyOnly("kerberosConfigFile"));
-	}
-
-	@Test
 	void oracleKerberosCacheFileIsCorrectlyMapped() {
 		this.contextRunner.withUserConfiguration(EmbeddedDataSourceConfiguration.class)
 			.withPropertyValues("spring.flyway.oracle-kerberos-cache-file=/tmp/cache")
@@ -607,15 +613,9 @@ class FlywayAutoConfigurationTests {
 
 	@Test
 	void sqlServerKerberosLoginFileIsCorrectlyMapped() {
-		try {
-			this.contextRunner.withUserConfiguration(EmbeddedDataSourceConfiguration.class)
-				.withPropertyValues("spring.flyway.sql-server-kerberos-login-file=/tmp/config")
-				.run(validateFlywayTeamsPropertyOnly("sqlserver.kerberos.login.file"));
-		}
-		finally {
-			// Reset to default value
-			PluginRegister.getPlugin(SQLServerConfigurationExtension.class).setKerberosLoginFile(null);
-		}
+		this.contextRunner.withUserConfiguration(EmbeddedDataSourceConfiguration.class)
+			.withPropertyValues("spring.flyway.sql-server-kerberos-login-file=/tmp/config")
+			.run(validateFlywayTeamsPropertyOnly("sqlserver.kerberos.login.file"));
 	}
 
 	@Test
@@ -657,13 +657,6 @@ class FlywayAutoConfigurationTests {
 	}
 
 	@Test
-	void baselineMigrationPrefixIsCorrectlyMapped() {
-		this.contextRunner.withUserConfiguration(EmbeddedDataSourceConfiguration.class)
-			.withPropertyValues("spring.flyway.baseline-migration-prefix=BL")
-			.run(validateFlywayTeamsPropertyOnly("baselineMigrationPrefix"));
-	}
-
-	@Test
 	void scriptPlaceholderPrefixIsCorrectlyMapped() {
 		this.contextRunner.withUserConfiguration(EmbeddedDataSourceConfiguration.class)
 			.withPropertyValues("spring.flyway.script-placeholder-prefix=SPP")
@@ -677,6 +670,20 @@ class FlywayAutoConfigurationTests {
 			.withPropertyValues("spring.flyway.script-placeholder-suffix=SPS")
 			.run((context) -> assertThat(context.getBean(Flyway.class).getConfiguration().getScriptPlaceholderSuffix())
 				.isEqualTo("SPS"));
+	}
+
+	@Test
+	void containsResourceProviderCustomizer() {
+		this.contextRunner.withPropertyValues("spring.flyway.url:jdbc:hsqldb:mem:" + UUID.randomUUID())
+			.run((context) -> assertThat(context).hasSingleBean(ResourceProviderCustomizer.class));
+	}
+
+	@Test
+	void shouldRegisterResourceHints() {
+		RuntimeHints runtimeHints = new RuntimeHints();
+		new FlywayAutoConfigurationRuntimeHints().registerHints(runtimeHints, getClass().getClassLoader());
+		assertThat(RuntimeHintsPredicates.resource().forResource("db/migration/")).accepts(runtimeHints);
+		assertThat(RuntimeHintsPredicates.resource().forResource("db/migration/V1__init.sql")).accepts(runtimeHints);
 	}
 
 	private ContextConsumer<AssertableApplicationContext> validateFlywayTeamsPropertyOnly(String propertyName) {
@@ -1018,11 +1025,6 @@ class FlywayAutoConfigurationTests {
 		}
 
 		@Override
-		public boolean isUndo() {
-			return false;
-		}
-
-		@Override
 		public boolean canExecuteInTransaction() {
 			return true;
 		}
@@ -1030,11 +1032,6 @@ class FlywayAutoConfigurationTests {
 		@Override
 		public void migrate(org.flywaydb.core.api.migration.Context context) {
 
-		}
-
-		@Override
-		public boolean isBaselineMigration() {
-			return false;
 		}
 
 	}
