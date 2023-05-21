@@ -221,7 +221,7 @@ class MimeMappingsTests {
 			.loadProperties(new ClassPathResource("mime-mappings.properties", getClass()));
 		Properties tomcatDefaultMimeMappings = PropertiesLoaderUtils
 			.loadProperties(new ClassPathResource("MimeTypeMappings.properties", Tomcat.class));
-		assertThat(ourDefaultMimeMappings).containsExactlyInAnyOrderEntriesOf(tomcatDefaultMimeMappings);
+		assertThat(ourDefaultMimeMappings).isEqualTo(tomcatDefaultMimeMappings);
 	}
 
 	@Test
