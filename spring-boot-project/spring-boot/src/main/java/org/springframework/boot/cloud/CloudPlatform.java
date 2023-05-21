@@ -86,6 +86,19 @@ public enum CloudPlatform {
 	},
 
 	/**
+	 * Nomad platform.
+	 * @since 3.1.0
+	 */
+	NOMAD {
+
+		@Override
+		public boolean isDetected(Environment environment) {
+			return environment.containsProperty("NOMAD_ALLOC_ID");
+		}
+
+	},
+
+	/**
 	 * Kubernetes platform.
 	 */
 	KUBERNETES {
