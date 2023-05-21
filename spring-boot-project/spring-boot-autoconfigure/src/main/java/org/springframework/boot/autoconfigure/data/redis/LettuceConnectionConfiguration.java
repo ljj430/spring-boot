@@ -52,8 +52,6 @@ import org.springframework.util.StringUtils;
  *
  * @author Mark Paluch
  * @author Andy Wilkinson
- * @author Moritz Halbritter
- * @author Phillip Webb
  */
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnClass(RedisClient.class)
@@ -63,10 +61,8 @@ class LettuceConnectionConfiguration extends RedisConnectionConfiguration {
 	LettuceConnectionConfiguration(RedisProperties properties,
 			ObjectProvider<RedisStandaloneConfiguration> standaloneConfigurationProvider,
 			ObjectProvider<RedisSentinelConfiguration> sentinelConfigurationProvider,
-			ObjectProvider<RedisClusterConfiguration> clusterConfigurationProvider,
-			RedisConnectionDetails connectionDetails) {
-		super(properties, connectionDetails, standaloneConfigurationProvider, sentinelConfigurationProvider,
-				clusterConfigurationProvider);
+			ObjectProvider<RedisClusterConfiguration> clusterConfigurationProvider) {
+		super(properties, standaloneConfigurationProvider, sentinelConfigurationProvider, clusterConfigurationProvider);
 	}
 
 	@Bean(destroyMethod = "shutdown")
@@ -120,7 +116,7 @@ class LettuceConnectionConfiguration extends RedisConnectionConfiguration {
 
 	private LettuceClientConfigurationBuilder applyProperties(
 			LettuceClientConfiguration.LettuceClientConfigurationBuilder builder) {
-		if (getConnectionDetails() instanceof PropertiesRedisConnectionDetails && getProperties().isSsl()) {
+		if (getProperties().isSsl()) {
 			builder.useSsl();
 		}
 		if (getProperties().getTimeout() != null) {
@@ -165,7 +161,8 @@ class LettuceConnectionConfiguration extends RedisConnectionConfiguration {
 	}
 
 	private void customizeConfigurationFromUrl(LettuceClientConfiguration.LettuceClientConfigurationBuilder builder) {
-		if (urlUsesSsl()) {
+		ConnectionInfo connectionInfo = parseUrl(getProperties().getUrl());
+		if (connectionInfo.isUseSsl()) {
 			builder.useSsl();
 		}
 	}

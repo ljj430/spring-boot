@@ -64,25 +64,6 @@ class ZipkinAutoConfigurationTests {
 			.run((context) -> assertThat(context).doesNotHaveBean(BytesEncoder.class));
 	}
 
-	@Test
-	void definesPropertiesBasedConnectionDetailsByDefault() {
-		this.contextRunner.run((context) -> assertThat(context).hasSingleBean(PropertiesZipkinConnectionDetails.class));
-	}
-
-	@Test
-	void shouldUseCustomConnectionDetailsWhenDefined() {
-		this.contextRunner.withBean(ZipkinConnectionDetails.class, () -> new ZipkinConnectionDetails() {
-
-			@Override
-			public String getSpanEndpoint() {
-				return "http://localhost";
-			}
-
-		})
-			.run((context) -> assertThat(context).hasSingleBean(ZipkinConnectionDetails.class)
-				.doesNotHaveBean(PropertiesZipkinConnectionDetails.class));
-	}
-
 	@Configuration(proxyBeanMethods = false)
 	private static class CustomConfiguration {
 

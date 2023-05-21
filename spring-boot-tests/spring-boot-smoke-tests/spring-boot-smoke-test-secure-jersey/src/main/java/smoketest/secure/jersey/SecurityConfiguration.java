@@ -20,7 +20,6 @@ import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointR
 import org.springframework.boot.actuate.web.mappings.MappingsEndpoint;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
@@ -29,8 +28,8 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 public class SecurityConfiguration {
 
-	@Bean
 	@SuppressWarnings("deprecation")
+	@Bean
 	public InMemoryUserDetailsManager inMemoryUserDetailsManager() {
 		return new InMemoryUserDetailsManager(
 				User.withDefaultPasswordEncoder()
@@ -53,7 +52,7 @@ public class SecurityConfiguration {
 				.hasRole("ACTUATOR");
 			requests.requestMatchers("/**").hasRole("USER");
 		});
-		http.httpBasic(Customizer.withDefaults());
+		http.httpBasic();
 		return http.build();
 	}
 

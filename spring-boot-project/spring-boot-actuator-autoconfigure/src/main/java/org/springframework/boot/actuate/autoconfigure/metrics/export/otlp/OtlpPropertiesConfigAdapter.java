@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2023 the original author or authors.
+ * Copyright 2012-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package org.springframework.boot.actuate.autoconfigure.metrics.export.otlp;
 
 import java.util.Map;
 
-import io.micrometer.registry.otlp.AggregationTemporality;
 import io.micrometer.registry.otlp.OtlpConfig;
 
 import org.springframework.boot.actuate.autoconfigure.metrics.export.properties.StepRegistryPropertiesConfigAdapter;
@@ -27,7 +26,6 @@ import org.springframework.boot.actuate.autoconfigure.metrics.export.properties.
  * Adapter to convert {@link OtlpProperties} to an {@link OtlpConfig}.
  *
  * @author Eddú Meléndez
- * @author Jonatan Ivanov
  */
 class OtlpPropertiesConfigAdapter extends StepRegistryPropertiesConfigAdapter<OtlpProperties> implements OtlpConfig {
 
@@ -46,18 +44,8 @@ class OtlpPropertiesConfigAdapter extends StepRegistryPropertiesConfigAdapter<Ot
 	}
 
 	@Override
-	public AggregationTemporality aggregationTemporality() {
-		return get(OtlpProperties::getAggregationTemporality, OtlpConfig.super::aggregationTemporality);
-	}
-
-	@Override
 	public Map<String, String> resourceAttributes() {
 		return get(OtlpProperties::getResourceAttributes, OtlpConfig.super::resourceAttributes);
-	}
-
-	@Override
-	public Map<String, String> headers() {
-		return get(OtlpProperties::getHeaders, OtlpConfig.super::headers);
 	}
 
 }

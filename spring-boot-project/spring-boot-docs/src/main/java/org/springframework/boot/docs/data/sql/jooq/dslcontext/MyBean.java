@@ -36,9 +36,11 @@ public class MyBean {
 
 	// tag::method[]
 	public List<GregorianCalendar> authorsBornAfter1980() {
+		// @formatter:off
 		return this.create.selectFrom(AUTHOR)
-			.where(AUTHOR.DATE_OF_BIRTH.greaterThan(new GregorianCalendar(1980, 0, 1)))
-			.fetch(AUTHOR.DATE_OF_BIRTH);
+				.where(AUTHOR.DATE_OF_BIRTH.greaterThan(new GregorianCalendar(1980, 0, 1)))
+				.fetch(AUTHOR.DATE_OF_BIRTH);
+		// @formatter:on
 	} // end::method[]
 
 }

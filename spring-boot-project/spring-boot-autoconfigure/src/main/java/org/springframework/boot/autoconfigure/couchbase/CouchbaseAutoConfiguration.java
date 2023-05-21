@@ -34,18 +34,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.AnyNestedCondition;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnSingleCandidate;
-import org.springframework.boot.autoconfigure.couchbase.CouchbaseAutoConfiguration.CouchbaseCondition;
 import org.springframework.boot.autoconfigure.couchbase.CouchbaseProperties.Timeouts;
 import org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.util.ResourceUtils;
@@ -56,52 +52,34 @@ import org.springframework.util.ResourceUtils;
  * @author Eddú Meléndez
  * @author Stephane Nicoll
  * @author Yulin Qin
- * @author Moritz Halbritter
- * @author Andy Wilkinson
- * @author Phillip Webb
  * @since 1.4.0
  */
 @AutoConfiguration(after = JacksonAutoConfiguration.class)
 @ConditionalOnClass(Cluster.class)
-@Conditional(CouchbaseCondition.class)
+@ConditionalOnProperty("spring.couchbase.connection-string")
 @EnableConfigurationProperties(CouchbaseProperties.class)
 public class CouchbaseAutoConfiguration {
 
-	private final CouchbaseProperties properties;
-
-	CouchbaseAutoConfiguration(CouchbaseProperties properties,
-			ObjectProvider<CouchbaseConnectionDetails> connectionDetails) {
-		this.properties = properties;
-	}
-
-	@Bean
-	@ConditionalOnMissingBean(CouchbaseConnectionDetails.class)
-	PropertiesCouchbaseConnectionDetails couchbaseConnectionDetails() {
-		return new PropertiesCouchbaseConnectionDetails(this.properties);
-	}
-
 	@Bean
 	@ConditionalOnMissingBean
-	public ClusterEnvironment couchbaseClusterEnvironment(CouchbaseConnectionDetails connectionDetails,
+	public ClusterEnvironment couchbaseClusterEnvironment(CouchbaseProperties properties,
 			ObjectProvider<ClusterEnvironmentBuilderCustomizer> customizers) {
-		Builder builder = initializeEnvironmentBuilder(connectionDetails);
+		Builder builder = initializeEnvironmentBuilder(properties);
 		customizers.orderedStream().forEach((customizer) -> customizer.customize(builder));
 		return builder.build();
 	}
 
 	@Bean(destroyMethod = "disconnect")
 	@ConditionalOnMissingBean
-	public Cluster couchbaseCluster(ClusterEnvironment couchbaseClusterEnvironment,
-			CouchbaseConnectionDetails connectionDetails) {
-		ClusterOptions options = ClusterOptions
-			.clusterOptions(connectionDetails.getUsername(), connectionDetails.getPassword())
+	public Cluster couchbaseCluster(CouchbaseProperties properties, ClusterEnvironment couchbaseClusterEnvironment) {
+		ClusterOptions options = ClusterOptions.clusterOptions(properties.getUsername(), properties.getPassword())
 			.environment(couchbaseClusterEnvironment);
-		return Cluster.connect(connectionDetails.getConnectionString(), options);
+		return Cluster.connect(properties.getConnectionString(), options);
 	}
 
-	private ClusterEnvironment.Builder initializeEnvironmentBuilder(CouchbaseConnectionDetails connectionDetails) {
+	private ClusterEnvironment.Builder initializeEnvironmentBuilder(CouchbaseProperties properties) {
 		ClusterEnvironment.Builder builder = ClusterEnvironment.builder();
-		Timeouts timeouts = this.properties.getEnv().getTimeouts();
+		Timeouts timeouts = properties.getEnv().getTimeouts();
 		builder.timeoutConfig((config) -> config.kvTimeout(timeouts.getKeyValue())
 			.analyticsTimeout(timeouts.getAnalytics())
 			.kvDurableTimeout(timeouts.getKeyValueDurable())
@@ -111,14 +89,13 @@ public class CouchbaseAutoConfiguration {
 			.managementTimeout(timeouts.getManagement())
 			.connectTimeout(timeouts.getConnect())
 			.disconnectTimeout(timeouts.getDisconnect()));
-		CouchbaseProperties.Io io = this.properties.getEnv().getIo();
+		CouchbaseProperties.Io io = properties.getEnv().getIo();
 		builder.ioConfig((config) -> config.maxHttpConnections(io.getMaxEndpoints())
 			.numKvConnections(io.getMinEndpoints())
 			.idleHttpConnectionTimeout(io.getIdleHttpConnectionTimeout()));
-		if ((connectionDetails instanceof PropertiesCouchbaseConnectionDetails)
-				&& this.properties.getEnv().getSsl().getEnabled()) {
+		if (properties.getEnv().getSsl().getEnabled()) {
 			builder.securityConfig((config) -> config.enableTls(true)
-				.trustManagerFactory(getTrustManagerFactory(this.properties.getEnv().getSsl())));
+				.trustManagerFactory(getTrustManagerFactory(properties.getEnv().getSsl())));
 		}
 		return builder;
 	}
@@ -176,56 +153,6 @@ public class CouchbaseAutoConfiguration {
 		@Override
 		public int getOrder() {
 			return 0;
-		}
-
-	}
-
-	/**
-	 * Condition that matches when {@code spring.couchbase.connection-string} has been
-	 * configured or there is a {@link CouchbaseConnectionDetails} bean.
-	 */
-	static final class CouchbaseCondition extends AnyNestedCondition {
-
-		CouchbaseCondition() {
-			super(ConfigurationPhase.REGISTER_BEAN);
-		}
-
-		@ConditionalOnProperty(prefix = "spring.couchbase", name = "connection-string")
-		private static final class CouchbaseUrlCondition {
-
-		}
-
-		@ConditionalOnBean(CouchbaseConnectionDetails.class)
-		private static final class CouchbaseConnectionDetailsCondition {
-
-		}
-
-	}
-
-	/**
-	 * Adapts {@link CouchbaseProperties} to {@link CouchbaseConnectionDetails}.
-	 */
-	static final class PropertiesCouchbaseConnectionDetails implements CouchbaseConnectionDetails {
-
-		private final CouchbaseProperties properties;
-
-		PropertiesCouchbaseConnectionDetails(CouchbaseProperties properties) {
-			this.properties = properties;
-		}
-
-		@Override
-		public String getConnectionString() {
-			return this.properties.getConnectionString();
-		}
-
-		@Override
-		public String getUsername() {
-			return this.properties.getUsername();
-		}
-
-		@Override
-		public String getPassword() {
-			return this.properties.getPassword();
 		}
 
 	}
