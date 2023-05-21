@@ -16,6 +16,9 @@
 
 package org.springframework.boot.autoconfigure.graphql.rsocket;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import graphql.GraphQL;
 import io.rsocket.core.RSocketServer;
@@ -55,9 +58,10 @@ public class GraphQlRSocketAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public GraphQlRSocketHandler graphQlRSocketHandler(ExecutionGraphQlService graphQlService,
-			ObjectProvider<RSocketGraphQlInterceptor> interceptors, ObjectMapper objectMapper) {
-		return new GraphQlRSocketHandler(graphQlService, interceptors.orderedStream().toList(),
-				new Jackson2JsonEncoder(objectMapper));
+			ObjectProvider<RSocketGraphQlInterceptor> interceptorsProvider, ObjectMapper objectMapper) {
+		List<RSocketGraphQlInterceptor> interceptors = interceptorsProvider.orderedStream()
+			.collect(Collectors.toList());
+		return new GraphQlRSocketHandler(graphQlService, interceptors, new Jackson2JsonEncoder(objectMapper));
 	}
 
 	@Bean

@@ -16,7 +16,7 @@
 
 package org.springframework.boot.web.servlet;
 
-import jakarta.servlet.Filter;
+import javax.servlet.Filter;
 
 import org.springframework.boot.testsupport.classpath.ClassPathExclusions;
 import org.springframework.boot.web.servlet.mock.MockFilter;

@@ -3,10 +3,12 @@ my:
   property: fromyamlfile
   other: notempty
 ---
-spring.config.activate.on-profile: dev
+spring:
+  profiles: dev
 my:
   property: fromdevprofile
 ---
-spring.config.activate.on-profile: other
+spring:
+  profiles: other
 my:
   property: fromotherprofile

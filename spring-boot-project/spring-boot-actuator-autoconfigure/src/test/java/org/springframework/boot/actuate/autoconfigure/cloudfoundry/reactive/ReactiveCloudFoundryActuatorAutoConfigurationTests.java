@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import javax.net.ssl.SSLException;
 
@@ -219,7 +220,9 @@ class ReactiveCloudFoundryActuatorAutoConfigurationTests {
 			.run((context) -> {
 				CloudFoundryWebFluxEndpointHandlerMapping handlerMapping = getHandlerMapping(context);
 				Collection<ExposableWebEndpoint> endpoints = handlerMapping.getEndpoints();
-				List<EndpointId> endpointIds = endpoints.stream().map(ExposableWebEndpoint::getEndpointId).toList();
+				List<EndpointId> endpointIds = endpoints.stream()
+					.map(ExposableWebEndpoint::getEndpointId)
+					.collect(Collectors.toList());
 				assertThat(endpointIds).contains(EndpointId.of("test"));
 			});
 	}

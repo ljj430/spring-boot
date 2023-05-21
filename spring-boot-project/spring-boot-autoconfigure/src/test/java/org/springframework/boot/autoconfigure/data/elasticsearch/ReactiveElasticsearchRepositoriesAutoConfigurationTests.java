@@ -29,15 +29,10 @@ import org.springframework.boot.autoconfigure.data.alt.elasticsearch.CityReactiv
 import org.springframework.boot.autoconfigure.data.elasticsearch.city.City;
 import org.springframework.boot.autoconfigure.data.elasticsearch.city.ReactiveCityRepository;
 import org.springframework.boot.autoconfigure.data.empty.EmptyDataPackage;
-import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchClientAutoConfiguration;
-import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration;
-import org.springframework.boot.autoconfigure.elasticsearch.ReactiveElasticsearchClientAutoConfiguration;
-import org.springframework.boot.autoconfigure.logging.ConditionEvaluationReportLoggingListener;
-import org.springframework.boot.logging.LogLevel;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.boot.testsupport.testcontainers.DockerImageNames;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.elasticsearch.client.elc.ReactiveElasticsearchTemplate;
+import org.springframework.data.elasticsearch.core.ReactiveElasticsearchTemplate;
 import org.springframework.data.elasticsearch.repository.config.EnableReactiveElasticsearchRepositories;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -58,14 +53,11 @@ class ReactiveElasticsearchRepositoriesAutoConfigurationTests {
 		.withStartupTimeout(Duration.ofMinutes(10));
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(ElasticsearchClientAutoConfiguration.class,
-				ElasticsearchRestClientAutoConfiguration.class,
-				ReactiveElasticsearchRepositoriesAutoConfiguration.class, ElasticsearchDataAutoConfiguration.class,
-				ReactiveElasticsearchClientAutoConfiguration.class))
+		.withConfiguration(AutoConfigurations.of(ReactiveElasticsearchRestClientAutoConfiguration.class,
+				ReactiveElasticsearchRepositoriesAutoConfiguration.class, ElasticsearchDataAutoConfiguration.class))
 		.withPropertyValues(
 				"spring.elasticsearch.uris=" + elasticsearch.getHost() + ":" + elasticsearch.getFirstMappedPort(),
-				"spring.elasticsearch.socket-timeout=30s")
-		.withInitializer(ConditionEvaluationReportLoggingListener.forLogLevel(LogLevel.INFO));
+				"spring.elasticsearch.socket-timeout=30s");
 
 	@Test
 	void testDefaultRepositoryConfiguration() {

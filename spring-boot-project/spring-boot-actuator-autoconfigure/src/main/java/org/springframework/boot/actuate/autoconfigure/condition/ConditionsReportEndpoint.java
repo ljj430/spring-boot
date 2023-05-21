@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
-import org.springframework.boot.actuate.endpoint.OperationResponseBody;
 import org.springframework.boot.actuate.endpoint.annotation.Endpoint;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
 import org.springframework.boot.autoconfigure.condition.ConditionEvaluationReport;
@@ -61,36 +60,37 @@ public class ConditionsReportEndpoint {
 	}
 
 	@ReadOperation
-	public ConditionsDescriptor conditions() {
-		Map<String, ContextConditionsDescriptor> contextConditionEvaluations = new HashMap<>();
+	public ApplicationConditionEvaluation applicationConditionEvaluation() {
+		Map<String, ContextConditionEvaluation> contextConditionEvaluations = new HashMap<>();
 		ConfigurableApplicationContext target = this.context;
 		while (target != null) {
-			contextConditionEvaluations.put(target.getId(), new ContextConditionsDescriptor(target));
+			contextConditionEvaluations.put(target.getId(), new ContextConditionEvaluation(target));
 			target = getConfigurableParent(target);
 		}
-		return new ConditionsDescriptor(contextConditionEvaluations);
+		return new ApplicationConditionEvaluation(contextConditionEvaluations);
 	}
 
 	private ConfigurableApplicationContext getConfigurableParent(ConfigurableApplicationContext context) {
 		ApplicationContext parent = context.getParent();
-		if (parent instanceof ConfigurableApplicationContext configurableParent) {
-			return configurableParent;
+		if (parent instanceof ConfigurableApplicationContext) {
+			return (ConfigurableApplicationContext) parent;
 		}
 		return null;
 	}
 
 	/**
-	 * A description of an application's condition evaluation.
+	 * A description of an application's condition evaluation, primarily intended for
+	 * serialization to JSON.
 	 */
-	public static final class ConditionsDescriptor implements OperationResponseBody {
+	public static final class ApplicationConditionEvaluation {
 
-		private final Map<String, ContextConditionsDescriptor> contexts;
+		private final Map<String, ContextConditionEvaluation> contexts;
 
-		private ConditionsDescriptor(Map<String, ContextConditionsDescriptor> contexts) {
+		private ApplicationConditionEvaluation(Map<String, ContextConditionEvaluation> contexts) {
 			this.contexts = contexts;
 		}
 
-		public Map<String, ContextConditionsDescriptor> getContexts() {
+		public Map<String, ContextConditionEvaluation> getContexts() {
 			return this.contexts;
 		}
 
@@ -101,11 +101,11 @@ public class ConditionsReportEndpoint {
 	 * for serialization to JSON.
 	 */
 	@JsonInclude(Include.NON_EMPTY)
-	public static final class ContextConditionsDescriptor {
+	public static final class ContextConditionEvaluation {
 
-		private final MultiValueMap<String, MessageAndConditionDescriptor> positiveMatches;
+		private final MultiValueMap<String, MessageAndCondition> positiveMatches;
 
-		private final Map<String, MessageAndConditionsDescriptor> negativeMatches;
+		private final Map<String, MessageAndConditions> negativeMatches;
 
 		private final List<String> exclusions;
 
@@ -113,7 +113,7 @@ public class ConditionsReportEndpoint {
 
 		private final String parentId;
 
-		public ContextConditionsDescriptor(ConfigurableApplicationContext context) {
+		public ContextConditionEvaluation(ConfigurableApplicationContext context) {
 			ConditionEvaluationReport report = ConditionEvaluationReport.get(context.getBeanFactory());
 			this.positiveMatches = new LinkedMultiValueMap<>();
 			this.negativeMatches = new LinkedHashMap<>();
@@ -127,18 +127,18 @@ public class ConditionsReportEndpoint {
 			String name = ClassUtils.getShortName(source);
 			if (conditionAndOutcomes.isFullMatch()) {
 				conditionAndOutcomes.forEach((conditionAndOutcome) -> this.positiveMatches.add(name,
-						new MessageAndConditionDescriptor(conditionAndOutcome)));
+						new MessageAndCondition(conditionAndOutcome)));
 			}
 			else {
-				this.negativeMatches.put(name, new MessageAndConditionsDescriptor(conditionAndOutcomes));
+				this.negativeMatches.put(name, new MessageAndConditions(conditionAndOutcomes));
 			}
 		}
 
-		public Map<String, List<MessageAndConditionDescriptor>> getPositiveMatches() {
+		public Map<String, List<MessageAndCondition>> getPositiveMatches() {
 			return this.positiveMatches;
 		}
 
-		public Map<String, MessageAndConditionsDescriptor> getNegativeMatches() {
+		public Map<String, MessageAndConditions> getNegativeMatches() {
 			return this.negativeMatches;
 		}
 
@@ -160,25 +160,25 @@ public class ConditionsReportEndpoint {
 	 * Adapts {@link ConditionAndOutcomes} to a JSON friendly structure.
 	 */
 	@JsonPropertyOrder({ "notMatched", "matched" })
-	public static class MessageAndConditionsDescriptor {
+	public static class MessageAndConditions {
 
-		private final List<MessageAndConditionDescriptor> notMatched = new ArrayList<>();
+		private final List<MessageAndCondition> notMatched = new ArrayList<>();
 
-		private final List<MessageAndConditionDescriptor> matched = new ArrayList<>();
+		private final List<MessageAndCondition> matched = new ArrayList<>();
 
-		public MessageAndConditionsDescriptor(ConditionAndOutcomes conditionAndOutcomes) {
+		public MessageAndConditions(ConditionAndOutcomes conditionAndOutcomes) {
 			for (ConditionAndOutcome conditionAndOutcome : conditionAndOutcomes) {
-				List<MessageAndConditionDescriptor> target = (conditionAndOutcome.getOutcome().isMatch() ? this.matched
+				List<MessageAndCondition> target = (conditionAndOutcome.getOutcome().isMatch() ? this.matched
 						: this.notMatched);
-				target.add(new MessageAndConditionDescriptor(conditionAndOutcome));
+				target.add(new MessageAndCondition(conditionAndOutcome));
 			}
 		}
 
-		public List<MessageAndConditionDescriptor> getNotMatched() {
+		public List<MessageAndCondition> getNotMatched() {
 			return this.notMatched;
 		}
 
-		public List<MessageAndConditionDescriptor> getMatched() {
+		public List<MessageAndCondition> getMatched() {
 			return this.matched;
 		}
 
@@ -188,13 +188,13 @@ public class ConditionsReportEndpoint {
 	 * Adapts {@link ConditionAndOutcome} to a JSON friendly structure.
 	 */
 	@JsonPropertyOrder({ "condition", "message" })
-	public static class MessageAndConditionDescriptor {
+	public static class MessageAndCondition {
 
 		private final String condition;
 
 		private final String message;
 
-		public MessageAndConditionDescriptor(ConditionAndOutcome conditionAndOutcome) {
+		public MessageAndCondition(ConditionAndOutcome conditionAndOutcome) {
 			Condition condition = conditionAndOutcome.getCondition();
 			ConditionOutcome outcome = conditionAndOutcome.getOutcome();
 			this.condition = ClassUtils.getShortName(condition.getClass());

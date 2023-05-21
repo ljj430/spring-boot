@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2022 the original author or authors.
+ * Copyright 2012-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package org.springframework.boot.actuate.info;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.boot.actuate.endpoint.OperationResponseBody;
 import org.springframework.boot.actuate.endpoint.annotation.Endpoint;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
 import org.springframework.util.Assert;
@@ -52,7 +51,8 @@ public class InfoEndpoint {
 		for (InfoContributor contributor : this.infoContributors) {
 			contributor.contribute(builder);
 		}
-		return OperationResponseBody.of(builder.build().getDetails());
+		Info build = builder.build();
+		return build.getDetails();
 	}
 
 }

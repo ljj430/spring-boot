@@ -22,7 +22,6 @@ import org.springframework.beans.factory.InjectionPoint;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.UnsatisfiedDependencyException;
 import org.springframework.boot.context.properties.ConfigurationPropertiesBean.BindMethod;
-import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import org.springframework.boot.diagnostics.FailureAnalysis;
 import org.springframework.boot.diagnostics.analyzer.AbstractInjectionFailureAnalyzer;
 import org.springframework.core.Ordered;
@@ -61,12 +60,13 @@ class NotConstructorBoundInjectionFailureAnalyzer
 	}
 
 	private boolean isConstructorBindingConfigurationProperties(InjectionPoint injectionPoint) {
-		if (injectionPoint != null && injectionPoint.getMember() instanceof Constructor<?> constructor) {
+		if (injectionPoint != null && injectionPoint.getMember() instanceof Constructor) {
+			Constructor<?> constructor = (Constructor<?>) injectionPoint.getMember();
 			Class<?> declaringClass = constructor.getDeclaringClass();
 			MergedAnnotation<ConfigurationProperties> configurationProperties = MergedAnnotations.from(declaringClass)
 				.get(ConfigurationProperties.class);
 			return configurationProperties.isPresent()
-					&& BindMethod.get(constructor.getDeclaringClass()) == BindMethod.VALUE_OBJECT;
+					&& BindMethod.forType(constructor.getDeclaringClass()) == BindMethod.VALUE_OBJECT;
 		}
 		return false;
 	}

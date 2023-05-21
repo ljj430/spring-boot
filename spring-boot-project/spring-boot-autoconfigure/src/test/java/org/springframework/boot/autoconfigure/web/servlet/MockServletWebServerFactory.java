@@ -18,7 +18,7 @@ package org.springframework.boot.autoconfigure.web.servlet;
 
 import java.util.Arrays;
 
-import jakarta.servlet.ServletContext;
+import javax.servlet.ServletContext;
 
 import org.springframework.boot.testsupport.web.servlet.MockServletWebServer.RegisteredFilter;
 import org.springframework.boot.testsupport.web.servlet.MockServletWebServer.RegisteredServlet;

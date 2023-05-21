@@ -46,6 +46,7 @@ import org.springframework.boot.devtools.restart.FailureHandler.Outcome;
 import org.springframework.boot.devtools.restart.classloader.ClassLoaderFiles;
 import org.springframework.boot.devtools.restart.classloader.RestartClassLoader;
 import org.springframework.boot.logging.DeferredLog;
+import org.springframework.boot.system.JavaVersion;
 import org.springframework.cglib.core.ClassNameReader;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.GenericApplicationContext;
@@ -106,7 +107,7 @@ public class Restarter {
 
 	private boolean enabled = true;
 
-	private final URL[] initialUrls;
+	private URL[] initialUrls;
 
 	private final String mainClassName;
 
@@ -332,6 +333,9 @@ public class Restarter {
 		cleanCachedIntrospectionResultsCache();
 		ReflectionUtils.clearCache();
 		clearAnnotationUtilsCache();
+		if (!JavaVersion.getJavaVersion().isEqualOrNewerThan(JavaVersion.NINE)) {
+			clear("com.sun.naming.internal.ResourceManager", "propertiesCache");
+		}
 	}
 
 	private void cleanCachedIntrospectionResultsCache() {
@@ -347,6 +351,17 @@ public class Restarter {
 		catch (Throwable ex) {
 			clear(AnnotationUtils.class, "findAnnotationCache");
 			clear(AnnotationUtils.class, "annotatedInterfaceCache");
+		}
+	}
+
+	private void clear(String className, String fieldName) {
+		try {
+			clear(Class.forName(className), fieldName);
+		}
+		catch (Exception ex) {
+			if (this.logger.isDebugEnabled()) {
+				this.logger.debug("Unable to clear field " + className + " " + fieldName, ex);
+			}
 		}
 	}
 
@@ -411,8 +426,8 @@ public class Restarter {
 		if (applicationContext != null && applicationContext.getParent() != null) {
 			return;
 		}
-		if (applicationContext instanceof GenericApplicationContext genericContext) {
-			prepare(genericContext);
+		if (applicationContext instanceof GenericApplicationContext) {
+			prepare((GenericApplicationContext) applicationContext);
 		}
 		this.rootContexts.add(applicationContext);
 	}

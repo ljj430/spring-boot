@@ -25,14 +25,9 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import org.springframework.aot.hint.RuntimeHints;
-import org.springframework.aot.hint.annotation.ReflectiveRuntimeHintsRegistrar;
-import org.springframework.aot.hint.predicate.ReflectionHintsPredicates;
-import org.springframework.aot.hint.predicate.RuntimeHintsPredicates;
-import org.springframework.boot.actuate.logging.LoggersEndpoint.GroupLoggerLevelsDescriptor;
-import org.springframework.boot.actuate.logging.LoggersEndpoint.LoggerLevelsDescriptor;
-import org.springframework.boot.actuate.logging.LoggersEndpoint.LoggersDescriptor;
-import org.springframework.boot.actuate.logging.LoggersEndpoint.SingleLoggerLevelsDescriptor;
+import org.springframework.boot.actuate.logging.LoggersEndpoint.GroupLoggerLevels;
+import org.springframework.boot.actuate.logging.LoggersEndpoint.LoggerLevels;
+import org.springframework.boot.actuate.logging.LoggersEndpoint.SingleLoggerLevels;
 import org.springframework.boot.logging.LogLevel;
 import org.springframework.boot.logging.LoggerConfiguration;
 import org.springframework.boot.logging.LoggerGroups;
@@ -66,33 +61,35 @@ class LoggersEndpointTests {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	void loggersShouldReturnLoggerConfigurationsWithNoLoggerGroups() {
 		given(this.loggingSystem.getLoggerConfigurations())
 			.willReturn(Collections.singletonList(new LoggerConfiguration("ROOT", null, LogLevel.DEBUG)));
 		given(this.loggingSystem.getSupportedLogLevels()).willReturn(EnumSet.allOf(LogLevel.class));
-		LoggersDescriptor result = new LoggersEndpoint(this.loggingSystem, new LoggerGroups()).loggers();
-		Map<String, LoggerLevelsDescriptor> loggers = result.getLoggers();
-		Set<LogLevel> levels = result.getLevels();
-		SingleLoggerLevelsDescriptor rootLevels = (SingleLoggerLevelsDescriptor) loggers.get("ROOT");
+		Map<String, Object> result = new LoggersEndpoint(this.loggingSystem, new LoggerGroups()).loggers();
+		Map<String, LoggerLevels> loggers = (Map<String, LoggerLevels>) result.get("loggers");
+		Set<LogLevel> levels = (Set<LogLevel>) result.get("levels");
+		SingleLoggerLevels rootLevels = (SingleLoggerLevels) loggers.get("ROOT");
 		assertThat(rootLevels.getConfiguredLevel()).isNull();
 		assertThat(rootLevels.getEffectiveLevel()).isEqualTo("DEBUG");
 		assertThat(levels).containsExactly(LogLevel.OFF, LogLevel.FATAL, LogLevel.ERROR, LogLevel.WARN, LogLevel.INFO,
 				LogLevel.DEBUG, LogLevel.TRACE);
-		Map<String, GroupLoggerLevelsDescriptor> groups = result.getGroups();
+		Map<String, LoggerGroups> groups = (Map<String, LoggerGroups>) result.get("groups");
 		assertThat(groups).isEmpty();
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	void loggersShouldReturnLoggerConfigurationsWithLoggerGroups() {
 		given(this.loggingSystem.getLoggerConfigurations())
 			.willReturn(Collections.singletonList(new LoggerConfiguration("ROOT", null, LogLevel.DEBUG)));
 		given(this.loggingSystem.getSupportedLogLevels()).willReturn(EnumSet.allOf(LogLevel.class));
-		LoggersDescriptor result = new LoggersEndpoint(this.loggingSystem, this.loggerGroups).loggers();
-		Map<String, GroupLoggerLevelsDescriptor> loggerGroups = result.getGroups();
-		GroupLoggerLevelsDescriptor groupLevel = loggerGroups.get("test");
-		Map<String, LoggerLevelsDescriptor> loggers = result.getLoggers();
-		Set<LogLevel> levels = result.getLevels();
-		SingleLoggerLevelsDescriptor rootLevels = (SingleLoggerLevelsDescriptor) loggers.get("ROOT");
+		Map<String, Object> result = new LoggersEndpoint(this.loggingSystem, this.loggerGroups).loggers();
+		Map<String, GroupLoggerLevels> loggerGroups = (Map<String, GroupLoggerLevels>) result.get("groups");
+		GroupLoggerLevels groupLevel = loggerGroups.get("test");
+		Map<String, LoggerLevels> loggers = (Map<String, LoggerLevels>) result.get("loggers");
+		Set<LogLevel> levels = (Set<LogLevel>) result.get("levels");
+		SingleLoggerLevels rootLevels = (SingleLoggerLevels) loggers.get("ROOT");
 		assertThat(rootLevels.getConfiguredLevel()).isNull();
 		assertThat(rootLevels.getEffectiveLevel()).isEqualTo("DEBUG");
 		assertThat(levels).containsExactly(LogLevel.OFF, LogLevel.FATAL, LogLevel.ERROR, LogLevel.WARN, LogLevel.INFO,
@@ -106,8 +103,7 @@ class LoggersEndpointTests {
 	void loggerLevelsWhenNameSpecifiedShouldReturnLevels() {
 		given(this.loggingSystem.getLoggerConfiguration("ROOT"))
 			.willReturn(new LoggerConfiguration("ROOT", null, LogLevel.DEBUG));
-		SingleLoggerLevelsDescriptor levels = (SingleLoggerLevelsDescriptor) new LoggersEndpoint(this.loggingSystem,
-				this.loggerGroups)
+		SingleLoggerLevels levels = (SingleLoggerLevels) new LoggersEndpoint(this.loggingSystem, this.loggerGroups)
 			.loggerLevels("ROOT");
 		assertThat(levels.getConfiguredLevel()).isNull();
 		assertThat(levels.getEffectiveLevel()).isEqualTo("DEBUG");
@@ -115,8 +111,7 @@ class LoggersEndpointTests {
 
 	@Test
 	void groupNameSpecifiedShouldReturnConfiguredLevelAndMembers() {
-		GroupLoggerLevelsDescriptor levels = (GroupLoggerLevelsDescriptor) new LoggersEndpoint(this.loggingSystem,
-				this.loggerGroups)
+		GroupLoggerLevels levels = (GroupLoggerLevels) new LoggersEndpoint(this.loggingSystem, this.loggerGroups)
 			.loggerLevels("test");
 		assertThat(levels.getConfiguredLevel()).isEqualTo("DEBUG");
 		assertThat(levels.getMembers()).isEqualTo(Collections.singletonList("test.member"));
@@ -144,21 +139,6 @@ class LoggersEndpointTests {
 	void configureLogLevelWithNullInLoggerGroupShouldSetLevelOnLoggingSystem() {
 		new LoggersEndpoint(this.loggingSystem, this.loggerGroups).configureLogLevel("test", null);
 		then(this.loggingSystem).should().setLogLevel("test.member", null);
-	}
-
-	@Test
-	void registersRuntimeHintsForClassesSerializedToJson() {
-		RuntimeHints runtimeHints = new RuntimeHints();
-		new ReflectiveRuntimeHintsRegistrar().registerRuntimeHints(runtimeHints, LoggersEndpoint.class);
-		ReflectionHintsPredicates reflection = RuntimeHintsPredicates.reflection();
-		assertThat(reflection.onType(LoggerLevelsDescriptor.class)).accepts(runtimeHints);
-		assertThat(reflection.onMethod(LoggerLevelsDescriptor.class, "getConfiguredLevel")).accepts(runtimeHints);
-		assertThat(reflection.onType(SingleLoggerLevelsDescriptor.class)).accepts(runtimeHints);
-		assertThat(reflection.onMethod(SingleLoggerLevelsDescriptor.class, "getEffectiveLevel")).accepts(runtimeHints);
-		assertThat(reflection.onMethod(SingleLoggerLevelsDescriptor.class, "getConfiguredLevel")).accepts(runtimeHints);
-		assertThat(reflection.onType(GroupLoggerLevelsDescriptor.class)).accepts(runtimeHints);
-		assertThat(reflection.onMethod(GroupLoggerLevelsDescriptor.class, "getMembers")).accepts(runtimeHints);
-		assertThat(reflection.onMethod(GroupLoggerLevelsDescriptor.class, "getConfiguredLevel")).accepts(runtimeHints);
 	}
 
 }

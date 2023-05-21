@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -153,7 +154,9 @@ public class CheckSpringConfigurationMetadata extends DefaultTask {
 			else {
 				lines.add("The following properties have no description:");
 				lines.add("");
-				lines.addAll(this.propertiesWithNoDescription.stream().map((line) -> "\t" + line).toList());
+				lines.addAll(this.propertiesWithNoDescription.stream()
+					.map((line) -> "\t" + line)
+					.collect(Collectors.toList()));
 			}
 			lines.add("");
 			return lines.iterator();

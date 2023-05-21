@@ -16,6 +16,8 @@
 
 package org.springframework.boot.actuate.autoconfigure.metrics.export.prometheus;
 
+import java.util.function.Consumer;
+
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.prometheus.PrometheusConfig;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
@@ -26,7 +28,6 @@ import io.prometheus.client.exporter.BasicAuthHttpConnectionFactory;
 import io.prometheus.client.exporter.DefaultHttpConnectionFactory;
 import io.prometheus.client.exporter.HttpConnectionFactory;
 import io.prometheus.client.exporter.PushGateway;
-import org.assertj.core.api.ThrowingConsumer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -75,7 +76,7 @@ class PrometheusMetricsExportAutoConfigurationTests {
 	@Test
 	void autoConfigurationCanBeDisabledWithDefaultsEnabledProperty() {
 		this.contextRunner.withUserConfiguration(BaseConfiguration.class)
-			.withPropertyValues("management.defaults.metrics.export.enabled=false")
+			.withPropertyValues("management.metrics.export.defaults.enabled=false")
 			.run((context) -> assertThat(context).doesNotHaveBean(PrometheusMeterRegistry.class)
 				.doesNotHaveBean(CollectorRegistry.class)
 				.doesNotHaveBean(PrometheusConfig.class));
@@ -84,7 +85,7 @@ class PrometheusMetricsExportAutoConfigurationTests {
 	@Test
 	void autoConfigurationCanBeDisabledWithSpecificEnabledProperty() {
 		this.contextRunner.withUserConfiguration(BaseConfiguration.class)
-			.withPropertyValues("management.prometheus.metrics.export.enabled=false")
+			.withPropertyValues("management.metrics.export.prometheus.enabled=false")
 			.run((context) -> assertThat(context).doesNotHaveBean(PrometheusMeterRegistry.class)
 				.doesNotHaveBean(CollectorRegistry.class)
 				.doesNotHaveBean(PrometheusConfig.class));
@@ -174,7 +175,7 @@ class PrometheusMetricsExportAutoConfigurationTests {
 	@Test
 	void withPushGatewayEnabled(CapturedOutput output) {
 		this.contextRunner.withConfiguration(AutoConfigurations.of(ManagementContextAutoConfiguration.class))
-			.withPropertyValues("management.prometheus.metrics.export.pushgateway.enabled=true")
+			.withPropertyValues("management.metrics.export.prometheus.pushgateway.enabled=true")
 			.withUserConfiguration(BaseConfiguration.class)
 			.run((context) -> {
 				assertThat(output).doesNotContain("Invalid PushGateway base url");
@@ -185,17 +186,30 @@ class PrometheusMetricsExportAutoConfigurationTests {
 	@Test
 	void withPushGatewayNoBasicAuth() {
 		this.contextRunner.withConfiguration(AutoConfigurations.of(ManagementContextAutoConfiguration.class))
-			.withPropertyValues("management.prometheus.metrics.export.pushgateway.enabled=true")
+			.withPropertyValues("management.metrics.export.prometheus.pushgateway.enabled=true")
 			.withUserConfiguration(BaseConfiguration.class)
 			.run(hasHttpConnectionFactory((httpConnectionFactory) -> assertThat(httpConnectionFactory)
 				.isInstanceOf(DefaultHttpConnectionFactory.class)));
 	}
 
 	@Test
+	@Deprecated
+	void withCustomLegacyPushGatewayURL(CapturedOutput output) {
+		this.contextRunner.withConfiguration(AutoConfigurations.of(ManagementContextAutoConfiguration.class))
+			.withPropertyValues("management.metrics.export.prometheus.pushgateway.enabled=true",
+					"management.metrics.export.prometheus.pushgateway.base-url=localhost:9090")
+			.withUserConfiguration(BaseConfiguration.class)
+			.run((context) -> {
+				assertThat(output).contains("Invalid PushGateway base url").contains("localhost:9090");
+				hasGatewayURL(context, "http://localhost:9090/metrics/");
+			});
+	}
+
+	@Test
 	void withCustomPushGatewayURL() {
 		this.contextRunner.withConfiguration(AutoConfigurations.of(ManagementContextAutoConfiguration.class))
-			.withPropertyValues("management.prometheus.metrics.export.pushgateway.enabled=true",
-					"management.prometheus.metrics.export.pushgateway.base-url=https://example.com:8080")
+			.withPropertyValues("management.metrics.export.prometheus.pushgateway.enabled=true",
+					"management.metrics.export.prometheus.pushgateway.base-url=https://example.com:8080")
 			.withUserConfiguration(BaseConfiguration.class)
 			.run((context) -> hasGatewayURL(context, "https://example.com:8080/metrics/"));
 	}
@@ -203,9 +217,9 @@ class PrometheusMetricsExportAutoConfigurationTests {
 	@Test
 	void withPushGatewayBasicAuth() {
 		this.contextRunner.withConfiguration(AutoConfigurations.of(ManagementContextAutoConfiguration.class))
-			.withPropertyValues("management.prometheus.metrics.export.pushgateway.enabled=true",
-					"management.prometheus.metrics.export.pushgateway.username=admin",
-					"management.prometheus.metrics.export.pushgateway.password=secret")
+			.withPropertyValues("management.metrics.export.prometheus.pushgateway.enabled=true",
+					"management.metrics.export.prometheus.pushgateway.username=admin",
+					"management.metrics.export.prometheus.pushgateway.password=secret")
 			.withUserConfiguration(BaseConfiguration.class)
 			.run(hasHttpConnectionFactory((httpConnectionFactory) -> assertThat(httpConnectionFactory)
 				.isInstanceOf(BasicAuthHttpConnectionFactory.class)));
@@ -216,7 +230,7 @@ class PrometheusMetricsExportAutoConfigurationTests {
 	}
 
 	private ContextConsumer<AssertableApplicationContext> hasHttpConnectionFactory(
-			ThrowingConsumer<HttpConnectionFactory> httpConnectionFactory) {
+			Consumer<HttpConnectionFactory> httpConnectionFactory) {
 		return (context) -> {
 			PushGateway pushGateway = getPushGateway(context);
 			httpConnectionFactory
@@ -301,11 +315,6 @@ class PrometheusMetricsExportAutoConfigurationTests {
 				@Override
 				public String getSpanId() {
 					return null;
-				}
-
-				@Override
-				public boolean isSampled() {
-					return false;
 				}
 
 			};
