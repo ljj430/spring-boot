@@ -41,6 +41,7 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 
@@ -514,15 +515,6 @@ abstract class AbstractBootArchiveIntegrationTests {
 		}
 	}
 
-	@TestTemplate
-	void javaVersionIsSetInManifest() throws IOException {
-		BuildResult result = this.gradleBuild.build(this.taskName);
-		assertThat(result.task(":" + this.taskName).getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
-		try (JarFile jarFile = new JarFile(new File(this.gradleBuild.getProjectDir(), "build/libs").listFiles()[0])) {
-			assertThat(jarFile.getManifest().getMainAttributes().getValue("Build-Jdk-Spec")).isNotEmpty();
-		}
-	}
-
 	private void copyMainClassApplication() throws IOException {
 		copyApplication("main");
 	}
@@ -622,15 +614,13 @@ abstract class AbstractBootArchiveIntegrationTests {
 		for (String layerName : layerNames) {
 			File layer = new File(root, layerName);
 			assertThat(layer).isDirectory();
-			List<String> files;
-			try (Stream<Path> pathStream = Files.walk(layer.toPath())) {
-				files = pathStream.filter((path) -> path.toFile().isFile())
-					.map(layer.toPath()::relativize)
-					.map(Path::toString)
-					.map(StringUtils::cleanPath)
-					.toList();
-			}
-			extractedLayers.put(layerName, files);
+			extractedLayers.put(layerName,
+					Files.walk(layer.toPath())
+						.filter((path) -> path.toFile().isFile())
+						.map(layer.toPath()::relativize)
+						.map(Path::toString)
+						.map(StringUtils::cleanPath)
+						.collect(Collectors.toList()));
 		}
 		return extractedLayers;
 	}

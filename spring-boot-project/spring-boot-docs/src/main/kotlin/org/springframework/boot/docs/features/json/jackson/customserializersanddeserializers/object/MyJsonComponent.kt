@@ -26,6 +26,7 @@ import org.springframework.boot.jackson.JsonComponent
 import org.springframework.boot.jackson.JsonObjectDeserializer
 import org.springframework.boot.jackson.JsonObjectSerializer
 import java.io.IOException
+import kotlin.jvm.Throws
 
 @JsonComponent
 class MyJsonComponent {

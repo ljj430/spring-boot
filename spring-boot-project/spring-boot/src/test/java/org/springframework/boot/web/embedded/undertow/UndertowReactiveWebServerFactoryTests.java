@@ -135,7 +135,7 @@ class UndertowReactiveWebServerFactoryTests extends AbstractReactiveWebServerFac
 		factory.setAccessLogSuffix(suffix);
 		File accessLogDirectory = this.tempDir;
 		factory.setAccessLogDirectory(accessLogDirectory);
-		assertThat(accessLogDirectory).isEmptyDirectory();
+		assertThat(accessLogDirectory.listFiles()).isEmpty();
 		this.webServer = factory.getWebServer(new EchoHandler());
 		this.webServer.start();
 		WebClient client = getWebClient(this.webServer.getPort()).build();

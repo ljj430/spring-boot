@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import graphql.GraphQL;
 import graphql.execution.instrumentation.Instrumentation;
@@ -29,8 +30,6 @@ import graphql.schema.visibility.NoIntrospectionGraphqlFieldVisibility;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import org.springframework.aot.hint.RuntimeHints;
-import org.springframework.aot.hint.RuntimeHintsRegistrar;
 import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -40,23 +39,12 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.convert.ApplicationConversionService;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.ImportRuntimeHints;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.core.log.LogMessage;
-import org.springframework.data.domain.ScrollPosition;
 import org.springframework.graphql.ExecutionGraphQlService;
 import org.springframework.graphql.data.method.annotation.support.AnnotatedControllerConfigurer;
-import org.springframework.graphql.data.pagination.ConnectionFieldTypeVisitor;
-import org.springframework.graphql.data.pagination.CursorEncoder;
-import org.springframework.graphql.data.pagination.CursorStrategy;
-import org.springframework.graphql.data.pagination.EncodingCursorStrategy;
-import org.springframework.graphql.data.query.ScrollPositionCursorStrategy;
-import org.springframework.graphql.data.query.SliceConnectionAdapter;
-import org.springframework.graphql.data.query.WindowConnectionAdapter;
 import org.springframework.graphql.execution.BatchLoaderRegistry;
-import org.springframework.graphql.execution.ConnectionTypeDefinitionConfigurer;
 import org.springframework.graphql.execution.DataFetcherExceptionResolver;
 import org.springframework.graphql.execution.DefaultBatchLoaderRegistry;
 import org.springframework.graphql.execution.DefaultExecutionGraphQlService;
@@ -75,7 +63,6 @@ import org.springframework.graphql.execution.SubscriptionExceptionResolver;
 @ConditionalOnClass({ GraphQL.class, GraphQlSource.class })
 @ConditionalOnGraphQlSchema
 @EnableConfigurationProperties(GraphQlProperties.class)
-@ImportRuntimeHints(GraphQlAutoConfiguration.GraphQlResourcesRuntimeHints.class)
 public class GraphQlAutoConfiguration {
 
 	private static final Log logger = LogFactory.getLog(GraphQlAutoConfiguration.class);
@@ -98,13 +85,12 @@ public class GraphQlAutoConfiguration {
 				properties.getSchema().getFileExtensions());
 		GraphQlSource.SchemaResourceBuilder builder = GraphQlSource.schemaResourceBuilder()
 			.schemaResources(schemaResources)
-			.exceptionResolvers(exceptionResolvers.orderedStream().toList())
-			.subscriptionExceptionResolvers(subscriptionExceptionResolvers.orderedStream().toList())
-			.instrumentation(instrumentations.orderedStream().toList());
+			.exceptionResolvers(toList(exceptionResolvers))
+			.subscriptionExceptionResolvers(toList(subscriptionExceptionResolvers))
+			.instrumentation(toList(instrumentations));
 		if (!properties.getSchema().getIntrospection().isEnabled()) {
 			builder.configureRuntimeWiring(this::enableIntrospection);
 		}
-		builder.configureTypeDefinitions(new ConnectionTypeDefinitionConfigurer());
 		wiringConfigurers.orderedStream().forEach(builder::configureRuntimeWiring);
 		sourceCustomizers.orderedStream().forEach((customizer) -> customizer.customize(builder));
 		return builder.build();
@@ -159,45 +145,8 @@ public class GraphQlAutoConfiguration {
 		return controllerConfigurer;
 	}
 
-	@Bean
-	DataFetcherExceptionResolver annotatedControllerConfigurerDataFetcherExceptionResolver(
-			AnnotatedControllerConfigurer annotatedControllerConfigurer) {
-		return annotatedControllerConfigurer.getExceptionResolver();
-	}
-
-	@ConditionalOnClass(ScrollPosition.class)
-	@Configuration(proxyBeanMethods = false)
-	static class GraphQlDataAutoConfiguration {
-
-		@Bean
-		@ConditionalOnMissingBean
-		EncodingCursorStrategy<ScrollPosition> cursorStrategy() {
-			return CursorStrategy.withEncoder(new ScrollPositionCursorStrategy(), CursorEncoder.base64());
-		}
-
-		@Bean
-		@SuppressWarnings("unchecked")
-		GraphQlSourceBuilderCustomizer cursorStrategyCustomizer(CursorStrategy<?> cursorStrategy) {
-			if (cursorStrategy.supports(ScrollPosition.class)) {
-				CursorStrategy<ScrollPosition> scrollCursorStrategy = (CursorStrategy<ScrollPosition>) cursorStrategy;
-				ConnectionFieldTypeVisitor connectionFieldTypeVisitor = ConnectionFieldTypeVisitor
-					.create(List.of(new WindowConnectionAdapter(scrollCursorStrategy),
-							new SliceConnectionAdapter(scrollCursorStrategy)));
-				return (builder) -> builder.typeVisitors(List.of(connectionFieldTypeVisitor));
-			}
-			return (builder) -> {
-			};
-		}
-
-	}
-
-	static class GraphQlResourcesRuntimeHints implements RuntimeHintsRegistrar {
-
-		@Override
-		public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
-			hints.resources().registerPattern("graphql/*.graphqls").registerPattern("graphql/*.gqls");
-		}
-
+	private <T> List<T> toList(ObjectProvider<T> provider) {
+		return provider.orderedStream().collect(Collectors.toList());
 	}
 
 }

@@ -68,15 +68,11 @@ public class TestJarFile {
 	}
 
 	public void addFile(String filename, File fileToCopy) throws IOException {
-		try (InputStream inputStream = new FileInputStream(fileToCopy)) {
-			addFile(filename, inputStream);
-		}
-	}
-
-	public void addFile(String filename, InputStream inputStream) throws IOException {
 		File file = getFilePath(filename);
 		file.getParentFile().mkdirs();
-		copyToFile(inputStream, file);
+		try (InputStream inputStream = new FileInputStream(fileToCopy)) {
+			copyToFile(inputStream, file);
+		}
 		this.entries.add(new FileSource(filename, file));
 	}
 

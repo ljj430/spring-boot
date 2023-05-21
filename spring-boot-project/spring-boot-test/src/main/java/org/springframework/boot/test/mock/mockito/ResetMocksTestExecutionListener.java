@@ -27,7 +27,6 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.core.NativeDetector;
 import org.springframework.core.Ordered;
 import org.springframework.test.context.TestContext;
 import org.springframework.test.context.TestExecutionListener;
@@ -54,21 +53,21 @@ public class ResetMocksTestExecutionListener extends AbstractTestExecutionListen
 
 	@Override
 	public void beforeTestMethod(TestContext testContext) throws Exception {
-		if (MOCKITO_IS_PRESENT && !NativeDetector.inNativeImage()) {
+		if (MOCKITO_IS_PRESENT) {
 			resetMocks(testContext.getApplicationContext(), MockReset.BEFORE);
 		}
 	}
 
 	@Override
 	public void afterTestMethod(TestContext testContext) throws Exception {
-		if (MOCKITO_IS_PRESENT && !NativeDetector.inNativeImage()) {
+		if (MOCKITO_IS_PRESENT) {
 			resetMocks(testContext.getApplicationContext(), MockReset.AFTER);
 		}
 	}
 
 	private void resetMocks(ApplicationContext applicationContext, MockReset reset) {
-		if (applicationContext instanceof ConfigurableApplicationContext configurableContext) {
-			resetMocks(configurableContext, reset);
+		if (applicationContext instanceof ConfigurableApplicationContext) {
+			resetMocks((ConfigurableApplicationContext) applicationContext, reset);
 		}
 	}
 

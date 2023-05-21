@@ -19,7 +19,6 @@ package org.springframework.boot.docs.actuator.endpoints.security.typical
 import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.security.config.Customizer.withDefaults
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.web.SecurityFilterChain
 
@@ -28,10 +27,10 @@ class MySecurityConfiguration {
 
 	@Bean
 	fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
-		http.securityMatcher(EndpointRequest.toAnyEndpoint()).authorizeHttpRequests { requests ->
+		http.requestMatcher(EndpointRequest.toAnyEndpoint()).authorizeRequests { requests ->
 			requests.anyRequest().hasRole("ENDPOINT_ADMIN")
 		}
-		http.httpBasic(withDefaults())
+		http.httpBasic()
 		return http.build()
 	}
 

@@ -36,7 +36,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Metadata generation tests for types defined by {@code @Bean} methods.
  *
  * @author Stephane Nicoll
- * @author Scott Frederick
  */
 class MethodBasedMetadataGenerationTests extends AbstractMetadataGenerationTests {
 
@@ -66,7 +65,7 @@ class MethodBasedMetadataGenerationTests extends AbstractMetadataGenerationTests
 	@Test
 	void privateMethodConfig() {
 		ConfigurationMetadata metadata = compile(PrivateMethodConfig.class);
-		assertThat(metadata).isNull();
+		assertThat(metadata).doesNotHave(Metadata.withGroup("foo"));
 	}
 
 	@Test
