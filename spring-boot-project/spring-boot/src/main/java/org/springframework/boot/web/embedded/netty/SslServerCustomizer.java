@@ -63,7 +63,7 @@ import org.springframework.util.StringUtils;
  * @since 2.0.0
  * @deprecated this class is meant for Spring Boot internal use only.
  */
-@Deprecated
+@Deprecated(since = "2.0.0", forRemoval = false)
 public class SslServerCustomizer implements NettyServerCustomizer {
 
 	private final Ssl ssl;

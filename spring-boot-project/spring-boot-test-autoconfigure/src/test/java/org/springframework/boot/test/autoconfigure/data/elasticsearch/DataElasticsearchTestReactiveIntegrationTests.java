@@ -25,7 +25,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.testsupport.testcontainers.DockerImageNames;
-import org.springframework.data.elasticsearch.core.ReactiveElasticsearchTemplate;
+import org.springframework.data.elasticsearch.client.elc.ReactiveElasticsearchTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
