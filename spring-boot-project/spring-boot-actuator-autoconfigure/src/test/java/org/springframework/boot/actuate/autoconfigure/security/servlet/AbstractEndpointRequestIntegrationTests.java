@@ -16,15 +16,11 @@
 
 package org.springframework.boot.actuate.autoconfigure.security.servlet;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.function.Supplier;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import org.jolokia.http.AgentServlet;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.boot.actuate.autoconfigure.endpoint.EndpointAutoConfiguration;
@@ -43,9 +39,7 @@ import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
 import org.springframework.boot.web.servlet.context.AnnotationConfigServletWebServerApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 /**
@@ -82,16 +76,8 @@ abstract class AbstractEndpointRequestIntegrationTests {
 		getContextRunner().run((context) -> {
 			WebTestClient webTestClient = getWebTestClient(context);
 			webTestClient.get().uri("/actuator").exchange().expectStatus().isOk();
-			webTestClient.get()
-				.uri("/actuator/")
-				.exchange()
-				.expectStatus()
-				.isEqualTo(expectedStatusWithTrailingSlash());
+			webTestClient.get().uri("/actuator/").exchange().expectStatus().isOk();
 		});
-	}
-
-	protected HttpStatus expectedStatusWithTrailingSlash() {
-		return HttpStatus.NOT_FOUND;
 	}
 
 	protected final WebApplicationContextRunner getContextRunner() {
@@ -179,7 +165,7 @@ abstract class AbstractEndpointRequestIntegrationTests {
 
 		@Override
 		public EndpointServlet get() {
-			return new EndpointServlet(ExampleServlet.class);
+			return new EndpointServlet(AgentServlet.class);
 		}
 
 	}
@@ -188,23 +174,22 @@ abstract class AbstractEndpointRequestIntegrationTests {
 	static class SecurityConfiguration {
 
 		@Bean
-		SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-			http.authorizeHttpRequests((requests) -> {
-				requests.requestMatchers(EndpointRequest.toLinks()).permitAll();
-				requests.requestMatchers(EndpointRequest.to(TestEndpoint1.class)).permitAll();
-				requests.requestMatchers(EndpointRequest.toAnyEndpoint()).authenticated();
-				requests.anyRequest().hasRole("ADMIN");
-			});
-			http.httpBasic();
-			return http.build();
-		}
+		@SuppressWarnings("deprecation")
+		org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter webSecurityConfigurerAdapter() {
+			return new org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter() {
 
-	}
+				@Override
+				protected void configure(HttpSecurity http) throws Exception {
+					http.authorizeRequests((requests) -> {
+						requests.requestMatchers(EndpointRequest.toLinks()).permitAll();
+						requests.requestMatchers(EndpointRequest.to(TestEndpoint1.class)).permitAll();
+						requests.requestMatchers(EndpointRequest.toAnyEndpoint()).authenticated();
+						requests.anyRequest().hasRole("ADMIN");
+					});
+					http.httpBasic();
+				}
 
-	static class ExampleServlet extends HttpServlet {
-
-		@Override
-		protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+			};
 		}
 
 	}

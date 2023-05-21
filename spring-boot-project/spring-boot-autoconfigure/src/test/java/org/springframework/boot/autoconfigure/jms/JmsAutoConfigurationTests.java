@@ -16,17 +16,17 @@
 
 package org.springframework.boot.autoconfigure.jms;
 
-import java.io.IOException;
+import javax.jms.ConnectionFactory;
+import javax.jms.ExceptionListener;
+import javax.jms.Session;
 
-import jakarta.jms.ConnectionFactory;
-import jakarta.jms.ExceptionListener;
-import jakarta.jms.Session;
-import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
+import org.apache.activemq.ActiveMQConnectionFactory;
 import org.junit.jupiter.api.Test;
+import org.messaginghub.pooled.jms.JmsPoolConnectionFactory;
 
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.jms.artemis.ArtemisAutoConfiguration;
+import org.springframework.boot.autoconfigure.jms.activemq.ActiveMQAutoConfiguration;
 import org.springframework.boot.test.context.assertj.AssertableApplicationContext;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
@@ -60,8 +60,12 @@ import static org.mockito.Mockito.mock;
  */
 class JmsAutoConfigurationTests {
 
+	private static final String ACTIVEMQ_EMBEDDED_URL = "vm://localhost?broker.persistent=false";
+
+	private static final String ACTIVEMQ_NETWORK_URL = "tcp://localhost:61616";
+
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(ArtemisAutoConfiguration.class, JmsAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(ActiveMQAutoConfiguration.class, JmsAutoConfiguration.class));
 
 	@Test
 	void testDefaultJmsConfiguration() {
@@ -77,15 +81,15 @@ class JmsAutoConfigurationTests {
 		JmsMessagingTemplate messagingTemplate = loaded.getBean(JmsMessagingTemplate.class);
 		assertThat(factory).isEqualTo(jmsTemplate.getConnectionFactory());
 		assertThat(messagingTemplate.getJmsTemplate()).isEqualTo(jmsTemplate);
-		assertThat(getBrokerUrl(factory)).startsWith("vm://");
+		assertThat(getBrokerUrl(factory)).isEqualTo(ACTIVEMQ_EMBEDDED_URL);
 		assertThat(loaded.containsBean("jmsListenerContainerFactory")).isTrue();
 	}
 
 	@Test
 	void testConnectionFactoryBackOff() {
 		this.contextRunner.withUserConfiguration(TestConfiguration2.class)
-			.run((context) -> assertThat(context.getBeansOfType(ActiveMQConnectionFactory.class))
-				.containsOnlyKeys("customConnectionFactory"));
+			.run((context) -> assertThat(context.getBean(ActiveMQConnectionFactory.class).getBrokerURL())
+				.isEqualTo("foobar"));
 	}
 
 	@Test
@@ -111,7 +115,7 @@ class JmsAutoConfigurationTests {
 	private void testJmsTemplateBackOffEverything(AssertableApplicationContext loaded) {
 		JmsTemplate jmsTemplate = loaded.getBean(JmsTemplate.class);
 		assertThat(jmsTemplate.getPriority()).isEqualTo(999);
-		assertThat(loaded.getBeansOfType(ActiveMQConnectionFactory.class)).containsOnlyKeys("customConnectionFactory");
+		assertThat(loaded.getBean(ActiveMQConnectionFactory.class).getBrokerURL()).isEqualTo("foobar");
 		JmsMessagingTemplate messagingTemplate = loaded.getBean(JmsMessagingTemplate.class);
 		assertThat(messagingTemplate.getDefaultDestinationName()).isEqualTo("fooBar");
 		assertThat(messagingTemplate.getJmsTemplate()).isEqualTo(jmsTemplate);
@@ -263,7 +267,7 @@ class JmsAutoConfigurationTests {
 				assertThat(jmsTemplate.isPubSubDomain()).isFalse();
 				assertThat(jmsTemplate.getDefaultDestinationName()).isEqualTo("testQueue");
 				assertThat(jmsTemplate.getDeliveryDelay()).isEqualTo(500);
-				assertThat(jmsTemplate.getDeliveryMode()).isOne();
+				assertThat(jmsTemplate.getDeliveryMode()).isEqualTo(1);
 				assertThat(jmsTemplate.getPriority()).isEqualTo(6);
 				assertThat(jmsTemplate.getTimeToLive()).isEqualTo(6000);
 				assertThat(jmsTemplate.isExplicitQosEnabled()).isTrue();
@@ -320,14 +324,83 @@ class JmsAutoConfigurationTests {
 			});
 	}
 
+	@Test
+	void testActiveMQOverriddenStandalone() {
+		this.contextRunner.withUserConfiguration(TestConfiguration.class)
+			.withPropertyValues("spring.activemq.inMemory:false")
+			.run((context) -> {
+				assertThat(context).hasSingleBean(JmsTemplate.class);
+				assertThat(context).hasSingleBean(CachingConnectionFactory.class);
+				JmsTemplate jmsTemplate = context.getBean(JmsTemplate.class);
+				ConnectionFactory factory = context.getBean(ConnectionFactory.class);
+				assertThat(factory).isEqualTo(jmsTemplate.getConnectionFactory());
+				assertThat(getBrokerUrl((CachingConnectionFactory) factory)).isEqualTo(ACTIVEMQ_NETWORK_URL);
+			});
+	}
+
+	@Test
+	void testActiveMQOverriddenRemoteHost() {
+		this.contextRunner.withUserConfiguration(TestConfiguration.class)
+			.withPropertyValues("spring.activemq.brokerUrl:tcp://remote-host:10000")
+			.run((context) -> {
+				assertThat(context).hasSingleBean(JmsTemplate.class);
+				assertThat(context).hasSingleBean(CachingConnectionFactory.class);
+				JmsTemplate jmsTemplate = context.getBean(JmsTemplate.class);
+				ConnectionFactory factory = context.getBean(ConnectionFactory.class);
+				assertThat(factory).isEqualTo(jmsTemplate.getConnectionFactory());
+				assertThat(getBrokerUrl((CachingConnectionFactory) factory)).isEqualTo("tcp://remote-host:10000");
+			});
+	}
+
 	private String getBrokerUrl(CachingConnectionFactory connectionFactory) {
 		assertThat(connectionFactory.getTargetConnectionFactory()).isInstanceOf(ActiveMQConnectionFactory.class);
-		try {
-			return ((ActiveMQConnectionFactory) connectionFactory.getTargetConnectionFactory()).toURI().toString();
-		}
-		catch (IOException ex) {
-			throw new RuntimeException(ex);
-		}
+		return ((ActiveMQConnectionFactory) connectionFactory.getTargetConnectionFactory()).getBrokerURL();
+	}
+
+	@Test
+	void testActiveMQOverriddenPool() {
+		this.contextRunner.withUserConfiguration(TestConfiguration.class)
+			.withPropertyValues("spring.activemq.pool.enabled:true")
+			.run((context) -> {
+				JmsTemplate jmsTemplate = context.getBean(JmsTemplate.class);
+				JmsPoolConnectionFactory pool = context.getBean(JmsPoolConnectionFactory.class);
+				assertThat(jmsTemplate).isNotNull();
+				assertThat(pool).isNotNull();
+				assertThat(pool).isEqualTo(jmsTemplate.getConnectionFactory());
+				ActiveMQConnectionFactory factory = (ActiveMQConnectionFactory) pool.getConnectionFactory();
+				assertThat(factory.getBrokerURL()).isEqualTo(ACTIVEMQ_EMBEDDED_URL);
+			});
+	}
+
+	@Test
+	void testActiveMQOverriddenPoolAndStandalone() {
+		this.contextRunner.withUserConfiguration(TestConfiguration.class)
+			.withPropertyValues("spring.activemq.pool.enabled:true", "spring.activemq.inMemory:false")
+			.run((context) -> {
+				JmsTemplate jmsTemplate = context.getBean(JmsTemplate.class);
+				JmsPoolConnectionFactory pool = context.getBean(JmsPoolConnectionFactory.class);
+				assertThat(jmsTemplate).isNotNull();
+				assertThat(pool).isNotNull();
+				assertThat(pool).isEqualTo(jmsTemplate.getConnectionFactory());
+				ActiveMQConnectionFactory factory = (ActiveMQConnectionFactory) pool.getConnectionFactory();
+				assertThat(factory.getBrokerURL()).isEqualTo(ACTIVEMQ_NETWORK_URL);
+			});
+	}
+
+	@Test
+	void testActiveMQOverriddenPoolAndRemoteServer() {
+		this.contextRunner.withUserConfiguration(TestConfiguration.class)
+			.withPropertyValues("spring.activemq.pool.enabled:true",
+					"spring.activemq.brokerUrl:tcp://remote-host:10000")
+			.run((context) -> {
+				JmsTemplate jmsTemplate = context.getBean(JmsTemplate.class);
+				JmsPoolConnectionFactory pool = context.getBean(JmsPoolConnectionFactory.class);
+				assertThat(jmsTemplate).isNotNull();
+				assertThat(pool).isNotNull();
+				assertThat(pool).isEqualTo(jmsTemplate.getConnectionFactory());
+				ActiveMQConnectionFactory factory = (ActiveMQConnectionFactory) pool.getConnectionFactory();
+				assertThat(factory.getBrokerURL()).isEqualTo("tcp://remote-host:10000");
+			});
 	}
 
 	@Test
@@ -347,8 +420,12 @@ class JmsAutoConfigurationTests {
 	static class TestConfiguration2 {
 
 		@Bean
-		ConnectionFactory customConnectionFactory() {
-			return new ActiveMQConnectionFactory();
+		ConnectionFactory connectionFactory() {
+			return new ActiveMQConnectionFactory() {
+				{
+					setBrokerURL("foobar");
+				}
+			};
 		}
 
 	}

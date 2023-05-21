@@ -18,15 +18,16 @@ package org.springframework.boot.actuate.autoconfigure.metrics.jersey;
 
 import java.net.URI;
 
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.binder.jersey.server.DefaultJerseyTagsProvider;
 import io.micrometer.core.instrument.binder.jersey.server.JerseyTagsProvider;
 import io.micrometer.core.instrument.binder.jersey.server.MetricsApplicationEventListener;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.monitoring.RequestEvent;
 import org.junit.jupiter.api.Test;
@@ -34,7 +35,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.actuate.autoconfigure.metrics.MetricsAutoConfiguration;
 import org.springframework.boot.actuate.autoconfigure.metrics.export.simple.SimpleMetricsExportAutoConfiguration;
 import org.springframework.boot.actuate.autoconfigure.metrics.test.MetricsRun;
-import org.springframework.boot.actuate.autoconfigure.observation.ObservationAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.jersey.JerseyAutoConfiguration;
 import org.springframework.boot.autoconfigure.jersey.ResourceConfigCustomizer;
@@ -63,10 +63,9 @@ class JerseyServerMetricsAutoConfigurationTests {
 
 	private final WebApplicationContextRunner webContextRunner = new WebApplicationContextRunner(
 			AnnotationConfigServletWebServerApplicationContext::new)
-		.withConfiguration(
-				AutoConfigurations.of(JerseyAutoConfiguration.class, JerseyServerMetricsAutoConfiguration.class,
-						ServletWebServerFactoryAutoConfiguration.class, SimpleMetricsExportAutoConfiguration.class,
-						ObservationAutoConfiguration.class, MetricsAutoConfiguration.class))
+		.withConfiguration(AutoConfigurations.of(JerseyAutoConfiguration.class,
+				JerseyServerMetricsAutoConfiguration.class, ServletWebServerFactoryAutoConfiguration.class,
+				SimpleMetricsExportAutoConfiguration.class, MetricsAutoConfiguration.class))
 		.withUserConfiguration(ResourceConfiguration.class)
 		.withPropertyValues("server.port:0");
 
@@ -93,7 +92,7 @@ class JerseyServerMetricsAutoConfigurationTests {
 			doRequest(context);
 			MeterRegistry registry = context.getBean(MeterRegistry.class);
 			Timer timer = registry.get("http.server.requests").tag("uri", "/users/{id}").timer();
-			assertThat(timer.count()).isOne();
+			assertThat(timer.count()).isEqualTo(1);
 		});
 	}
 

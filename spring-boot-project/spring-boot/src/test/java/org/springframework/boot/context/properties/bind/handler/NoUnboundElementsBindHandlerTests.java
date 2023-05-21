@@ -40,7 +40,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
  */
 class NoUnboundElementsBindHandlerTests {
 
-	private final List<ConfigurationPropertySource> sources = new ArrayList<>();
+	private List<ConfigurationPropertySource> sources = new ArrayList<>();
 
 	private Binder binder;
 

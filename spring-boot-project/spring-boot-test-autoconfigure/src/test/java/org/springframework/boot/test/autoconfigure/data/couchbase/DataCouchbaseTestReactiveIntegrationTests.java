@@ -25,9 +25,10 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.couchbase.CouchbaseServiceConnection;
 import org.springframework.boot.testsupport.testcontainers.DockerImageNames;
 import org.springframework.data.couchbase.core.ReactiveCouchbaseTemplate;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -36,22 +37,26 @@ import static org.assertj.core.api.Assertions.assertThat;
  * repositories.
  *
  * @author Eddú Meléndez
- * @author Moritz Halbritter
- * @author Andy Wilkinson
- * @author Phillip Webb
  */
-@DataCouchbaseTest(properties = "spring.data.couchbase.bucket-name=cbbucket")
+@DataCouchbaseTest
 @Testcontainers(disabledWithoutDocker = true)
 class DataCouchbaseTestReactiveIntegrationTests {
 
 	private static final String BUCKET_NAME = "cbbucket";
 
 	@Container
-	@CouchbaseServiceConnection
 	static final CouchbaseContainer couchbase = new CouchbaseContainer(DockerImageNames.couchbase())
 		.withStartupAttempts(5)
 		.withStartupTimeout(Duration.ofMinutes(10))
 		.withBucket(new BucketDefinition(BUCKET_NAME));
+
+	@DynamicPropertySource
+	static void couchbaseProperties(DynamicPropertyRegistry registry) {
+		registry.add("spring.couchbase.connection-string", couchbase::getConnectionString);
+		registry.add("spring.couchbase.username", couchbase::getUsername);
+		registry.add("spring.couchbase.password", couchbase::getPassword);
+		registry.add("spring.data.couchbase.bucket-name", () -> BUCKET_NAME);
+	}
 
 	@Autowired
 	private ReactiveCouchbaseTemplate couchbaseTemplate;

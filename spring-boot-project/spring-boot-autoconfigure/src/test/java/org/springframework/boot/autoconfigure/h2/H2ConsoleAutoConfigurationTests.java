@@ -30,8 +30,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.context.properties.ConfigurationPropertiesBindException;
-import org.springframework.boot.context.properties.bind.BindException;
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
@@ -80,10 +78,6 @@ class H2ConsoleAutoConfigurationTests {
 			.run((context) -> {
 				assertThat(context).hasFailed();
 				assertThat(context.getStartupFailure()).isInstanceOf(BeanCreationException.class)
-					.cause()
-					.isInstanceOf(ConfigurationPropertiesBindException.class)
-					.cause()
-					.isInstanceOf(BindException.class)
 					.hasMessageContaining("Failed to bind properties under 'spring.h2.console'");
 			});
 	}

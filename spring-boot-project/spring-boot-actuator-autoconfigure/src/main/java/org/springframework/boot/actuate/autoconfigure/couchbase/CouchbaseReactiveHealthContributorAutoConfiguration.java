@@ -48,10 +48,6 @@ import org.springframework.context.annotation.Bean;
 public class CouchbaseReactiveHealthContributorAutoConfiguration
 		extends CompositeReactiveHealthContributorConfiguration<CouchbaseReactiveHealthIndicator, Cluster> {
 
-	public CouchbaseReactiveHealthContributorAutoConfiguration() {
-		super(CouchbaseReactiveHealthIndicator::new);
-	}
-
 	@Bean
 	@ConditionalOnMissingBean(name = { "couchbaseHealthIndicator", "couchbaseHealthContributor" })
 	public ReactiveHealthContributor couchbaseHealthContributor(Map<String, Cluster> clusters) {

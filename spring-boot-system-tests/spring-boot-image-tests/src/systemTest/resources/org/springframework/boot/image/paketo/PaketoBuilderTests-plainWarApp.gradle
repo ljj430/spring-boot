@@ -31,5 +31,4 @@ war {
 
 bootBuildImage {
 	archiveFile = war.archiveFile
-	environment = ['BP_JVM_VERSION': project.targetCompatibility.getMajorVersion(), 'BP_TOMCAT_VERSION': '10.*']
 }
